@@ -1,0 +1,3668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neoblox</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a0d18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Neoblox">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<style>
+  /* ---------- tokens ---------- */
+  :root{
+    --bg:#0a0d18;
+    --bg-elevated:#121729;
+    --bg-panel: rgba(16,20,36,0.82);
+    --panel-border: rgba(200,255,77,0.22);
+    --panel-border-soft: rgba(147,160,196,0.16);
+    --ink:#eef2ff;
+    --ink-dim:#8f9bc2;
+    --ink-faint:#5b6690;
+    --accent:#c8ff4d;
+    --accent-ink:#0a0d18;
+    --accent-soft: rgba(200,255,77,0.14);
+    --accent2:#ff5c72;
+    --accent2-soft: rgba(255,92,114,0.16);
+    --accent3:#4de3ff;
+    --accent3-soft: rgba(77,227,255,0.14);
+    --accent4:#b06bff;
+    --accent4-soft: rgba(176,107,255,0.16);
+    --shadow: 0 10px 40px rgba(0,0,0,0.45);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); }
+  body{
+    font-family:'Manrope',-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+  h1,h2,h3,.display{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    letter-spacing:0.01em;
+    text-wrap:balance;
+    margin:0;
+  }
+  .mono-num{ font-variant-numeric: tabular-nums; }
+  button{ font-family:inherit; cursor:pointer; }
+  ::selection{ background:var(--accent); color:var(--accent-ink); }
+
+  #app{ position:fixed; inset:0; }
+
+  /* ---------- canvas layer ---------- */
+  #gamecanvas{ position:absolute; inset:0; width:100%; height:100%; display:block; outline:none; }
+
+  /* ---------- generic screen ---------- */
+  .screen{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  [hidden]{ display:none !important; }
+
+  /* ---------- angular panel (clipped-corner HUD aesthetic) ---------- */
+  .panel{
+    background:var(--bg-panel);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border:1px solid var(--panel-border-soft);
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    box-shadow: var(--shadow);
+  }
+  .panel.accent{ border-color: var(--panel-border); }
+
+  .btn{
+    border:1px solid var(--panel-border-soft);
+    background: rgba(255,255,255,0.03);
+    color:var(--ink);
+    padding:10px 18px;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: transform .08s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn:hover{ background: rgba(255,255,255,0.07); border-color: var(--panel-border-soft); }
+  .btn:active{ transform: scale(0.97); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn.ghost{ background:transparent; }
+  .btn.danger{ background:var(--accent2-soft); border-color: var(--accent2); color:#ffd7dc; }
+  .btn.studio{ background:var(--accent4-soft); border-color:var(--accent4); color:#ecdcff; }
+  .btn:disabled{ opacity:.4; cursor:default; pointer-events:none; }
+  .btn.small{ padding:7px 12px; font-size:12px; }
+
+  .eyebrow{
+    font-family:'Rajdhani', sans-serif; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;
+    font-size:12px; color:var(--accent3);
+  }
+
+  /* ================= BOOT / MENU ================= */
+  #screen-boot{
+    background:
+      radial-gradient(1100px 700px at 18% 8%, rgba(176,107,255,0.20), transparent 60%),
+      radial-gradient(1000px 640px at 88% 92%, rgba(77,227,255,0.16), transparent 55%),
+      linear-gradient(180deg, #0a0d18 0%, #0d1120 60%, #0a0d18 100%);
+    flex-direction:column;
+    gap:28px;
+    padding:24px;
+  }
+  .brandmark{ text-align:center; }
+  .brandmark .logo{
+    font-size:clamp(52px,10vw,108px);
+    line-height:0.92;
+    background: linear-gradient(92deg, #c8ff4d 0%, #4de3ff 55%, #b06bff 100%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter: drop-shadow(0 6px 30px rgba(77,227,255,0.25));
+  }
+  .brandmark .tag{ margin-top:6px; color:var(--ink-dim); font-size:14px; letter-spacing:0.28em; text-transform:uppercase; font-weight:700; }
+
+  .boot-card{ width:min(440px,92vw); padding:26px 26px 22px; display:flex; flex-direction:column; gap:16px; }
+  .field label{ display:block; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:6px; font-weight:700; }
+  .field input[type=text]{
+    width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--panel-border-soft); color:var(--ink);
+    padding:11px 12px; font-size:16px; font-family:'Rajdhani',sans-serif; font-weight:600; letter-spacing:0.02em;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+  .field input[type=text]:focus{ outline:none; border-color:var(--accent3); }
+
+  .swatch-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .swatch{
+    width:30px; height:30px; border-radius:50%; border:2px solid transparent; cursor:pointer;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25);
+  }
+  .swatch.selected{ border-color:var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+
+  .avatar-preview-wrap{ position:relative; height:180px; border:1px solid var(--panel-border-soft); background: radial-gradient(circle at 50% 30%, rgba(77,227,255,0.10), transparent 65%); }
+
+  .menu-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+  .menu-actions .btn{ flex:1; }
+
+  .boot-foot{ display:flex; justify-content:space-between; align-items:center; width:min(440px,92vw); color:var(--ink-faint); font-size:12px; }
+
+  /* ================= HUD (shared by lobby / world / studio) ================= */
+  #hud{ position:absolute; inset:0; pointer-events:none; }
+  #hud .interactive{ pointer-events:auto; }
+
+  .hud-top{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; gap:12px;
+  }
+  .hud-mode-chip{ display:flex; align-items:center; gap:10px; padding:8px 14px; }
+  .hud-mode-chip .dot{ width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+  .hud-mode-chip .name{ font-family:'Rajdhani',sans-serif; font-weight:700; font-size:16px; letter-spacing:0.04em; }
+  .hud-mode-chip .sub{ color:var(--ink-faint); font-size:11px; }
+
+  .hud-top-right{ display:flex; gap:10px; }
+
+  /* ===== Lobby nav: tab bar / name plate / world card ===== */
+  #lobbyNav{ position:absolute; inset:0; }
+  .lobby-topbar{
+    position:absolute; top:14px; left:14px; right:14px;
+    display:flex; align-items:center; gap:6px; padding:8px 10px;
+  }
+  .icon-btn{
+    width:36px; height:36px; flex:none; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.04); border:1px solid var(--panel-border-soft); color:var(--ink);
+    border-radius:8px; font-size:16px;
+  }
+  .icon-btn:hover{ background:rgba(255,255,255,0.09); }
+  .tab-row{ display:flex; gap:4px; margin-left:6px; overflow-x:auto; scrollbar-width:none; }
+  .tab-row::-webkit-scrollbar{ display:none; }
+  .tab-btn{
+    flex:none; background:transparent; border:1px solid transparent; color:var(--ink-dim);
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px; letter-spacing:0.05em; text-transform:uppercase;
+    padding:8px 14px; border-radius:7px;
+  }
+  .tab-btn:hover{ color:var(--ink); background:rgba(255,255,255,0.05); }
+  .tab-btn.active{ color:var(--accent-ink); background:var(--accent); }
+  .lobby-top-right{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+  .online-chip{
+    display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:var(--ink-dim);
+    letter-spacing:0.03em; white-space:nowrap;
+  }
+  .pulse-dot{ width:8px; height:8px; border-radius:50%; background:#57e389; box-shadow:0 0 8px #57e389; }
+  .profile-chip{
+    display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.05); border:1px solid var(--panel-border-soft);
+    border-radius:20px; padding:5px 12px 5px 5px; color:var(--ink); font-weight:700; font-size:13px;
+  }
+  .profile-chip:hover{ border-color:var(--accent3); }
+  .profile-chip .swatch-mini{ width:24px; height:24px; }
+
+  .name-plate{
+    position:absolute; top:70px; left:14px;
+    display:flex; align-items:center; gap:10px; padding:9px 14px 9px 10px;
+  }
+  .name-plate .swatch-mini{ width:32px; height:32px; }
+  .name-plate .who{ font-family:'Rajdhani',sans-serif; font-weight:700; font-size:15px; }
+  .name-plate .status{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-faint); }
+  .dot-online{ width:7px; height:7px; border-radius:50%; background:#57e389; box-shadow:0 0 6px #57e389; }
+
+  .world-card{
+    position:absolute; left:14px; bottom:16px; width:300px;
+    display:flex; align-items:center; gap:2px; padding:14px;
+  }
+  .world-card-body{ flex:1; min-width:0; }
+  .world-card .eyebrow{ margin-bottom:2px; }
+  .world-card-title{ font-size:26px; line-height:1.05; text-wrap:balance; margin-bottom:4px; }
+  .world-card-status{ font-size:12px; color:var(--ink-faint); margin-bottom:10px; font-variant-numeric:tabular-nums; }
+  .carousel-arrow{
+    flex:none; width:30px; height:44px; background:transparent; border:none; color:var(--ink-faint); font-size:22px;
+  }
+  .carousel-arrow:hover{ color:var(--accent3); }
+  .play-btn{ width:100%; font-size:15px; padding:12px 0; }
+
+  .hud-bottom{
+    position:absolute; bottom:0; left:0; right:0;
+    display:flex; align-items:flex-end; justify-content:space-between;
+    padding:16px 18px; gap:12px;
+  }
+
+  .hint-bar{ padding:9px 14px; display:flex; gap:14px; align-items:center; font-size:12px; color:var(--ink-dim); }
+  .hint-bar kbd{ background:rgba(255,255,255,0.08); border:1px solid var(--panel-border-soft); padding:2px 6px; font-size:11px; font-family:'Rajdhani',sans-serif; font-weight:700; color:var(--ink); }
+
+  .side-panel{
+    position:absolute; top:64px; right:14px; width:230px; max-height:calc(100% - 150px);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  #playerPanel{ top:132px; max-height:calc(100% - 220px); }
+  .side-panel .head{ padding:10px 14px; border-bottom:1px solid var(--panel-border-soft); display:flex; justify-content:space-between; align-items:center; }
+  .side-panel .head .t{ font-family:'Rajdhani',sans-serif; font-weight:700; font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); }
+  .side-panel .body{ overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .side-panel .body::-webkit-scrollbar{ width:6px; }
+  .side-panel .body::-webkit-scrollbar-thumb{ background:var(--panel-border-soft); }
+
+  .player-row{ display:flex; align-items:center; gap:8px; padding:6px 8px; font-size:13px; background:rgba(255,255,255,0.02); }
+  .player-row .swatch-mini{ width:14px; height:14px; border-radius:50%; flex:none; }
+  .player-row .who{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .player-row .badge{ font-size:9px; letter-spacing:0.08em; padding:2px 5px; color:var(--ink-faint); border:1px solid var(--panel-border-soft); }
+  .player-row.me .who{ color:var(--accent); font-weight:700; }
+  .player-row.bot .badge{ color:var(--accent4); border-color:var(--accent4); }
+
+  .world-row{ padding:8px 9px; display:flex; flex-direction:column; gap:3px; background:rgba(255,255,255,0.02); border:1px solid transparent; }
+  .world-row:hover{ border-color:var(--panel-border-soft); background:rgba(255,255,255,0.045); }
+  .world-row .t{ font-size:13px; font-weight:700; }
+  .world-row .m{ font-size:10.5px; color:var(--ink-faint); }
+
+  .emote-bar{ display:flex; gap:8px; margin-left:auto; }
+  .emote-btn{ width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:21px; background:var(--bg-panel); backdrop-filter:blur(14px); border:1px solid var(--panel-border-soft); clip-path:none; }
+  .emote-btn:hover{ border-color:var(--accent3); }
+
+  .toast-stack{ position:absolute; top:70px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .toast{ padding:9px 16px; font-size:13px; font-weight:600; background:var(--bg-panel); border:1px solid var(--panel-border); animation: toastin .18s ease; }
+  @keyframes toastin{ from{ opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
+
+  .crosshair{ position:absolute; top:50%; left:50%; width:6px; height:6px; margin:-3px; border-radius:50%; background:rgba(255,255,255,0.65); box-shadow:0 0 0 1px rgba(0,0,0,0.4); }
+
+  .center-banner{ position:absolute; top:38%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .center-banner .title{ font-size:clamp(34px,6vw,64px); background:linear-gradient(92deg,#c8ff4d,#4de3ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .center-banner .sub{ margin-top:6px; color:var(--ink-dim); font-size:14px; letter-spacing:0.06em; }
+
+  .timer-chip{ padding:9px 16px; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:22px; letter-spacing:0.04em; }
+
+  /* studio palette */
+  .palette-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:4px; }
+  .block-swatch{ aspect-ratio:1; border:2px solid transparent; position:relative; display:flex; align-items:flex-end; }
+  .block-swatch .lbl{ font-size:9px; padding:2px 4px; background:rgba(0,0,0,0.45); width:100%; text-align:center; letter-spacing:0.03em; }
+  .block-swatch.selected{ border-color:var(--accent); }
+
+  .studio-toolbar{ position:absolute; top:64px; left:14px; display:flex; flex-direction:column; gap:8px; width:172px; }
+  .tool-btn{ padding:9px 12px; font-size:12px; display:flex; align-items:center; gap:8px; }
+  .tool-btn.active{ border-color:var(--accent3); background:var(--accent3-soft); }
+
+  .modal-back{ position:absolute; inset:0; background:rgba(4,6,14,0.7); display:flex; align-items:center; justify-content:center; }
+  .modal{ width:min(380px,90vw); padding:22px; display:flex; flex-direction:column; gap:14px; }
+
+  .locker-modal, .worlds-modal{ width:min(420px,92vw); max-height:min(680px,86vh); }
+  .locker-head{ display:flex; align-items:center; justify-content:space-between; }
+  .locker-body{ display:flex; flex-direction:column; gap:14px; overflow-y:auto; padding-right:2px; }
+  .side-panel-flat{ display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:420px; padding-right:2px; }
+  .worlds-modal .world-row{ display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:10px; }
+  .worlds-modal .world-row .wtext{ min-width:0; overflow:hidden; }
+  .worlds-modal .world-row .btn{ flex:none; }
+
+  .loading-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .loading-bar{ width:220px; height:4px; background:rgba(255,255,255,0.08); overflow:hidden; }
+  .loading-bar .fill{ height:100%; width:30%; background:linear-gradient(90deg,#c8ff4d,#4de3ff); animation: loadmove 1.1s ease-in-out infinite; }
+  @keyframes loadmove{ 0%{ margin-left:-30%;} 50%{ margin-left:70%;} 100%{ margin-left:-30%;} }
+
+  @media (max-width: 640px){
+    .side-panel{ width:180px; }
+    .studio-toolbar{ width:140px; }
+    .world-card{ width:min(260px, calc(100vw - 28px)); }
+    .tab-row{ max-width:36vw; }
+  }
+
+  /* ---------- persistent party / chat / voice dock (visible on every screen) ---------- */
+  #partyDock{
+    position:fixed; right:16px; bottom:16px; z-index:400;
+    width:52px; height:52px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg-panel); backdrop-filter:blur(14px);
+    border:1px solid var(--panel-border-soft); cursor:pointer;
+    font-size:22px; box-shadow:0 6px 22px rgba(0,0,0,0.35);
+  }
+  #partyDock:hover{ border-color:var(--accent3); }
+  #partyDock .dot{
+    position:absolute; top:2px; right:2px; width:11px; height:11px; border-radius:50%;
+    background:var(--ink-faint); border:2px solid var(--bg);
+  }
+  #partyDock .dot.live{ background:var(--accent); }
+  #partyDock .cnt{
+    position:absolute; bottom:-3px; left:-3px; min-width:16px; height:16px; padding:0 3px;
+    border-radius:9px; background:var(--accent3); color:var(--accent-ink); font-size:10px;
+    font-weight:800; display:flex; align-items:center; justify-content:center; font-family:'Manrope',sans-serif;
+  }
+  #partyPanel{
+    position:fixed; right:16px; bottom:78px; z-index:400;
+    width:300px; max-height:min(72vh,540px); display:flex; flex-direction:column;
+    padding:0; overflow:hidden;
+  }
+  #partyPanel.hidden{ display:none; }
+  .party-head{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--panel-border-soft); }
+  .party-head .t{ font-family:'Rajdhani',sans-serif; font-weight:700; font-size:15px; letter-spacing:0.03em; }
+  .party-status{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--ink-faint); }
+  .party-status .dot{ width:7px; height:7px; border-radius:50%; background:var(--ink-faint); }
+  .party-status .dot.live{ background:var(--accent); }
+  .party-body{ display:flex; flex-direction:column; gap:10px; padding:12px 14px; overflow-y:auto; }
+  .party-row{ display:flex; gap:8px; }
+  .party-row input{ flex:1; min-width:0; }
+  .party-members{ display:flex; flex-direction:column; gap:4px; }
+  .party-member{ display:flex; align-items:center; gap:7px; font-size:12px; padding:5px 7px; background:rgba(255,255,255,0.03); }
+  .party-member .swatch-mini{ width:14px; height:14px; border-radius:3px; flex:none; }
+  .party-member .who{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .party-member .mic{ font-size:11px; color:var(--ink-faint); }
+  .party-member .mic.on{ color:var(--accent); }
+  .chat-tabs{ display:flex; gap:6px; }
+  .chat-tab{ flex:1; padding:6px 8px; font-size:11px; font-weight:700; text-align:center; background:rgba(255,255,255,0.03); border:1px solid var(--panel-border-soft); cursor:pointer; letter-spacing:0.03em; }
+  .chat-tab.active{ border-color:var(--accent3); background:var(--accent3-soft); color:var(--accent3); }
+  .chat-log{ flex:1; min-height:120px; max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding:2px; }
+  .chat-msg{ font-size:12px; line-height:1.4; word-break:break-word; }
+  .chat-msg .who{ font-weight:700; color:var(--accent3); }
+  .chat-msg.me .who{ color:var(--accent); }
+  .chat-empty{ font-size:11.5px; color:var(--ink-faint); padding:8px 2px; }
+  .chat-input-row{ display:flex; gap:6px; }
+  .chat-input-row input{ flex:1; min-width:0; }
+  .voice-row{ display:flex; align-items:center; gap:8px; }
+  .voice-row .btn{ flex:1; }
+  .net-note{ font-size:11px; color:var(--ink-faint); line-height:1.5; padding:2px; }
+  #partyPanel input[type=text]{
+    background:rgba(255,255,255,0.04); border:1px solid var(--panel-border-soft); color:var(--ink);
+    padding:8px 10px; font-size:13px; font-family:'Manrope',sans-serif; font-weight:600;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+  #partyPanel input[type=text]:focus{ outline:none; border-color:var(--accent3); }
+
+  /* ---------- iOS/iPadOS "Add to Home Screen" install overlay ---------- */
+  #iosInstallOverlay{
+    position:fixed; inset:0; z-index:900;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(6,8,16,0.86); backdrop-filter:blur(6px);
+    padding:20px;
+  }
+  #iosInstallOverlay[hidden]{ display:none; }
+  .ios-install-card{
+    width:min(360px, 100%); background:var(--bg-elevated); border:1px solid var(--panel-border);
+    box-shadow:var(--shadow); padding:22px 20px; display:flex; flex-direction:column; gap:14px;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  .ios-install-card .head{ display:flex; align-items:center; gap:10px; }
+  .ios-install-card .head .icon{ width:40px; height:40px; border-radius:9px; flex:none; }
+  .ios-install-card .head .t{ font-family:'Rajdhani',sans-serif; font-weight:700; font-size:17px; letter-spacing:0.02em; }
+  .ios-install-card .sub{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; }
+  .ios-install-steps{ display:flex; flex-direction:column; gap:10px; }
+  .ios-install-step{ display:flex; align-items:center; gap:10px; font-size:12.5px; line-height:1.4; }
+  .ios-install-step .num{
+    width:20px; height:20px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
+    font-weight:800; font-size:11px; display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .ios-install-step .glyph{
+    width:22px; height:22px; border-radius:5px; background:rgba(255,255,255,0.06); flex:none;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .ios-install-actions{ display:flex; gap:8px; margin-top:2px; }
+  .ios-install-actions .btn{ flex:1; }
+
+  /* ---------- touch controls (phone/tablet: virtual joystick + jump, shown during Play/Studio) ---------- */
+  .touch-joystick{
+    position:absolute; left:24px; bottom:104px; width:120px; height:120px; border-radius:50%;
+    background:var(--bg-panel); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--panel-border-soft); touch-action:none;
+  }
+  .touch-joystick .tj-knob{
+    position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px;
+    border-radius:50%; background:rgba(255,255,255,0.16); border:1px solid var(--panel-border);
+    pointer-events:none; transition:transform .02s linear;
+  }
+  .touch-jump-btn{
+    position:absolute; right:28px; bottom:112px; width:64px; height:64px; border-radius:50%;
+    background:var(--accent-soft); border:1px solid var(--accent); color:var(--accent);
+    font-size:22px; font-weight:800; display:flex; align-items:center; justify-content:center;
+    touch-action:none; clip-path:none;
+  }
+  .touch-jump-btn:active{ background:var(--accent); color:var(--accent-ink); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="iosInstallOverlay" hidden>
+    <div class="ios-install-card">
+      <div class="head">
+        <div class="icon" style="background:linear-gradient(135deg,var(--accent),var(--accent3));"></div>
+        <div class="t">Install Neoblox</div>
+      </div>
+      <div class="sub">Add Neoblox to your Home Screen for the real mobile app — full screen, its own icon, and offline play once it's installed.</div>
+      <div class="ios-install-steps">
+        <div class="ios-install-step"><span class="num">1</span><span class="glyph">&#x2B0F;</span><span>Tap the <b>Share</b> button in Safari's toolbar.</span></div>
+        <div class="ios-install-step"><span class="num">2</span><span class="glyph">&#x2795;</span><span>Scroll down and tap <b>Add to Home Screen</b>.</span></div>
+        <div class="ios-install-step"><span class="num">3</span><span class="glyph">&#x2713;</span><span>Tap <b>Add</b> — Neoblox now opens like any other app.</span></div>
+      </div>
+      <div class="ios-install-actions">
+        <button class="btn ghost" id="iosInstallDismiss">Maybe later</button>
+      </div>
+    </div>
+  </div>
+  <canvas id="gamecanvas"></canvas>
+
+  <!-- ============ BOOT / MAIN MENU ============ -->
+  <div class="screen" id="screen-boot">
+    <div class="brandmark">
+      <div class="logo display">NEOBLOX</div>
+      <div class="tag">build a world. drop into the lobby.</div>
+    </div>
+
+    <div class="boot-card panel accent">
+      <div class="field">
+        <label for="nameInput">Player name</label>
+        <input id="nameInput" type="text" maxlength="16" placeholder="Runner" autocomplete="off">
+      </div>
+
+      <div class="avatar-preview-wrap panel" style="clip-path:none; border:1px solid var(--panel-border-soft);">
+        <canvas id="avatarPreview" style="width:100%; height:100%; display:block;"></canvas>
+      </div>
+
+      <div class="field">
+        <label>Skin tone</label>
+        <div class="swatch-row" id="skinRow"></div>
+      </div>
+      <div class="field">
+        <label>Outfit color</label>
+        <div class="swatch-row" id="shirtRow"></div>
+      </div>
+      <div class="field">
+        <label>Trim color</label>
+        <div class="swatch-row" id="pantsRow"></div>
+      </div>
+
+      <div class="menu-actions">
+        <button class="btn primary" id="btnPlay">Enter Lobby</button>
+        <button class="btn studio" id="btnStudio">NeoStudio</button>
+        <button class="btn" id="btnBattle" style="background:#3a2f08; border-color:#ffd23f; color:#ffe58a;">⚡ Thunder Battle</button>
+      </div>
+    </div>
+    <div class="boot-foot">
+      <span id="connFlag">connecting…</span>
+      <span>WASD move · mouse look · space jump</span>
+    </div>
+  </div>
+
+  <!-- ============ HUD (used across lobby / world / studio) ============ -->
+  <div id="hud" hidden>
+    <div class="crosshair" id="crosshair" hidden></div>
+
+    <div class="hud-top" id="modeTopBar">
+      <div class="hud-mode-chip panel interactive">
+        <span class="dot"></span>
+        <div>
+          <div class="name" id="modeName">LOBBY</div>
+          <div class="sub" id="modeSub">Neoblox Central</div>
+        </div>
+      </div>
+      <div class="hud-top-right">
+        <div class="timer-chip panel interactive" id="timerChip" hidden>00.0</div>
+        <button class="btn small ghost interactive" id="btnMenu">Menu</button>
+      </div>
+    </div>
+
+    <!-- ===== Lobby-only Fortnite-style nav: tab bar, name plate, world card ===== -->
+    <div id="lobbyNav" hidden>
+      <div class="lobby-topbar panel interactive">
+        <button class="icon-btn" id="lobbyMenuBtn" title="Menu">☰</button>
+        <nav class="tab-row" id="tabRow">
+          <button class="tab-btn active" data-tab="play">Play</button>
+          <button class="tab-btn" data-tab="locker">Locker</button>
+          <button class="tab-btn" data-tab="worlds">Worlds</button>
+          <button class="tab-btn" data-tab="studio">Studio</button>
+        </nav>
+        <div class="lobby-top-right">
+          <div class="online-chip" id="onlineChip"><span class="pulse-dot"></span><span id="onlineChipCount">1</span> online</div>
+          <button class="profile-chip interactive" id="profileChip">
+            <span class="swatch-mini" id="profileChipSwatch"></span>
+            <span id="profileChipName">Runner</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="name-plate panel interactive" id="namePlate">
+        <span class="swatch-mini" id="namePlateSwatch"></span>
+        <div>
+          <div class="who" id="namePlateName">Runner</div>
+          <div class="status"><span class="dot-online"></span>Online — Central Lobby</div>
+        </div>
+      </div>
+
+      <div class="world-card panel accent interactive" id="worldCard">
+        <button class="carousel-arrow" id="worldPrev" aria-label="Previous world">‹</button>
+        <div class="world-card-body">
+          <div class="eyebrow" id="worldCardEyebrow">NEOBLOX ORIGINAL</div>
+          <div class="world-card-title display" id="worldCardTitle">SKY RUSH</div>
+          <div class="world-card-status" id="worldCardStatus">No runs yet</div>
+          <button class="btn primary play-btn" id="worldCardPlay">▶ Play</button>
+        </div>
+        <button class="carousel-arrow" id="worldNext" aria-label="Next world">›</button>
+      </div>
+    </div>
+
+    <div class="side-panel panel interactive" id="playerPanel">
+      <div class="head"><span class="t">In the lobby</span><span class="sub" id="playerCount" style="color:var(--ink-faint); font-size:11px;">1</span></div>
+      <div class="body" id="playerList"></div>
+    </div>
+
+    <div class="side-panel panel interactive" id="worldPanel" hidden style="top:64px;">
+      <div class="head"><span class="t">Community worlds</span></div>
+      <div class="body" id="worldList"></div>
+    </div>
+
+    <div class="studio-toolbar interactive" id="studioToolbar" hidden>
+      <div class="panel" style="padding:10px;">
+        <div class="eyebrow" style="margin-bottom:8px;">Palette</div>
+        <div class="palette-grid" id="paletteGrid"></div>
+      </div>
+      <button class="btn tool-btn" id="toolPlace" data-tool="place">▦ Build</button>
+      <button class="btn tool-btn" id="toolErase" data-tool="erase">✕ Erase</button>
+      <button class="btn tool-btn" id="toolSpawn" data-tool="spawn">★ Set spawn</button>
+      <button class="btn tool-btn" id="toolGoal" data-tool="goal">⚑ Set goal</button>
+      <button class="btn primary tool-btn" id="btnPublish">⇪ Publish world</button>
+      <button class="btn ghost tool-btn small" id="btnClearWorld">Clear all blocks</button>
+    </div>
+
+    <!-- ===== Touch controls (phone/tablet): virtual joystick + jump, drag the scene to look ===== -->
+    <div id="touchControls" hidden>
+      <div class="touch-joystick interactive" id="touchJoystick"><div class="tj-knob" id="tjKnob"></div></div>
+      <button class="touch-jump-btn interactive" id="touchJumpBtn" aria-label="Jump">&#9650;</button>
+    </div>
+
+    <div class="toast-stack" id="toastStack"></div>
+
+    <div class="center-banner" id="centerBanner" hidden>
+      <div class="title" id="bannerTitle"></div>
+      <div class="sub" id="bannerSub"></div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="hint-bar panel interactive" id="hintBar">WASD move · Mouse look · Space jump · Esc release cursor</div>
+      <div class="emote-bar" id="emoteBar"></div>
+    </div>
+  </div>
+
+  <!-- ============ LOCKER (avatar customizer overlay) ============ -->
+  <div class="modal-back" id="lockerOverlay" hidden>
+    <div class="modal panel accent locker-modal">
+      <div class="locker-head">
+        <h3 class="display" style="font-size:22px;">Locker</h3>
+        <button class="icon-btn interactive" id="btnCloseLocker">✕</button>
+      </div>
+      <div class="locker-body">
+        <div class="avatar-preview-wrap panel" style="clip-path:none; border:1px solid var(--panel-border-soft);">
+          <canvas id="lockerPreview" style="width:100%; height:100%; display:block;"></canvas>
+        </div>
+        <div class="field">
+          <label for="lockerNameInput">Player name</label>
+          <input id="lockerNameInput" type="text" maxlength="16" placeholder="Runner" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Skin tone</label>
+          <div class="swatch-row" id="lockerSkinRow"></div>
+        </div>
+        <div class="field">
+          <label>Outfit color</label>
+          <div class="swatch-row" id="lockerShirtRow"></div>
+        </div>
+        <div class="field">
+          <label>Trim color</label>
+          <div class="swatch-row" id="lockerPantsRow"></div>
+        </div>
+      </div>
+      <button class="btn primary" id="btnLockerDone">Done</button>
+    </div>
+  </div>
+
+  <!-- ============ WORLDS browser (also where publishing is surfaced) ============ -->
+  <div class="modal-back" id="worldsOverlay" hidden>
+    <div class="modal panel accent worlds-modal">
+      <div class="locker-head">
+        <h3 class="display" style="font-size:22px;">Worlds</h3>
+        <button class="icon-btn interactive" id="btnCloseWorlds">✕</button>
+      </div>
+      <button class="btn studio" id="btnPublishCTA" style="width:100%;">🎨 Build &amp; publish a world in NeoStudio</button>
+      <div class="side-panel-flat" id="worldsOverlayList"></div>
+    </div>
+  </div>
+
+  <!-- ============ MODALS ============ -->
+  <div class="modal-back" id="modalPublish" hidden>
+    <div class="modal panel accent">
+      <h3 class="display" style="font-size:22px;">Publish to Neoblox</h3>
+      <div class="field">
+        <label for="worldNameInput">World name</label>
+        <input id="worldNameInput" type="text" maxlength="24" placeholder="Sky Temple">
+      </div>
+      <div class="menu-actions">
+        <button class="btn ghost" id="btnCancelPublish">Cancel</button>
+        <button class="btn primary" id="btnConfirmPublish">Publish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-back" id="modalExit" hidden>
+    <div class="modal panel">
+      <h3 class="display" style="font-size:20px;">Leave to menu?</h3>
+      <p style="color:var(--ink-dim); font-size:13px; margin:0;">Unpublished builds in NeoStudio will be lost.</p>
+      <div class="menu-actions">
+        <button class="btn ghost" id="btnCancelExit">Stay</button>
+        <button class="btn danger" id="btnConfirmExit">Leave</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-loading" hidden>
+    <div class="loading-wrap">
+      <div class="display" style="font-size:22px; color:var(--ink-dim);" id="loadingLabel">Loading…</div>
+      <div class="loading-bar"><div class="fill"></div></div>
+    </div>
+  </div>
+
+  <!-- ============ PERSISTENT PARTY / CHAT / VOICE (stays up across the whole site) ============ -->
+  <button id="partyDock" title="Party & chat">
+    💬<span class="dot" id="partyDot"></span><span class="cnt" id="partyCnt" hidden>0</span>
+  </button>
+  <div class="panel accent" id="partyPanel" hidden>
+    <div class="party-head">
+      <span class="t">Party &amp; chat</span>
+      <div class="party-status"><span class="dot" id="partyStatusDot"></span><span id="partyStatusText">offline</span></div>
+      <button class="icon-btn interactive" id="btnClosePartyPanel" style="width:26px;height:26px;">✕</button>
+    </div>
+    <div class="party-body" id="partyBodyOffline" hidden>
+      <div class="net-note">Live party chat &amp; voice need the Neoblox server running on this domain — this preview is offline/solo. Deploy <code>neoblox-server</code> (see README) to turn this on.</div>
+    </div>
+    <div class="party-body" id="partyBodyOnline" hidden>
+      <div id="partyNoPartyRow">
+        <div class="party-row">
+          <button class="btn small primary" id="btnCreateParty" style="flex:1;">➕ Create party</button>
+        </div>
+        <div class="party-row" style="margin-top:8px;">
+          <input type="text" id="partyJoinCode" placeholder="Party code" maxlength="6" style="text-transform:uppercase;">
+          <button class="btn small ghost" id="btnJoinParty">Join</button>
+        </div>
+      </div>
+      <div id="partyHasPartyRow" hidden>
+        <div class="party-row" style="align-items:center;">
+          <div style="flex:1;font-size:12px;color:var(--ink-dim);">Code: <b id="partyCodeLabel" style="color:var(--accent3);letter-spacing:0.08em;">—</b></div>
+          <button class="btn small ghost" id="btnCopyPartyCode">Copy</button>
+          <button class="btn small danger" id="btnLeaveParty">Leave</button>
+        </div>
+        <div class="party-members" id="partyMembers" style="margin-top:8px;"></div>
+        <div class="voice-row" style="margin-top:8px;">
+          <button class="btn small studio" id="btnToggleVoice">🎙️ Join voice</button>
+          <button class="btn small ghost" id="btnToggleMute" hidden>🔇 Mute</button>
+        </div>
+      </div>
+      <div class="chat-tabs" style="margin-top:10px;">
+        <div class="chat-tab active" id="chatTabParty" data-scope="party">PARTY</div>
+        <div class="chat-tab" id="chatTabGlobal" data-scope="global">GLOBAL</div>
+      </div>
+      <div class="chat-log" id="chatLog"><div class="chat-empty">No messages yet — say hi!</div></div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Message…" maxlength="480">
+        <button class="btn small primary" id="btnSendChat">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   NEOBLOX + NEOSTUDIO — single-file client
+   Sections: STATE · CAPS · AUDIO · AVATAR · WORLDS · LOBBY-SCENE ·
+   STUDIO-SCENE · CONTROLS · LOOP · UI
+   ===================================================================== */
+
+// === SECTION:STATE ===
+
+const SKIN_TONES   = ['#ffd9b3','#f0b98d','#c68642','#8d5524','#6b3f22','#3a2417'];
+const OUTFIT_COLORS= ['#4de3ff','#c8ff4d','#ff5c72','#b06bff','#ffb84d','#ffffff','#2a3350','#ff4de3'];
+const TRIM_COLORS  = ['#0a0d18','#ffffff','#c8ff4d','#4de3ff','#ff5c72','#b06bff'];
+
+const BLOCK_TYPES = [
+  { id:'grass', label:'Grass', color:0x6bd66b, emissive:0x000000 },
+  { id:'stone', label:'Stone', color:0x8993a8, emissive:0x000000 },
+  { id:'wood',  label:'Wood',  color:0xb9793f, emissive:0x000000 },
+  { id:'brick', label:'Brick', color:0xc45a4a, emissive:0x000000 },
+  { id:'ice',   label:'Ice',   color:0xbdeaff, emissive:0x1a3a44 },
+  { id:'neon',  label:'Neon',  color:0xc8ff4d, emissive:0x4d6b18 },
+];
+
+function loadLocal(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
+}
+function saveLocal(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ /* ignore */ }
+}
+
+function uid(){ return 'p_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+const Profile = loadLocal('nb_profile', null) || {
+  id: uid(),
+  name: 'Runner' + Math.floor(Math.random()*900+100),
+  skin: SKIN_TONES[1],
+  shirt: OUTFIT_COLORS[0],
+  pants: TRIM_COLORS[0],
+  bestTime: null,
+  customSkin: 'ender',
+};
+if(!Profile.id) Profile.id = uid();
+// One-time migration: profiles saved before the personal-skin feature existed have no
+// customSkin field at all — default THOSE to 'ender' too (this is what makes "make this my
+// avatar" apply immediately), while leaving alone anyone who has since explicitly picked one
+// (including explicitly picking 'default' via /skin default, which stores null, not undefined).
+if(Profile.customSkin === undefined){ Profile.customSkin = 'ender'; saveLocal('nb_profile', Profile); }
+
+const MyWorlds = loadLocal('nb_myworlds', []); // array of {id, name} authored on this device
+
+const App = {
+  mode: 'boot',        // boot | lobby | play | studio
+  caps: { db:null, room:null },
+  connected: false,
+  scene:null, camera:null, renderer:null, clock:null,
+  animId:null,
+  currentWorldId:null,  // world doc id when in `play` mode on a community world
+  studio: {
+    worldId:null, // set once you've published/loaded, for overwrite-on-republish
+    selectedBlock:'grass',
+    tool:'place', // place | erase | spawn | goal
+    blocks: new Map(), // key "x,y,z" -> {type}
+    spawn: {x:0,y:1,z:0},
+    goal: null,
+  },
+};
+
+// === SECTION:CAPS ===
+
+async function initCaps(){
+  // Try the real Neoblox server first (works once this page is deployed on your own domain —
+  // see /neoblox-server). It's what makes multiplayer, party and voice actually "online".
+  const netOk = await initNet().catch(()=>false);
+  try{
+    if(window.claude && window.claude.use){
+      const [db, room] = await Promise.all([
+        window.claude.use('db').catch(()=>null),
+        window.claude.use('room').catch(()=>null),
+      ]);
+      App.caps.db = db;
+      App.caps.room = room;
+      if(room){
+        room.onConnection((c)=>{
+          App.connected = c;
+          const flag = document.getElementById('connFlag');
+          if(flag && !netOk) flag.textContent = c ? 'live · other players can join' : 'offline · solo mode';
+        }, ()=>{ App.connected = false; });
+        room.on('emote', (msg)=>{
+          if(msg.isMe) return;
+          const av = App.remoteAvatars[msg.peer];
+          if(!av || !msg.data) return;
+          const kind = msg.data.kind;
+          av.emote = { type: kind, startedAt: App.clockT };
+          const dur = kind==='dance' ? 2.2 : kind==='spin' ? 1.0 : 1.5;
+          setTimeout(()=>{ if(av.emote && av.emote.type===kind) av.emote = null; }, dur*1000);
+        }, ()=>{});
+      }
+    }
+  }catch(e){ /* capabilities unavailable — solo/local mode */ }
+  const flag = document.getElementById('connFlag');
+  if(flag){
+    if(netOk) flag.textContent = 'online · live server connected';
+    else if(!App.caps.room) flag.textContent = 'solo mode (no live players)';
+  }
+  initPartyUI();
+}
+
+function worldsCol(){
+  if(Net.connected){
+    if(!Net._worldsCol) Net._worldsCol = makeNetWorldsCol();
+    return Net._worldsCol;
+  }
+  return App.caps.db ? App.caps.db.collection('worlds') : null;
+}
+
+// === SECTION:NET (real internet multiplayer, party system, chat & voice signaling) ===
+// Auto-connects to a Neoblox server running on THIS origin (see /neoblox-server/README.md).
+// On claude.ai (or anywhere that server isn't running) this fails fast and everything above
+// quietly falls back to the claude.ai `room` capability, or solo mode.
+
+// Real admin state — starts false every single page load/reconnect and can only flip to
+// true via a server-verified 'admin_ok' reply (see /admin below). Never persisted to
+// localStorage on purpose: it must be re-proven each session, the same as any real login.
+const Admin = { isAdmin:false };
+let LastAdminPassAttempt = null; // set right before every admin_auth send, so 'admin_ok' knows what to remember
+let LastAdminAuthWasAutomatic = false; // true only for the silent auto-login-on-connect attempt
+
+const Net = {
+  ws: null,
+  id: null,
+  connected: false,
+  peers: {},        // id -> {id,name,avatar,x,y,z,ry,anim,world,isAdmin}
+  party: null,       // {code, leader, members:[{id,name,avatar,inVoice}]}
+  _handlers: {},
+  _worldsCol: null,
+  _wantReconnect: false,
+  _reconnectTimer: null,
+};
+
+function netOn(ev, cb){ (Net._handlers[ev] = Net._handlers[ev]||[]).push(cb); }
+function netEmit(ev){
+  const args = Array.prototype.slice.call(arguments, 1);
+  (Net._handlers[ev]||[]).forEach(cb=>{ try{ cb.apply(null, args); }catch(e){} });
+}
+
+// window.NEOBLOX_SERVER lets a file://-loaded client (the Electron desktop app, which has
+// no meaningful location.host to auto-detect from) point at a deployed server explicitly —
+// set it to e.g. 'wss://yourdomain.com/ws' before this script runs. The web version (served
+// BY that same deployed server) needs no config at all: it just uses its own origin.
+function netShouldAttempt(){
+  try{
+    if(window.NEOBLOX_SERVER) return true;
+    const h = location.hostname;
+    if(!h) return false;
+    if(h==='claude.ai' || h.endsWith('.claude.ai') || h.endsWith('.anthropic.com')) return false;
+    if(location.protocol!=='http:' && location.protocol!=='https:') return false;
+    return true;
+  }catch(e){ return false; }
+}
+
+function netHttpBase(){
+  if(window.NEOBLOX_SERVER){
+    return window.NEOBLOX_SERVER.replace(/^ws/,'http').replace(/\/ws\/?$/,'');
+  }
+  return '';
+}
+
+// === SECTION:PWA (iOS/iPadOS install prompt + service-worker "real storage" upgrade) ===
+// iOS Safari has no install-prompt API, so we detect the device ourselves and show our own
+// "Add to Home Screen" instructions. The site starts network-light (no aggressive caching);
+// once it's actually running from the Home Screen icon (standalone display mode), we tell the
+// service worker to precache the full game so it becomes a real, storage-backed offline app.
+function isIOSDevice(){
+  try{
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }catch(e){ return false; }
+}
+function isStandaloneDisplay(){
+  try{
+    return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
+  }catch(e){ return false; }
+}
+function isTouchDevice(){
+  try{ return ('ontouchstart' in window) || (navigator.maxTouchPoints||0) > 0; }catch(e){ return false; }
+}
+function initIOSInstallPrompt(){
+  const overlay = document.getElementById('iosInstallOverlay');
+  if(!overlay) return;
+  if(!isIOSDevice() || isStandaloneDisplay()) return;
+  try{ if(sessionStorage.getItem('nb_ios_install_dismissed')==='1') return; }catch(e){}
+  overlay.hidden = false;
+  const dismissBtn = document.getElementById('iosInstallDismiss');
+  if(dismissBtn) dismissBtn.addEventListener('click', ()=>{
+    overlay.hidden = true;
+    try{ sessionStorage.setItem('nb_ios_install_dismissed','1'); }catch(e){}
+  });
+}
+function registerServiceWorker(){
+  try{
+    if(!('serviceWorker' in navigator)) return;
+    if(!netShouldAttempt()) return; // only on a real deployed web origin — not claude.ai, not file://
+    navigator.serviceWorker.register('/sw.js').then((reg)=>{
+      if(!isStandaloneDisplay()) return; // still just being browsed — keep it light
+      // running installed, from the Home Screen icon: upgrade to the full offline cache
+      const goFull = ()=>{ if(reg.active) reg.active.postMessage({ type:'PRECACHE_FULL_GAME' }); };
+      if(reg.active) goFull(); else navigator.serviceWorker.ready.then(goFull).catch(()=>{});
+    }).catch(()=>{});
+  }catch(e){ /* unsupported — fine, the game still works without it */ }
+}
+
+function initNet(){
+  return new Promise((resolve)=>{
+    if(!netShouldAttempt()){ resolve(false); return; }
+    let ws;
+    try{
+      const proto = location.protocol==='https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(window.NEOBLOX_SERVER || (proto+'//'+location.host+'/ws'));
+    }catch(e){ resolve(false); return; }
+    let settled = false;
+    const to = setTimeout(()=>{ if(!settled){ settled=true; try{ws.close();}catch(e){} resolve(false); } }, 3000);
+    ws.addEventListener('open', ()=>{
+      Net.ws = ws;
+      netSend({ t:'hello', name:Profile.name, avatar:{ skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants, customSkin:Profile.customSkin||null } });
+      // Remembered admin login — saved locally the first time /admin succeeds (see 'admin_ok'
+      // below), so you don't have to retype the password every time you open the game. Still a
+      // real server-side check every time, just automatic instead of manual.
+      const savedPass = loadLocal('nb_admin_pass', null);
+      if(savedPass){ LastAdminPassAttempt = savedPass; LastAdminAuthWasAutomatic = true; netSend({ t:'admin_auth', pass: savedPass }); }
+    });
+    ws.addEventListener('message', (ev)=>{
+      let msg; try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+      if(msg.t==='welcome' && !settled){
+        settled = true; clearTimeout(to);
+        Net.id = msg.id; Net.connected = true; Net._wantReconnect = true;
+        Net.peers = {};
+        (msg.players||[]).forEach(p=>{ Net.peers[p.id] = p; });
+        resolve(true);
+        netEmit('connection', true);
+      }
+      netHandleMessage(msg);
+    });
+    ws.addEventListener('close', ()=>{
+      const was = Net.connected;
+      Net.connected = false; Net.ws = null; Net.peers = {}; Net.party = null;
+      if(was) netEmit('connection', false);
+      if(!settled){ settled = true; clearTimeout(to); resolve(false); }
+      if(Net._wantReconnect){
+        clearTimeout(Net._reconnectTimer);
+        Net._reconnectTimer = setTimeout(()=>{ initNet(); }, 3500);
+      }
+    });
+    ws.addEventListener('error', ()=>{});
+  });
+}
+
+function netSend(msg){ if(Net.ws && Net.ws.readyState===1) Net.ws.send(JSON.stringify(msg)); }
+
+// Re-announce name/avatar to the server — the initial 'hello' fires the instant the socket
+// connects (page load), often before the player has typed their name or picked colors, so
+// call this again whenever Profile.name/skin/shirt/pants are finalized (Enter Lobby, NeoStudio,
+// or any Locker change) so other players & your party actually see the right name/colors.
+function syncProfileToNet(){
+  if(Net.connected){
+    netSend({ t:'hello', name:Profile.name, avatar:{ skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants, customSkin:Profile.customSkin||null } });
+  }
+}
+
+function netWorldLabel(){
+  return App.mode==='play' ? ('play:'+(App.currentWorldId||'sky')) : App.mode;
+}
+
+function netHandleMessage(msg){
+  switch(msg.t){
+    case 'player_join':
+      Net.peers[msg.id] = { id:msg.id, name:msg.name, avatar:msg.avatar, world:msg.world||null, x:0,y:1,z:0, ry:0, anim:'idle', isAdmin:!!msg.isAdmin };
+      break;
+    case 'player_leave':
+      delete Net.peers[msg.id];
+      netEmit('peer_leave', msg.id);
+      break;
+    case 'player_join_world': {
+      const p = Net.peers[msg.id] || (Net.peers[msg.id] = { x:0,y:1,z:0, ry:0, anim:'idle' });
+      p.id = msg.id; p.name = msg.name; p.avatar = msg.avatar; p.world = msg.world; p.isAdmin = !!msg.isAdmin;
+      break;
+    }
+    case 'admin_ok': {
+      Admin.isAdmin = true;
+      // Remember it locally on THIS device so future sessions log back in automatically —
+      // "saving your admin account" — instead of needing /admin <password> every time.
+      if(LastAdminPassAttempt){ saveLocal('nb_admin_pass', LastAdminPassAttempt); }
+      if(!LastAdminAuthWasAutomatic) showToast('⚡ Admin verified — /kick is now available');
+      // Only auto-wear the admin skin if you haven't already picked a personal skin of your
+      // own (becoming admin, even automatically on reconnect, shouldn't yank off a skin you
+      // chose) — 'admin' itself doesn't count as "your own pick" here, it's fine to reattach.
+      if(App.player && App.player.rig && (!Profile.customSkin || Profile.customSkin==='admin')) attachAdminSkin(App.player.rig);
+      break;
+    }
+    case 'admin_fail': {
+      if(LastAdminAuthWasAutomatic){
+        // The saved password no longer works (probably rotated by the host) — forget it
+        // quietly instead of greeting you with an error every time you open the game.
+        saveLocal('nb_admin_pass', null);
+      } else {
+        showToast('❌ Wrong admin password');
+      }
+      break;
+    }
+    case 'admin_status': {
+      // Someone (possibly already visible to us) just authenticated as admin — reflect it
+      // live rather than waiting for them to move or reconnect.
+      const p = Net.peers[msg.id];
+      if(p){ p.isAdmin = !!msg.isAdmin; }
+      if(msg.isAdmin) showToast('⚡ '+(msg.name||'A player')+' is now an admin');
+      const av = App.remoteAvatars && App.remoteAvatars[msg.id];
+      const hasOwnSkin = !!(p && p.avatar && p.avatar.customSkin && p.avatar.customSkin !== 'admin');
+      if(av && msg.isAdmin && !hasOwnSkin) attachAdminSkin(av.rig);
+      break;
+    }
+    case 'kicked': {
+      showBanner('🛑 Removed from the game', 'Kicked by '+(msg.by||'an admin'));
+      setTimeout(()=>{ backToMenu(); }, 1200);
+      break;
+    }
+    case 'presence': {
+      const p = Net.peers[msg.id];
+      if(p){ p.x=msg.x; p.y=msg.y; p.z=msg.z; p.ry=msg.ry; p.anim=msg.anim; if(msg.world) p.world = msg.world; }
+      break;
+    }
+    case 'emote':
+      netEmit('emote', msg.id, msg.kind);
+      break;
+    case 'chat':
+      if(typeof msg.text === 'string' && msg.text.indexOf(GAME_EVT_PREFIX) === 0){
+        try{ battleHandleEvent(JSON.parse(msg.text.slice(GAME_EVT_PREFIX.length))); }catch(e){}
+        break;
+      }
+      netEmit('chat', msg);
+      break;
+    case 'party_update':
+      Net.party = { code:msg.code, leader:msg.leader, members:msg.members };
+      netEmit('party', Net.party);
+      break;
+    case 'party_error':
+      netEmit('party_error', msg.reason, msg.code);
+      break;
+    case 'party_invited':
+      netEmit('party_invited', msg);
+      break;
+    case 'voice_roster':
+      netEmit('voice_roster', msg.peers||[]);
+      break;
+    case 'voice_peer_join':
+      netEmit('voice_peer_join', msg.id);
+      break;
+    case 'voice_peer_leave':
+      netEmit('voice_peer_leave', msg.id);
+      break;
+    case 'rtc_signal':
+      netEmit('rtc_signal', msg.from, msg.data);
+      break;
+  }
+}
+
+// ---- worlds REST adapter — mirrors the slice of the claude.ai `db` API this game uses,
+// so publishing/browsing worlds works identically whether it's backed by claude.ai or by
+// your own deployed neoblox-server. ----
+function makeNetWorldsCol(){
+  function build(state){
+    return {
+      where(field, op, val){ return build(Object.assign({}, state, { whereField:field, whereVal:val })); },
+      orderBy(field){ return build(Object.assign({}, state, { order:field })); },
+      limit(n){ return build(Object.assign({}, state, { limitN:n })); },
+      async get(){
+        const qs = new URLSearchParams();
+        if(state.whereField) qs.set(state.whereField, state.whereVal);
+        if(state.order) qs.set('order', state.order);
+        if(state.limitN) qs.set('limit', state.limitN);
+        const res = await fetch(netHttpBase()+'/api/worlds?'+qs.toString());
+        if(!res.ok) throw new Error('worlds fetch failed');
+        const rows = await res.json();
+        return { docs: rows.map(r=>({ id:r.id, data:()=>r })) };
+      },
+      doc(id){
+        return {
+          update: async (payload) => {
+            const res = await fetch(netHttpBase()+'/api/worlds/'+encodeURIComponent(id), { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+            if(!res.ok) throw new Error('update failed');
+          },
+        };
+      },
+      async add(payload){
+        const res = await fetch(netHttpBase()+'/api/worlds', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        if(!res.ok) throw new Error('publish failed');
+        return await res.json();
+      },
+    };
+  }
+  return build({});
+}
+
+// === SECTION:AUDIO ===
+
+let Actx = null;
+function actx(){ if(!Actx){ try{ Actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return Actx; }
+function beep(freq, dur, type, gainMax){
+  const ctx = actx(); if(!ctx) return;
+  if(ctx.state === 'suspended') ctx.resume();
+  const osc = ctx.createOscillator(); const gain = ctx.createGain();
+  osc.type = type || 'sine'; osc.frequency.value = freq;
+  gain.gain.value = 0;
+  osc.connect(gain); gain.connect(ctx.destination);
+  const t0 = ctx.currentTime;
+  gain.gain.linearRampToValue ? null : null;
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(gainMax||0.06, t0+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+(dur||0.15));
+  osc.start(t0); osc.stop(t0+(dur||0.15)+0.02);
+}
+const SFX = {
+  jump:   ()=>beep(420,0.12,'square',0.05),
+  land:   ()=>beep(150,0.08,'sine',0.04),
+  place:  ()=>beep(560,0.07,'square',0.045),
+  erase:  ()=>beep(220,0.09,'sawtooth',0.04),
+  portal: ()=>{ beep(300,0.2,'sine',0.05); setTimeout(()=>beep(600,0.25,'sine',0.05),90); },
+  publish:()=>{ beep(500,0.1,'square',0.05); setTimeout(()=>beep(750,0.1,'square',0.05),100); setTimeout(()=>beep(1000,0.18,'square',0.05),200); },
+  goal:   ()=>{ beep(660,0.12,'square',0.06); setTimeout(()=>beep(880,0.12,'square',0.06),110); setTimeout(()=>beep(1180,0.22,'square',0.06),220); },
+};
+
+// === SECTION:AVATAR ===
+
+const RIG = { legH:0.8, torsoH:0.7, torsoW:0.62, torsoD:0.36, headS:0.52, limbW:0.24 };
+
+function buildAvatar(profile){
+  const g = new THREE.Group();
+  const skinMat  = new THREE.MeshLambertMaterial({ color: profile.skin || SKIN_TONES[1] });
+  const shirtMat = new THREE.MeshLambertMaterial({ color: profile.shirt || OUTFIT_COLORS[0] });
+  const pantsMat = new THREE.MeshLambertMaterial({ color: profile.pants || TRIM_COLORS[0] });
+  const eyeMat   = new THREE.MeshLambertMaterial({ color: 0x0a0d18 });
+
+  // legs (pivot at hip)
+  function makeLeg(sign){
+    const pivot = new THREE.Object3D();
+    pivot.position.set(sign*0.16, RIG.legH, 0);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(RIG.limbW, RIG.legH, RIG.limbW), pantsMat);
+    mesh.position.set(0, -RIG.legH/2, 0);
+    mesh.castShadow = true;
+    pivot.add(mesh);
+    g.add(pivot);
+    return pivot;
+  }
+  const leftLeg = makeLeg(-1), rightLeg = makeLeg(1);
+
+  // torso
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(RIG.torsoW, RIG.torsoH, RIG.torsoD), shirtMat);
+  torso.position.set(0, RIG.legH + RIG.torsoH/2, 0);
+  torso.castShadow = true;
+  g.add(torso);
+
+  // arms (pivot at shoulder)
+  function makeArm(sign){
+    const pivot = new THREE.Object3D();
+    pivot.position.set(sign*(RIG.torsoW/2 + RIG.limbW/2), RIG.legH + RIG.torsoH, 0);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(RIG.limbW, RIG.torsoH, RIG.limbW), skinMat);
+    mesh.position.set(0, -RIG.torsoH/2, 0);
+    mesh.castShadow = true;
+    pivot.add(mesh);
+    g.add(pivot);
+    return pivot;
+  }
+  const leftArm = makeArm(-1), rightArm = makeArm(1);
+
+  // head
+  const headPivot = new THREE.Object3D();
+  headPivot.position.set(0, RIG.legH + RIG.torsoH + RIG.headS/2, 0);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(RIG.headS, RIG.headS, RIG.headS), skinMat);
+  head.castShadow = true;
+  headPivot.add(head);
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(RIG.headS*0.7, RIG.headS*0.16, 0.03), eyeMat);
+  visor.position.set(0, RIG.headS*0.06, RIG.headS/2+0.01);
+  headPivot.add(visor);
+  g.add(headPivot);
+
+  // cape / backpack accent using trim color for silhouette variety
+  const cape = new THREE.Mesh(new THREE.BoxGeometry(RIG.torsoW*0.85, RIG.torsoH*0.9, 0.06), pantsMat);
+  cape.position.set(0, RIG.legH + RIG.torsoH/2, -RIG.torsoD/2 - 0.05);
+  g.add(cape);
+
+  g.traverse(o=>{ if(o.isMesh) o.receiveShadow = false; });
+
+  return { group:g, leftLeg, rightLeg, leftArm, rightArm, headPivot, torso, cape };
+}
+
+// ---- custom glTF skins — cosmetic replacements for the box-avatar rig ----
+// Loaded once each from a local file (not a CDN — this sandbox's own testing showed CDN
+// fetches can be blocked by network policy, and vendoring means the game never depends on a
+// third-party host being reachable), then cloned onto whichever rig(s) need them. 'admin' is
+// tied to real server-verified admin auth; 'ender' is just a personal look anyone can wear —
+// same trust level as picking a skin tone or outfit color, no auth needed.
+const SKIN_REGISTRY = {
+  admin: {
+    gltfUrl: '/skins/admin/source/model.gltf',
+    rootNodeName: 'SkinSlim0', // the source is a showcase with two copies side by side
+    textureUrl: '/skins/admin/textures/jabakowy_sketchfab.png', // embedded texture is a blank placeholder
+    pivotNames: { head:'Head0', leftArm:'Left_Arm0', rightArm:'Right_Arm0', leftLeg:'Left_Leg0', rightLeg:'Right_Leg0' },
+  },
+  ender: {
+    gltfUrl: '/skins/ender/source/model.gltf',
+    rootNodeName: null, // single-character file, use the scene root as-is
+    textureUrl: null, // embedded texture here is the real painted skin already
+    pivotNames: { head:'Head', leftArm:'LeftArm', rightArm:'RightArm', leftLeg:'LeftLeg', rightLeg:'RightLeg' },
+  },
+};
+const SkinTemplates = {};   // name -> loaded, normalized THREE.Object3D template
+const SkinLoadCbs = {};     // name -> [callback,...] while its load is in flight
+function ensureSkinLoaded(name, cb){
+  if(SkinTemplates[name]){ cb(SkinTemplates[name]); return; }
+  if(SkinLoadCbs[name]){ SkinLoadCbs[name].push(cb); return; }
+  SkinLoadCbs[name] = [cb];
+  const cfg = SKIN_REGISTRY[name];
+  if(!cfg || typeof THREE.GLTFLoader !== 'function'){ SkinLoadCbs[name] = null; return; }
+  const loader = new THREE.GLTFLoader();
+  loader.load(cfg.gltfUrl, (gltf)=>{
+    const root = (cfg.rootNodeName && gltf.scene.getObjectByName(cfg.rootNodeName)) || gltf.scene;
+    const targetH = RIG.legH + RIG.torsoH + RIG.headS;
+    const box1 = new THREE.Box3().setFromObject(root);
+    const h = Math.max(0.0001, box1.max.y - box1.min.y);
+    root.scale.setScalar(targetH / h);
+    const box2 = new THREE.Box3().setFromObject(root);
+    // Recenter on the rig's own origin in X/Z, on top of feet-on-the-ground in Y, so the
+    // visible model actually lines up with where the game thinks the player is standing
+    // (collision, portals, obstacle courses like Sky Rush all check the rig's origin, not
+    // wherever the source file happened to place the mesh).
+    root.position.x -= (box2.min.x + box2.max.x) / 2;
+    root.position.z -= (box2.min.z + box2.max.z) / 2;
+    root.position.y -= box2.min.y;
+    root.traverse(o=>{ if(o.isMesh){ o.castShadow = true; if(o.material) o.material.side = THREE.DoubleSide; } });
+
+    const finish = ()=>{
+      SkinTemplates[name] = root;
+      const cbs = SkinLoadCbs[name]; SkinLoadCbs[name] = null;
+      (cbs||[]).forEach(fn=>{ try{ fn(root); }catch(e){} });
+    };
+    if(cfg.textureUrl){
+      // This model's embedded texture is just a blank placeholder — the real painted skin is
+      // a separate file that shipped alongside it. Load that and swap it onto the material.
+      const texLoader = new THREE.TextureLoader();
+      texLoader.load(cfg.textureUrl, (tex)=>{
+        tex.flipY = false; // glTF UVs assume a top-left origin, unlike TextureLoader's default
+        tex.magFilter = THREE.NearestFilter; // keep the pixel-art skin crisp, not blurry
+        tex.minFilter = THREE.NearestFilter;
+        tex.generateMipmaps = false;
+        if(THREE.sRGBEncoding !== undefined) tex.encoding = THREE.sRGBEncoding;
+        root.traverse(o=>{ if(o.isMesh && o.material){ o.material.map = tex; o.material.needsUpdate = true; } });
+        finish();
+      }, undefined, (err)=>{ console.warn('skin texture failed to load', name, err); finish(); });
+    } else {
+      // Embedded texture is already the real art — just make sure it stays crisp, pixel-art
+      // style, rather than getting blurred by mipmapping/bilinear filtering.
+      root.traverse(o=>{
+        if(o.isMesh && o.material && o.material.map){
+          const tex = o.material.map;
+          tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+          tex.generateMipmaps = false; tex.needsUpdate = true;
+        }
+      });
+      finish();
+    }
+  }, undefined, (err)=>{ console.warn('skin failed to load', name, err); SkinLoadCbs[name] = null; });
+}
+function detachCustomSkin(rig){
+  if(!rig) return;
+  if(rig.customSkinMesh) rig.group.remove(rig.customSkinMesh);
+  rig.customSkinMesh = null;
+  rig.customSkinPivots = null;
+  rig.customSkinBaseY = undefined;
+  rig.usingCustomSkin = null;
+}
+// Reverts a rig all the way back to the plain box avatar (used by "/skin default").
+function revertToDefaultSkin(rig){
+  if(!rig) return;
+  detachCustomSkin(rig);
+  if(rig.torso) rig.torso.visible = true;
+  if(rig.headPivot) rig.headPivot.visible = true;
+  if(rig.leftLeg) rig.leftLeg.visible = true;
+  if(rig.rightLeg) rig.rightLeg.visible = true;
+  if(rig.leftArm) rig.leftArm.visible = true;
+  if(rig.rightArm) rig.rightArm.visible = true;
+  if(rig.cape) rig.cape.visible = true;
+}
+function attachSkin(rig, name){
+  if(!rig || !name || !SKIN_REGISTRY[name]) return;
+  if(rig.usingCustomSkin === name && rig.customSkinMesh) return; // already showing this one
+  if(rig.usingCustomSkin && rig.usingCustomSkin !== name) detachCustomSkin(rig);
+  rig.usingCustomSkin = name;
+  // Hide the box-avatar parts right away (don't wait on the async load) so there's never a
+  // flash of the default body before the model appears. They keep getting posed by
+  // animateAvatar() in the background (just invisible) — syncSkinPose() below copies that
+  // same pose onto the glTF model's own joints so it walks/emotes instead of staying static.
+  if(rig.torso) rig.torso.visible = false;
+  if(rig.headPivot) rig.headPivot.visible = false;
+  if(rig.leftLeg) rig.leftLeg.visible = false;
+  if(rig.rightLeg) rig.rightLeg.visible = false;
+  if(rig.leftArm) rig.leftArm.visible = false;
+  if(rig.rightArm) rig.rightArm.visible = false;
+  if(rig.cape) rig.cape.visible = false;
+  ensureSkinLoaded(name, (template)=>{
+    if(rig.usingCustomSkin !== name) return; // switched to something else while this was loading
+    if(rig.customSkinMesh) return;
+    const inst = template.clone(true);
+    rig.group.add(inst);
+    rig.customSkinMesh = inst;
+    const pv = SKIN_REGISTRY[name].pivotNames;
+    rig.customSkinPivots = {
+      head: inst.getObjectByName(pv.head),
+      leftArm: inst.getObjectByName(pv.leftArm),
+      rightArm: inst.getObjectByName(pv.rightArm),
+      leftLeg: inst.getObjectByName(pv.leftLeg),
+      rightLeg: inst.getObjectByName(pv.rightLeg),
+    };
+    rig.customSkinBaseY = inst.position.y;
+  });
+}
+// Back-compat alias — the admin flow reads more clearly calling this by name.
+function attachAdminSkin(rig){ attachSkin(rig, 'admin'); }
+// Mirrors whatever pose animateAvatar() just computed for the (now-hidden) box rig onto the
+// glTF model's own joints, so walking, jumping, and every emote animate the real skin too.
+function syncSkinPose(rig){
+  const p = rig.customSkinPivots;
+  if(!p) return;
+  if(p.head) p.head.rotation.x = rig.headPivot.rotation.x;
+  if(p.leftArm){ p.leftArm.rotation.x = rig.leftArm.rotation.x; p.leftArm.rotation.z = rig.leftArm.rotation.z || 0; }
+  if(p.rightArm){ p.rightArm.rotation.x = rig.rightArm.rotation.x; p.rightArm.rotation.z = rig.rightArm.rotation.z || 0; }
+  if(p.leftLeg) p.leftLeg.rotation.x = rig.leftLeg.rotation.x;
+  if(p.rightLeg) p.rightLeg.rotation.x = rig.rightLeg.rotation.x;
+  if(rig.customSkinMesh && rig.customSkinBaseY !== undefined){
+    // Mirror the torso's little up/down bob so walking/dancing doesn't look flat-footed.
+    rig.customSkinMesh.position.y = rig.customSkinBaseY + (rig.torso.position.y - (RIG.legH + RIG.torsoH/2));
+  }
+}
+
+function animateAvatar(rig, t, opts){
+  opts = opts || {};
+  const speed = opts.speedFactor || 0;   // 0..1 how fast moving
+  const jumping = !!opts.jumping;
+  const emote = opts.emote;              // {type, startedAt} or null
+
+  if(emote){
+    const et = (t - emote.startedAt);
+    if(emote.type === 'wave'){
+      rig.rightArm.rotation.x = -2.4;
+      rig.rightArm.rotation.z = Math.sin(et*10)*0.5;
+      rig.leftArm.rotation.x = Math.sin(t*2)*0.06;
+      rig.group.rotation.y = rig.group.userData.baseY || rig.group.rotation.y;
+    } else if(emote.type === 'dance'){
+      rig.group.rotation.y = (rig.group.userData.baseY||0) + Math.sin(et*6)*0.5;
+      rig.leftArm.rotation.x = Math.sin(et*10)*1.1 - 0.4;
+      rig.rightArm.rotation.x = -Math.sin(et*10)*1.1 - 0.4;
+      rig.leftLeg.rotation.x = -Math.sin(et*10)*0.4;
+      rig.rightLeg.rotation.x = Math.sin(et*10)*0.4;
+      rig.torso.position.y = RIG.legH + RIG.torsoH/2 + Math.abs(Math.sin(et*10))*0.06;
+    } else if(emote.type === 'cheer'){
+      rig.leftArm.rotation.x = -2.6 + Math.sin(et*12)*0.15;
+      rig.rightArm.rotation.x = -2.6 - Math.sin(et*12)*0.15;
+      rig.headPivot.rotation.x = -0.1;
+    } else if(emote.type === 'spin'){
+      rig.group.rotation.y = (rig.group.userData.baseY||0) + et*10;
+      rig.leftArm.rotation.x = -0.3; rig.rightArm.rotation.x = -0.3;
+    }
+    syncSkinPose(rig);
+    return;
+  }
+
+  rig.headPivot.rotation.x = 0;
+  if(jumping){
+    rig.leftArm.rotation.x = -0.6; rig.rightArm.rotation.x = -0.6;
+    rig.leftLeg.rotation.x = 0.35; rig.rightLeg.rotation.x = -0.25;
+    rig.torso.position.y = RIG.legH + RIG.torsoH/2;
+    syncSkinPose(rig);
+    return;
+  }
+  if(speed > 0.02){
+    const w = t*9*Math.min(1,0.4+speed);
+    rig.leftArm.rotation.x = Math.sin(w)*0.9*speed;
+    rig.rightArm.rotation.x = -Math.sin(w)*0.9*speed;
+    rig.leftLeg.rotation.x = -Math.sin(w)*0.9*speed;
+    rig.rightLeg.rotation.x = Math.sin(w)*0.9*speed;
+    rig.torso.position.y = RIG.legH + RIG.torsoH/2 + Math.abs(Math.sin(w))*0.03*speed;
+  } else {
+    rig.leftArm.rotation.x = Math.sin(t*1.6)*0.05;
+    rig.rightArm.rotation.x = -Math.sin(t*1.6)*0.05;
+    rig.leftLeg.rotation.x = 0; rig.rightLeg.rotation.x = 0;
+    rig.torso.position.y = RIG.legH + RIG.torsoH/2 + Math.sin(t*1.6)*0.01;
+  }
+  syncSkinPose(rig);
+}
+
+// === SECTION:WORLDGEO ===
+
+const BOX_GEO = new THREE.BoxGeometry(1,1,1);
+const BLOCK_MATS = {};
+BLOCK_TYPES.forEach(t=>{
+  BLOCK_MATS[t.id] = new THREE.MeshLambertMaterial({ color:t.color, emissive:t.emissive||0x000000 });
+});
+function blockKey(x,y,z){ return x+','+y+','+z; }
+
+function makeBlockMesh(typeId){
+  const mat = BLOCK_MATS[typeId] || BLOCK_MATS.stone;
+  const m = new THREE.Mesh(BOX_GEO, mat);
+  m.userData.blockType = typeId;
+  return m;
+}
+
+function serializeBlocks(blocksMap){
+  const arr = [];
+  blocksMap.forEach((v,k)=>{
+    const [x,y,z] = k.split(',').map(Number);
+    arr.push([x,y,z,v.type]);
+  });
+  return arr;
+}
+function deserializeBlocks(arr){
+  const m = new Map();
+  (arr||[]).forEach(b=>{ m.set(blockKey(b[0],b[1],b[2]), { type:b[3] }); });
+  return m;
+}
+
+// === SECTION:SCENE ===
+
+const WORLD_BOUND = 14;   // build/play grid half-extent
+const WORLD_MAXY  = 18;
+
+function makeSkyTexture(topHex, botHex){
+  const c = document.createElement('canvas'); c.width=8; c.height=128;
+  const ctx = c.getContext('2d');
+  const g = ctx.createLinearGradient(0,0,0,128);
+  g.addColorStop(0, topHex); g.addColorStop(1, botHex);
+  ctx.fillStyle = g; ctx.fillRect(0,0,8,128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function disposeObj(obj){
+  obj.traverse(o=>{
+    if(o.isMesh){
+      if(o.geometry && o.geometry !== BOX_GEO) o.geometry.dispose();
+      if(o.material && !Object.values(BLOCK_MATS).includes(o.material) && o.material.dispose) o.material.dispose();
+    }
+  });
+}
+
+function teardownScene(){
+  if(App.scene){
+    disposeObj(App.scene);
+  }
+  App.scene = null; App.camera = null;
+  App.worldMeshes = null; App.blockGroup = null;
+  App.markers = {};
+  App.remoteAvatars = {};
+  App.bots = [];
+  App.portals = [];
+}
+
+function ensureRenderer(){
+  if(App.renderer) return App.renderer;
+  const canvas = document.getElementById('gamecanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  App.renderer = renderer;
+  window.addEventListener('resize', ()=>{
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if(App.camera){ App.camera.aspect = window.innerWidth/window.innerHeight; App.camera.updateProjectionMatrix(); }
+  });
+  return renderer;
+}
+
+function newBaseScene(skyTop, skyBot, fogColor, fogFar){
+  const scene = new THREE.Scene();
+  scene.background = makeSkyTexture(skyTop, skyBot);
+  scene.fog = new THREE.Fog(fogColor, 18, fogFar||60);
+  const hemi = new THREE.HemisphereLight(0xdfefff, 0x1a2036, 0.9);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.85);
+  sun.position.set(12, 20, 8);
+  scene.add(sun);
+  const fill = new THREE.DirectionalLight(0x4de3ff, 0.18);
+  fill.position.set(-10,6,-10);
+  scene.add(fill);
+  const camera = new THREE.PerspectiveCamera(62, window.innerWidth/window.innerHeight, 0.1, 300);
+  App.scene = scene; App.camera = camera;
+  return { scene, camera };
+}
+
+function addGroundGrid(scene, size, colorMinor, colorMajor){
+  const grid = new THREE.GridHelper(size, size, colorMajor, colorMinor);
+  grid.position.y = 0.001;
+  scene.add(grid);
+  return grid;
+}
+
+// ---- decorative prop builder for the lobby island ----
+function makePylon(x,z,h,color){
+  const g = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.6,0.4,8), mat);
+  base.position.set(x,0.2,z); g.add(base);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,h,8), mat);
+  shaft.position.set(x,0.4+h/2,z); g.add(shaft);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8), new THREE.MeshLambertMaterial({ color:0xffffff, emissive:color, emissiveIntensity:0.6 }));
+  cap.position.set(x,0.4+h+0.1,z); g.add(cap);
+  return g;
+}
+
+function makeBanner(x,z,ry,color){
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,3.2,6), new THREE.MeshLambertMaterial({color:0x2a3350}));
+  pole.position.set(x,1.6,z); g.add(pole);
+  const flag = new THREE.Mesh(new THREE.BoxGeometry(1.1,1.5,0.04), new THREE.MeshLambertMaterial({color}));
+  flag.position.set(x+0.58,2.35,z); g.add(flag);
+  g.rotation.y = ry;
+  return g;
+}
+
+function makeBus(){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.6,1.6,1.5), new THREE.MeshLambertMaterial({ color:0x4de3ff }));
+  g.add(body);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.62,0.4,1.52), new THREE.MeshLambertMaterial({ color:0xc8ff4d }));
+  g.add(stripe);
+  const bal1 = new THREE.Mesh(new THREE.SphereGeometry(0.7,10,10), new THREE.MeshLambertMaterial({ color:0xff5c72 }));
+  bal1.position.set(-1.3,1.6,0); g.add(bal1);
+  const bal2 = bal1.clone(); bal2.position.set(1.3,1.6,0); g.add(bal2);
+  return g;
+}
+
+function makePortal(x,z,color,label){
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.05,0.12,10,24), new THREE.MeshLambertMaterial({ color, emissive:color, emissiveIntensity:0.5 }));
+  ring.position.set(x,1.3,z);
+  g.add(ring);
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,0.08,24), new THREE.MeshLambertMaterial({ color, emissive:color, emissiveIntensity:0.3, transparent:true, opacity:0.55 }));
+  pad.position.set(x,0.05,z);
+  g.add(pad);
+  g.userData = { isPortal:true, x, z, label };
+  return g;
+}
+
+function buildLobbyScene(){
+  teardownScene();
+  const { scene } = newBaseScene('#1b2450','#0a0d18', 0x0a0d18, 70);
+  App.portals = [];
+
+  // island base
+  const islandMat = new THREE.MeshLambertMaterial({ color:0x232c4d });
+  const island = new THREE.Mesh(new THREE.CylinderGeometry(24,26,2,48), islandMat);
+  island.position.y = -1;
+  scene.add(island);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(24,0.35,10,48), new THREE.MeshLambertMaterial({ color:0xc8ff4d, emissive:0x2b3a10, emissiveIntensity:0.4 }));
+  rim.rotation.x = Math.PI/2; rim.position.y = 0.02;
+  scene.add(rim);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(23.8,48), new THREE.MeshLambertMaterial({ color:0x161b34 }));
+  floor.rotation.x = -Math.PI/2; floor.position.y = 0.03;
+  scene.add(floor);
+  addGroundGrid(scene, 48, 0x2a3350, 0x3a4470).position.y = 0.04;
+
+  // podium at center
+  const podium = new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.6,0.6,24), new THREE.MeshLambertMaterial({ color:0x2f3a63 }));
+  podium.position.y = 0.3; scene.add(podium);
+
+  // banners + pylons ring
+  const bannerColors = [0x4de3ff,0xff5c72,0xb06bff,0xc8ff4d];
+  for(let i=0;i<8;i++){
+    const a = (i/8)*Math.PI*2;
+    scene.add(makePylon(Math.cos(a)*20, Math.sin(a)*20, 2+ (i%3), bannerColors[i%4]));
+  }
+  for(let i=0;i<4;i++){
+    const a = (i/4)*Math.PI*2 + 0.4;
+    scene.add(makeBanner(Math.cos(a)*17, Math.sin(a)*17, -a+Math.PI, bannerColors[i%4]));
+  }
+
+  // floating battle bus
+  const bus = makeBus();
+  bus.position.set(-8, 13, -10);
+  bus.rotation.y = 0.5;
+  scene.add(bus);
+  App.lobbyBus = bus;
+
+  // portals: built-in SkyRush course + community worlds (populated async)
+  const skyrushPortal = makePortal(9, -6, 0xff5c72, 'Sky Rush');
+  skyrushPortal.userData.worldRef = { kind:'builtin', id:'skyrush' };
+  scene.add(skyrushPortal);
+  App.portals.push(skyrushPortal);
+
+  const battlePortal = makePortal(12, 7, 0xffd23f, 'Thunder Battle');
+  battlePortal.userData.worldRef = { kind:'builtin', id:'thunderbattle' };
+  scene.add(battlePortal);
+  App.portals.push(battlePortal);
+
+  const studioPortal = makePortal(-9, -6, 0xb06bff, 'NeoStudio');
+  studioPortal.userData.worldRef = { kind:'studio' };
+  scene.add(studioPortal);
+  App.portals.push(studioPortal);
+
+  App.communityPortalAnchor = { x:0, z:-14, spread:5.5 };
+  App.communityPortals = [];
+
+  return scene;
+}
+
+function refreshCommunityPortals(worldsArr){
+  const scene = App.scene; if(!scene) return;
+  // clear old
+  App.communityPortals.forEach(p=>{ scene.remove(p); disposeObj(p); });
+  App.communityPortals = [];
+  App.portals = App.portals.filter(p=>!p.userData.worldRef || p.userData.worldRef.kind !== 'community');
+  const anchor = App.communityPortalAnchor;
+  worldsArr.slice(0,6).forEach((w,i)=>{
+    const x = anchor.x + (i - (Math.min(worldsArr.length,6)-1)/2) * anchor.spread;
+    const portal = makePortal(x, anchor.z, 0x4de3ff, w.name || 'Untitled');
+    portal.userData.worldRef = { kind:'community', id:w.id, data:w };
+    scene.add(portal);
+    App.communityPortals.push(portal);
+    App.portals.push(portal);
+  });
+}
+
+// ---- shared "play world" (voxel) scene, used by SkyRush + community worlds ----
+function buildPlayScene(worldData){
+  teardownScene();
+  const { scene } = newBaseScene('#274a63','#0a0d18', 0x0a0d18, 55);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_BOUND*2+4, WORLD_BOUND*2+4), new THREE.MeshLambertMaterial({ color:0x141a30 }));
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = -9;  // void backstop — real footing comes only from placed blocks
+  scene.add(ground);
+  App.groundMesh = ground;
+
+  const blockGroup = new THREE.Group();
+  scene.add(blockGroup);
+  App.blockGroup = blockGroup;
+  App.worldMeshes = new Map();
+
+  const blocks = deserializeBlocks(worldData.blocks);
+  blocks.forEach((v,k)=>{
+    const [x,y,z] = k.split(',').map(Number);
+    const m = makeBlockMesh(v.type);
+    m.position.set(x+0.5, y+0.5, z+0.5);
+    m.userData.gx=x; m.userData.gy=y; m.userData.gz=z;
+    blockGroup.add(m);
+    App.worldMeshes.set(k, m);
+  });
+
+  App.markers = {};
+  if(worldData.goal){
+    const flag = makeFlagMarker(0xff5c72);
+    flag.position.set(worldData.goal.x+0.5, worldData.goal.y, worldData.goal.z+0.5);
+    scene.add(flag);
+    App.markers.goal = flag;
+  }
+  App.currentWorldData = worldData;
+  return scene;
+}
+
+function makeFlagMarker(color){
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.6,6), new THREE.MeshLambertMaterial({ color:0xffffff }));
+  pole.position.y = 0.8; g.add(pole);
+  const flag = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.34,0.03), new THREE.MeshLambertMaterial({ color, emissive:color, emissiveIntensity:0.5 }));
+  flag.position.set(0.28,1.35,0); g.add(flag);
+  return g;
+}
+
+// ---- studio (build) scene ----
+function buildStudioScene(){
+  teardownScene();
+  const { scene } = newBaseScene('#33224e','#0a0d18', 0x0a0d18, 55);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_BOUND*2+4, WORLD_BOUND*2+4), new THREE.MeshLambertMaterial({ color:0x1a1530 }));
+  ground.rotation.x = -Math.PI/2;
+  scene.add(ground);
+  App.groundMesh = ground;
+  addGroundGrid(scene, WORLD_BOUND*2, 0x3a2a5c, 0x53398a);
+
+  const blockGroup = new THREE.Group();
+  scene.add(blockGroup);
+  App.blockGroup = blockGroup;
+  App.worldMeshes = new Map();
+
+  // rebuild from App.studio.blocks (persists while switching in/out during a session)
+  App.studio.blocks.forEach((v,k)=>{
+    const [x,y,z] = k.split(',').map(Number);
+    const m = makeBlockMesh(v.type);
+    m.position.set(x+0.5, y+0.5, z+0.5);
+    m.userData.gx=x; m.userData.gy=y; m.userData.gz=z;
+    blockGroup.add(m);
+    App.worldMeshes.set(k, m);
+  });
+
+  App.markers = {};
+  const spawnFlag = makeFlagMarker(0xc8ff4d);
+  spawnFlag.position.set(App.studio.spawn.x+0.5, App.studio.spawn.y, App.studio.spawn.z+0.5);
+  scene.add(spawnFlag);
+  App.markers.spawn = spawnFlag;
+  if(App.studio.goal){
+    const goalFlag = makeFlagMarker(0xff5c72);
+    goalFlag.position.set(App.studio.goal.x+0.5, App.studio.goal.y, App.studio.goal.z+0.5);
+    scene.add(goalFlag);
+    App.markers.goal = goalFlag;
+  }
+  return scene;
+}
+
+const SKYRUSH_WORLD = (function(){
+  const blocks = [];
+  // starting platform
+  for(let x=-2;x<=2;x++) for(let z=-2;z<=2;z++) blocks.push([x,0,z,'grass']);
+  // winding ascending path
+  const path = [
+    [0,-4,'stone'],[0,-6,'stone'],[1,-8,'stone'],[2,-10,'wood'],[2,-12,'wood'],
+    [1,-14,'ice'],[0,-16,'ice'],[-1,-18,'stone'],[-2,-20,'stone'],[-2,-22,'brick']
+  ];
+  let y = 0;
+  path.forEach((p,i)=>{
+    y = 1 + i; // steadily rising
+    blocks.push([p[0], y, p[1], p[2]]);
+    blocks.push([p[0], y-1, p[1], p[2]]);
+  });
+  // floating stepping stones widen near the end
+  for(let i=0;i<4;i++){ blocks.push([-2+ (i%2===0?0:1), y+1, -22-i, 'neon']); }
+  // final platform + goal
+  for(let x=-3;x<=-1;x++) for(let z=-27;z<=-25;z++) blocks.push([x,y+1,z,'brick']);
+  return {
+    name:'Sky Rush', builtin:true,
+    blocks,
+    spawn:{x:0,y:1,z:0},
+    goal:{x:-2,y:y+2,z:-26},
+  };
+})();
+
+// === SECTION:CONTROLS ===
+
+const RAY = new THREE.Raycaster();
+const GRAVITY = 24, JUMP_SPEED = 8.6, MOVE_SPEED = 5.4, STEP = 1.15;
+const BOT_NAMES = ['Zed_Bot','Nova','Glitch','PixelPup'];
+const BOT_SHIRTS = [0xff5c72,0x4de3ff,0xb06bff,0xffb84d];
+
+App.input = { forward:false, back:false, left:false, right:false, jump:false, up:false, down:false };
+App.yaw = 0; App.pitch = -0.18;
+App.emote = null; App.clockT = 0; App.lastPresenceSend = 0;
+App.remoteAvatars = {}; App.bots = [];
+App.overlayOpen = false;
+App.worldCarousel = [];
+App.selectedWorldIdx = 0;
+
+function uiBlocking(){
+  if(App.overlayOpen) return true;
+  const ae = document.activeElement;
+  if(ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA')) return true;
+  return false;
+}
+
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+function camDirFromYawPitch(yaw,pitch){
+  return new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch), Math.sin(pitch), Math.cos(yaw)*Math.cos(pitch));
+}
+
+// ---- pointer lock + input wiring (installed once) ----
+let inputInstalled = false;
+function installInputOnce(){
+  if(inputInstalled) return; inputInstalled = true;
+  const canvas = document.getElementById('gamecanvas');
+
+  canvas.addEventListener('mousedown', (e)=>{
+    if(App.mode==='boot') return;
+    if(isTouchDevice()) return; // touch uses drag-to-look + the on-screen joystick instead — see installTouchControlsOnce()
+    if(document.pointerLockElement !== canvas){
+      canvas.requestPointerLock && canvas.requestPointerLock();
+      return;
+    }
+    if(App.mode==='studio' && e.button===0){ performBuildAction(); }
+    if(App.mode==='battle'){ battleHandleClick(e.button); }
+  });
+  canvas.addEventListener('contextmenu', e=> e.preventDefault());
+  installTouchControlsOnce();
+
+  document.addEventListener('mousemove', (e)=>{
+    if(document.pointerLockElement !== canvas) return;
+    App.yaw   -= e.movementX * 0.0024;
+    App.pitch -= e.movementY * 0.0022;
+    App.pitch = clamp(App.pitch, -0.85, 1.1);
+  });
+
+  document.addEventListener('pointerlockchange', ()=>{
+    const locked = document.pointerLockElement === canvas;
+    const cross = document.getElementById('crosshair');
+    if(cross) cross.hidden = !(locked && (App.mode==='studio' || App.mode==='battle'));
+    const hint = document.getElementById('hintBar');
+    if(hint && App.mode!=='boot'){
+      hint.textContent = locked
+        ? (App.mode==='studio' ? 'Click = use tool · WASD fly · Space/Shift up-down · 1-6 block · B/X/V/G tool · Esc release'
+           : App.mode==='battle' ? 'Click = fire · B = build · 1-5 weapon/block · WASD move · Space jump · Esc release'
+                                : 'WASD move · Space jump · 1-4 emote · Esc release cursor')
+        : 'Click the scene to look around';
+    }
+  });
+
+  window.addEventListener('keydown', (e)=>{
+    if(App.mode==='boot') return;
+    if(uiBlocking()) return;
+    switch(e.code){
+      case 'KeyW': case 'ArrowUp': App.input.forward = true; break;
+      case 'KeyS': case 'ArrowDown': App.input.back = true; break;
+      case 'KeyA': case 'ArrowLeft': App.input.left = true; break;
+      case 'KeyD': case 'ArrowRight': App.input.right = true; break;
+      case 'Space': App.input.jump = true; e.preventDefault(); break;
+      case 'ShiftLeft': case 'ShiftRight': App.input.down = true; break;
+    }
+    if(App.mode==='studio'){
+      const idx = ['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6'].indexOf(e.code);
+      if(idx>=0 && BLOCK_TYPES[idx]) selectPaletteBlock(BLOCK_TYPES[idx].id);
+      const toolKeys = { KeyB:'place', KeyX:'erase', KeyV:'spawn', KeyG:'goal' };
+      if(toolKeys[e.code]) setStudioTool(toolKeys[e.code]);
+    } else if(App.mode==='lobby' || App.mode==='play'){
+      const emoteMap = { Digit1:'wave', Digit2:'dance', Digit3:'cheer', Digit4:'spin' };
+      if(emoteMap[e.code]) triggerEmote(emoteMap[e.code]);
+    } else if(App.mode==='battle'){
+      battleKeydown(e.code);
+    }
+  });
+  window.addEventListener('keyup', (e)=>{
+    switch(e.code){
+      case 'KeyW': case 'ArrowUp': App.input.forward = false; break;
+      case 'KeyS': case 'ArrowDown': App.input.back = false; break;
+      case 'KeyA': case 'ArrowLeft': App.input.left = false; break;
+      case 'KeyD': case 'ArrowRight': App.input.right = false; break;
+      case 'Space': App.input.jump = false; break;
+      case 'ShiftLeft': case 'ShiftRight': App.input.down = false; break;
+    }
+  });
+}
+
+// ---- touch controls: virtual joystick (movement), drag-to-look on the canvas, jump button ----
+// Only wired up for touch pointers, so it never interferes with the existing mouse/keyboard path.
+let touchControlsInstalled = false;
+function installTouchControlsOnce(){
+  if(touchControlsInstalled) return; touchControlsInstalled = true;
+  if(!isTouchDevice()) return;
+  const canvas = document.getElementById('gamecanvas');
+  const joy = document.getElementById('touchJoystick');
+  const knob = document.getElementById('tjKnob');
+  const jumpBtn = document.getElementById('touchJumpBtn');
+  if(!canvas || !joy || !knob || !jumpBtn) return;
+
+  const JOY_RADIUS = 40; // max knob travel in px
+  const JOY_DEADZONE = 0.28; // fraction of radius before a direction counts as "pressed"
+  let joyPointerId = null, joyRect = null;
+
+  function updateJoyFromEvent(e){
+    if(!joyRect) return;
+    const cx = joyRect.left + joyRect.width/2, cy = joyRect.top + joyRect.height/2;
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    const dist = Math.hypot(dx,dy) || 1;
+    const clamped = Math.min(dist, JOY_RADIUS);
+    const kx = (dx/dist)*clamped, ky = (dy/dist)*clamped;
+    knob.style.transform = 'translate(' + kx.toFixed(1) + 'px,' + ky.toFixed(1) + 'px)';
+    const nx = dx/JOY_RADIUS, ny = dy/JOY_RADIUS;
+    App.input.right   = nx >  JOY_DEADZONE;
+    App.input.left    = nx < -JOY_DEADZONE;
+    App.input.back    = ny >  JOY_DEADZONE;
+    App.input.forward = ny < -JOY_DEADZONE;
+  }
+  function resetJoy(){
+    App.input.forward = App.input.back = App.input.left = App.input.right = false;
+    knob.style.transform = 'translate(0,0)';
+  }
+
+  joy.addEventListener('pointerdown', (e)=>{
+    joyPointerId = e.pointerId;
+    joyRect = joy.getBoundingClientRect();
+    try{ joy.setPointerCapture(joyPointerId); }catch(err){}
+    updateJoyFromEvent(e);
+    e.preventDefault();
+  });
+  joy.addEventListener('pointermove', (e)=>{
+    if(e.pointerId !== joyPointerId) return;
+    updateJoyFromEvent(e);
+    e.preventDefault();
+  });
+  const endJoy = (e)=>{ if(e.pointerId !== joyPointerId) return; joyPointerId = null; resetJoy(); };
+  joy.addEventListener('pointerup', endJoy);
+  joy.addEventListener('pointercancel', endJoy);
+
+  jumpBtn.addEventListener('pointerdown', (e)=>{ App.input.jump = true; e.preventDefault(); });
+  const endJump = ()=>{ App.input.jump = false; };
+  jumpBtn.addEventListener('pointerup', endJump);
+  jumpBtn.addEventListener('pointercancel', endJump);
+  jumpBtn.addEventListener('pointerleave', endJump);
+
+  // Drag anywhere else on the scene to look around — the touch equivalent of mouse-look.
+  let lookPointerId = null, lookLastX = 0, lookLastY = 0;
+  canvas.style.touchAction = 'none';
+  canvas.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType !== 'touch' || App.mode==='boot') return;
+    lookPointerId = e.pointerId; lookLastX = e.clientX; lookLastY = e.clientY;
+    try{ canvas.setPointerCapture(lookPointerId); }catch(err){}
+  });
+  canvas.addEventListener('pointermove', (e)=>{
+    if(e.pointerId !== lookPointerId) return;
+    const dx = e.clientX - lookLastX, dy = e.clientY - lookLastY;
+    lookLastX = e.clientX; lookLastY = e.clientY;
+    App.yaw   -= dx * 0.0042;
+    App.pitch -= dy * 0.0038;
+    App.pitch = clamp(App.pitch, -0.85, 1.1);
+  });
+  const endLook = (e)=>{ if(e.pointerId===lookPointerId) lookPointerId=null; };
+  canvas.addEventListener('pointerup', endLook);
+  canvas.addEventListener('pointercancel', endLook);
+}
+
+function triggerEmote(type){
+  App.emote = { type, startedAt: App.clockT };
+  const dur = type==='dance' ? 2.2 : type==='spin' ? 1.0 : 1.5;
+  setTimeout(()=>{ if(App.emote && App.emote.type===type) App.emote=null; }, dur*1000);
+  if(Net.connected){
+    netSend({ t:'emote', kind:type });
+  } else if(App.caps.room){
+    App.caps.room.emit('emote', { kind:type }).catch(()=>{});
+  }
+}
+
+// live emotes from the real server (mirrors the claude.ai room.on('emote', ...) handler above)
+netOn('emote', (peerId, kind)=>{
+  const av = App.remoteAvatars[peerId];
+  if(!av) return;
+  av.emote = { type: kind, startedAt: App.clockT };
+  const dur = kind==='dance' ? 2.2 : kind==='spin' ? 1.0 : 1.5;
+  setTimeout(()=>{ if(av.emote && av.emote.type===kind) av.emote = null; }, dur*1000);
+});
+
+// ---- avatar spawning ----
+function spawnLocalAvatar(scene, pos){
+  const rig = buildAvatar(Profile);
+  scene.add(rig.group);
+  App.player = { pos: new THREE.Vector3(pos.x,pos.y,pos.z), vel:new THREE.Vector3(0,0,0), grounded:false, rig };
+  rig.group.position.copy(App.player.pos);
+  // A personal skin you've explicitly chosen always wins; the admin skin only shows up
+  // automatically as a fallback "badge" when you haven't picked one for yourself. 'admin' is
+  // excluded from the personal-skin branch and gated on the real (server-verified) Admin.isAdmin
+  // instead — customSkin is unauthenticated client-reported data, so without this a stale or
+  // tampered Profile.customSkin==='admin' could show the exclusive look without real admin auth.
+  if(Profile.customSkin && Profile.customSkin !== 'admin') attachSkin(rig, Profile.customSkin);
+  else if(Admin.isAdmin) attachAdminSkin(rig);
+}
+
+function spawnRemoteAvatar(peerId, presence){
+  const prof = { skin:presence.skin||SKIN_TONES[1], shirt:presence.shirt||OUTFIT_COLORS[0], pants:presence.pants||TRIM_COLORS[0] };
+  const rig = buildAvatar(prof);
+  App.scene.add(rig.group);
+  const label = makeNameSprite(presence.name||'Player');
+  label.position.set(0, RIG.legH+RIG.torsoH+RIG.headS+0.35, 0);
+  rig.group.add(label);
+  rig.group.userData.shirtColor = prof.shirt;
+  // Same 'admin' carve-out as spawnLocalAvatar — presence.customSkin is self-reported by that
+  // peer's own client, so it must never be able to grant itself the admin look; only the
+  // server-verified presence.isAdmin flag can do that.
+  if(presence.customSkin && presence.customSkin !== 'admin') attachSkin(rig, presence.customSkin);
+  else if(presence.isAdmin) attachAdminSkin(rig);
+  return { rig, target:new THREE.Vector3(presence.x||0,presence.y||0,presence.z||0), yaw:presence.ry||0, label, lastEmote:null };
+}
+
+function makeNameSprite(text){
+  const c = document.createElement('canvas'); c.width=256; c.height=64;
+  const ctx = c.getContext('2d');
+  ctx.font='700 30px Rajdhani, sans-serif';
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(10,13,24,0.55)';
+  const w = Math.min(240, ctx.measureText(text).width+28);
+  ctx.fillRect(128-w/2,10,w,40);
+  ctx.fillStyle='#eef2ff';
+  ctx.fillText(text,128,38);
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.SpriteMaterial({ map:tex, depthTest:false, transparent:true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.6,0.4,1);
+  sprite.renderOrder = 999;
+  return sprite;
+}
+
+function makeBots(scene){
+  App.bots = [];
+  for(let i=0;i<BOT_NAMES.length;i++){
+    const a = (i/BOT_NAMES.length)*Math.PI*2;
+    const startPos = { x:Math.cos(a)*10, z:Math.sin(a)*10 };
+    const rig = buildAvatar({ skin:SKIN_TONES[i%SKIN_TONES.length], shirt:BOT_SHIRTS[i%BOT_SHIRTS.length], pants:TRIM_COLORS[0] });
+    scene.add(rig.group);
+    rig.group.position.set(startPos.x,0,startPos.z);
+    const label = makeNameSprite(BOT_NAMES[i]);
+    label.position.set(0, RIG.legH+RIG.torsoH+RIG.headS+0.35, 0);
+    rig.group.add(label);
+    App.bots.push({ rig, pos:new THREE.Vector3(startPos.x,0,startPos.z), target:new THREE.Vector3(startPos.x,0,startPos.z), name:BOT_NAMES[i], shirt:BOT_SHIRTS[i%BOT_SHIRTS.length], nextEmoteAt: App.clockT + 4 + Math.random()*8 });
+  }
+}
+
+function pickBotTarget(bot){
+  const r = 6 + Math.random()*15, a = Math.random()*Math.PI*2;
+  bot.target.set(Math.cos(a)*r, 0, Math.sin(a)*r);
+}
+
+function updateBots(dt){
+  App.bots.forEach(bot=>{
+    const d = bot.target.clone().sub(bot.pos);
+    const dist = d.length();
+    let moving = false;
+    if(dist < 0.4){ pickBotTarget(bot); }
+    else { d.normalize(); bot.pos.addScaledVector(d, 1.6*dt); moving = true; bot.rig.group.rotation.y = Math.atan2(d.x,d.z); }
+    bot.rig.group.position.copy(bot.pos);
+    if(App.clockT > bot.nextEmoteAt){ bot.emote = { type:['wave','dance','cheer'][Math.floor(Math.random()*3)], startedAt: App.clockT }; bot.nextEmoteAt = App.clockT + 8 + Math.random()*10; setTimeout(()=>{ bot.emote=null; }, 1800); }
+    animateAvatar(bot.rig, App.clockT, { speedFactor: moving?0.7:0, jumping:false, emote: bot.emote });
+  });
+}
+
+// ---- remote avatar sync — the real server (Net) when deployed, else claude.ai room, else solo ----
+function syncRemotePeers(dt){
+  const usingNet = Net.connected;
+  const room = App.caps.room;
+  if(!usingNet && !room){ renderPlayerList(); setOnlineCount(1 + App.bots.length); return; }
+  const seen = new Set();
+
+  if(usingNet){
+    const myWorld = netWorldLabel();
+    Object.values(Net.peers).forEach(p=>{
+      if(p.world !== myWorld) return;
+      seen.add(p.id);
+      const av2 = (p.avatar)||{};
+      let av = App.remoteAvatars[p.id];
+      if(!av){ av = App.remoteAvatars[p.id] = spawnRemoteAvatar(p.id, { skin:av2.skin, shirt:av2.shirt, pants:av2.pants, customSkin:av2.customSkin, name:p.name, x:p.x, y:p.y, z:p.z, ry:p.ry, isAdmin:p.isAdmin }); }
+      av.target.set(p.x||0, p.y||0, p.z||0);
+      av.yaw = p.ry||0;
+      av._name = p.name || 'Player';
+    });
+  } else if(room){
+    room.peers().forEach(p=>{
+      if(p.isMe) return;
+      const pres = p.presence || {};
+      if(pres.mode !== 'lobby') return;
+      seen.add(p.peer);
+      let av = App.remoteAvatars[p.peer];
+      if(!av){ av = App.remoteAvatars[p.peer] = spawnRemoteAvatar(p.peer, pres); }
+      av.target.set(pres.x||0, pres.y||0, pres.z||0);
+      av.yaw = pres.ry||0;
+      av._name = pres.name || 'Player';
+    });
+  }
+
+  Object.keys(App.remoteAvatars).forEach(id=>{
+    if(!seen.has(id)){ App.scene.remove(App.remoteAvatars[id].rig.group); disposeObj(App.remoteAvatars[id].rig.group); delete App.remoteAvatars[id]; }
+  });
+  Object.values(App.remoteAvatars).forEach(av=>{
+    av.rig.group.position.lerp(av.target, Math.min(1, dt*10));
+    let ang = av.yaw - av.rig.group.rotation.y;
+    ang = Math.atan2(Math.sin(ang), Math.cos(ang));
+    av.rig.group.rotation.y += ang * Math.min(1, dt*10);
+    const moving = av.rig.group.position.distanceTo(av.target) > 0.05;
+    animateAvatar(av.rig, App.clockT, { speedFactor: moving?0.8:0, jumping:false, emote: av.emote });
+  });
+  renderPlayerList();
+  setOnlineCount(1 + App.bots.length + Object.keys(App.remoteAvatars).length);
+}
+netOn('peer_leave', (id)=>{
+  const av = App.remoteAvatars[id];
+  if(av){ App.scene && App.scene.remove(av.rig.group); disposeObj(av.rig.group); delete App.remoteAvatars[id]; }
+});
+function setOnlineCount(n){
+  const a = document.getElementById('playerCount'), b = document.getElementById('onlineChipCount');
+  if(a) a.textContent = n;
+  if(b) b.textContent = n;
+}
+
+if(typeof window!=='undefined'){
+  window.addEventListener('DOMContentLoaded', ()=>{}); // placeholder, real init happens in UI section
+}
+
+function sendPresence(){
+  if(!App.player) return;
+  const now = performance.now();
+  if(now - App.lastPresenceSend < 90) return;
+  App.lastPresenceSend = now;
+  if(Net.connected){
+    netSend({
+      t:'presence', x:App.player.pos.x, y:App.player.pos.y, z:App.player.pos.z, ry:App.yaw,
+      anim: (App.emote&&App.emote.type) || 'idle', world: netWorldLabel(),
+    });
+  } else if(App.caps.room){
+    App.caps.room.presence({
+      x:App.player.pos.x, y:App.player.pos.y, z:App.player.pos.z, ry:App.yaw,
+      name:Profile.name, skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants,
+      mode: App.mode,
+    }).catch(()=>{});
+  }
+}
+
+// ---- physics: shared avatar controller for lobby + play ----
+function columnTopAt(x,z){
+  if(!App.worldMeshes) return null;
+  const bx = Math.floor(x), bz = Math.floor(z);
+  let top = null;
+  App.worldMeshes.forEach(m=>{
+    if(m.userData.gx===bx && m.userData.gz===bz){
+      const t = m.userData.gy+1;
+      if(top===null || t>top) top = t;
+    }
+  });
+  return top;
+}
+
+function canEnterColumn(x,z,feetY){
+  if(App.mode==='lobby') return Math.hypot(x,z) < 23;
+  const top = columnTopAt(x,z);
+  if(top===null) return true;
+  return (top - feetY) <= STEP;
+}
+
+function updateAvatarController(dt){
+  const p = App.player; if(!p || uiBlocking()) return;
+  if(App.mode==='battle' && App.battle && App.battle.phase && App.battle.phase!=='landed'){
+    updateBattleIntroPhase(dt);
+    return;
+  }
+  const forward = new THREE.Vector3(Math.sin(App.yaw),0,Math.cos(App.yaw));
+  const right = new THREE.Vector3(Math.sin(App.yaw+Math.PI/2),0,Math.cos(App.yaw+Math.PI/2));
+  const mv = new THREE.Vector3();
+  if(App.input.forward) mv.add(forward);
+  if(App.input.back) mv.sub(forward);
+  if(App.input.right) mv.add(right);
+  if(App.input.left) mv.sub(right);
+  let moving = false;
+  if(mv.lengthSq() > 0){ mv.normalize(); moving = true; }
+
+  const tryX = p.pos.x + mv.x*MOVE_SPEED*dt;
+  if(canEnterColumn(tryX, p.pos.z, p.pos.y)) p.pos.x = tryX;
+  const tryZ = p.pos.z + mv.z*MOVE_SPEED*dt;
+  if(canEnterColumn(p.pos.x, tryZ, p.pos.y)) p.pos.z = tryZ;
+
+  p.vel.y -= GRAVITY*dt;
+  p.pos.y += p.vel.y*dt;
+  const groundY = App.mode==='lobby' ? 0 : (columnTopAt(p.pos.x,p.pos.z) ?? -999);
+  const wasAirborne = !p.grounded;
+  if(p.pos.y <= groundY){
+    p.pos.y = groundY; p.vel.y = 0;
+    if(wasAirborne && p.grounded===false && groundY > -900) SFX.land();
+    p.grounded = true;
+  } else {
+    p.grounded = false;
+  }
+  if(App.input.jump && p.grounded){ p.vel.y = JUMP_SPEED; p.grounded = false; SFX.jump(); }
+
+  if((App.mode==='play' || App.mode==='battle') && p.pos.y < -8){
+    const sp = App.mode==='battle' ? battlePickSpawn() : App.currentWorldData.spawn;
+    p.pos.set(sp.x+0.5, sp.y, sp.z+0.5); p.vel.set(0,0,0);
+    showToast('Back to spawn!');
+  }
+
+  p.rig.group.position.copy(p.pos);
+  p.rig.group.rotation.y = App.yaw;
+  animateAvatar(p.rig, App.clockT, { speedFactor: moving?1:0, jumping: !p.grounded, emote: App.emote });
+
+  const camDir = camDirFromYawPitch(App.yaw, App.pitch);
+  const headPos = new THREE.Vector3(p.pos.x, p.pos.y+1.55, p.pos.z);
+  if(App.mode==='battle'){
+    // First-person: show the body (torso/arms/legs) so you can look down and see yourself —
+    // only the head is hidden, since it sits right where the camera is and would otherwise
+    // clip/z-fight directly in front of your view.
+    p.rig.group.visible = true;
+    if(p.rig.headPivot) p.rig.headPivot.visible = false;
+    App.camera.position.copy(headPos);
+    App.camera.lookAt(headPos.clone().add(camDir));
+  } else {
+    p.rig.group.visible = true;
+    if(p.rig.headPivot) p.rig.headPivot.visible = !p.rig.usingCustomSkin;
+    const dist = 5.6;
+    const camPos = headPos.clone().sub(camDir.clone().multiplyScalar(dist));
+    camPos.y = Math.max(camPos.y, p.pos.y + 0.35);
+    App.camera.position.copy(camPos);
+    App.camera.lookAt(headPos);
+  }
+
+  sendPresence();
+
+  if(App.mode==='lobby'){
+    checkPortals(p.pos);
+  } else if(App.mode==='play'){
+    checkGoal(p.pos);
+  } else if(App.mode==='battle'){
+    updateBattle(dt, p.pos);
+  }
+}
+
+// ---- portals ----
+let lastPortalCheck = 0;
+function checkPortals(pos){
+  for(const portal of App.portals){
+    const dx = pos.x - portal.userData.x, dz = pos.z - portal.userData.z;
+    if(dx*dx+dz*dz < 3.2*3.2){
+      const now = performance.now();
+      if(now - lastPortalCheck < 1500) return;
+      lastPortalCheck = now;
+      enterPortal(portal.userData.worldRef);
+      return;
+    }
+  }
+}
+function enterPortal(ref){
+  SFX.portal();
+  if(ref.kind==='studio'){ goToStudio(); return; }
+  if(ref.kind==='builtin' && ref.id==='skyrush'){ goToPlay(SKYRUSH_WORLD, null); return; }
+  if(ref.kind==='builtin' && ref.id==='thunderbattle'){ goToBattle(); return; }
+  if(ref.kind==='community'){ goToPlay(ref.data, ref.id); return; }
+}
+
+let goalReached = false;
+function checkGoal(pos){
+  if(goalReached || !App.currentWorldData.goal) return;
+  const g = App.currentWorldData.goal;
+  const dx = pos.x-(g.x+0.5), dy=pos.y-g.y, dz=pos.z-(g.z+0.5);
+  if(dx*dx+dz*dz < 1.4*1.4 && Math.abs(dy) < 2.2){
+    goalReached = true;
+    SFX.goal();
+    const elapsed = (App.clockT - App.playStart).toFixed(1);
+    if(!Profile.bestTime || parseFloat(elapsed) < Profile.bestTime){ Profile.bestTime = parseFloat(elapsed); saveLocal('nb_profile', Profile); }
+    showBanner('Goal reached! 🎉', elapsed+'s · best '+ (Profile.bestTime||elapsed) +'s — press Menu to return');
+  }
+}
+
+// ---- studio building ----
+function selectPaletteBlock(id){
+  App.studio.selectedBlock = id;
+  document.querySelectorAll('.block-swatch').forEach(el=> el.classList.toggle('selected', el.dataset.id===id));
+}
+function setStudioTool(tool){
+  App.studio.tool = tool;
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(el=> el.classList.toggle('active', el.dataset.tool===tool));
+}
+
+function addStudioBlock(x,y,z,type){
+  const key = blockKey(x,y,z);
+  if(App.studio.blocks.has(key)) return;
+  App.studio.blocks.set(key, { type });
+  const m = makeBlockMesh(type);
+  m.position.set(x+0.5,y+0.5,z+0.5);
+  m.userData.gx=x; m.userData.gy=y; m.userData.gz=z;
+  App.blockGroup.add(m);
+  App.worldMeshes.set(key, m);
+  SFX.place();
+}
+function removeStudioBlock(x,y,z){
+  const key = blockKey(x,y,z);
+  if(!App.studio.blocks.has(key)) return;
+  App.studio.blocks.delete(key);
+  const m = App.worldMeshes.get(key);
+  if(m){ App.blockGroup.remove(m); App.worldMeshes.delete(key); }
+  SFX.erase();
+}
+
+function performBuildAction(){
+  RAY.setFromCamera({x:0,y:0}, App.camera);
+  const targets = App.blockGroup.children.concat(App.groundMesh ? [App.groundMesh] : []);
+  const hits = RAY.intersectObjects(targets, false);
+  if(!hits.length) return;
+  const hit = hits[0];
+  const tool = App.studio.tool;
+
+  if(tool==='erase'){
+    if(hit.object.userData.gx!==undefined) removeStudioBlock(hit.object.userData.gx, hit.object.userData.gy, hit.object.userData.gz);
+    return;
+  }
+  let gx,gy,gz;
+  if(hit.object.userData.gx!==undefined){
+    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+    gx = hit.object.userData.gx + Math.round(n.x);
+    gy = hit.object.userData.gy + Math.round(n.y);
+    gz = hit.object.userData.gz + Math.round(n.z);
+  } else {
+    gx = Math.floor(hit.point.x); gz = Math.floor(hit.point.z); gy = 0;
+  }
+  if(Math.abs(gx)>WORLD_BOUND || Math.abs(gz)>WORLD_BOUND || gy<0 || gy>WORLD_MAXY){ showToast('Out of bounds'); return; }
+
+  if(tool==='place'){ addStudioBlock(gx,gy,gz, App.studio.selectedBlock); }
+  else if(tool==='spawn'){
+    App.studio.spawn = { x:gx, y:gy+1, z:gz };
+    App.markers.spawn.position.set(gx+0.5, gy+1, gz+0.5);
+  } else if(tool==='goal'){
+    App.studio.goal = { x:gx, y:gy+1, z:gz };
+    if(!App.markers.goal){ App.markers.goal = makeFlagMarker(0xff5c72); App.scene.add(App.markers.goal); }
+    App.markers.goal.position.set(gx+0.5, gy+1, gz+0.5);
+  }
+}
+
+function updateStudioCamera(dt){
+  if(uiBlocking()) return;
+  if(!App.studioPos) App.studioPos = new THREE.Vector3(0, 9, 13);
+  const camDir = camDirFromYawPitch(App.yaw, App.pitch);
+  const right = new THREE.Vector3(Math.sin(App.yaw+Math.PI/2),0,Math.cos(App.yaw+Math.PI/2));
+  const speed = 9;
+  if(App.input.forward) App.studioPos.addScaledVector(camDir, speed*dt);
+  if(App.input.back) App.studioPos.addScaledVector(camDir, -speed*dt);
+  if(App.input.right) App.studioPos.addScaledVector(right, speed*dt);
+  if(App.input.left) App.studioPos.addScaledVector(right, -speed*dt);
+  if(App.input.jump) App.studioPos.y += speed*dt;
+  if(App.input.down) App.studioPos.y -= speed*dt;
+  App.studioPos.y = clamp(App.studioPos.y, 0.6, WORLD_MAXY+6);
+  App.camera.position.copy(App.studioPos);
+  App.camera.lookAt(App.studioPos.clone().add(camDir));
+}
+
+// === SECTION:LOOP ===
+
+App.clock = new THREE.Clock();
+
+function animate(){
+  App.animId = requestAnimationFrame(animate);
+  const dt = Math.min(App.clock.getDelta(), 0.05);
+  App.clockT += dt;
+
+  if(App.mode==='lobby'){
+    if(App.lobbyBus){ App.lobbyBus.position.y = 13 + Math.sin(App.clockT*0.6)*0.6; App.lobbyBus.rotation.y += dt*0.05; }
+    App.portals.forEach(p=>{ p.rotation.y += dt*0.6; });
+    updateAvatarController(dt);
+    updateBots(dt);
+    syncRemotePeers(dt);
+  } else if(App.mode==='play'){
+    if(App.markers.goal) App.markers.goal.rotation.y += dt*1.2;
+    updateAvatarController(dt);
+    if(Net.connected) syncRemotePeers(dt);
+    const chip = document.getElementById('timerChip');
+    if(chip && !goalReached) chip.textContent = (App.clockT - App.playStart).toFixed(1);
+  } else if(App.mode==='battle'){
+    updateAvatarController(dt);
+    if(Net.connected) syncRemotePeers(dt);
+  } else if(App.mode==='studio'){
+    if(App.markers.spawn) App.markers.spawn.rotation.y += dt*1.2;
+    if(App.markers.goal) App.markers.goal.rotation.y += dt*1.2;
+    updateStudioCamera(dt);
+  }
+
+  if(App.renderer && App.scene && App.camera){
+    App.renderer.render(App.scene, App.camera);
+  }
+}
+
+function goToLobby(){
+  App.mode = 'lobby';
+  goalReached = false;
+  App.yaw = 0.3; App.pitch = -0.18;
+  buildLobbyScene();
+  spawnLocalAvatar(App.scene, { x:0, y:1, z:8 });
+  App.bots = []; // no filler NPCs in the lobby — only real connected players show up
+  showHudFor('lobby');
+  refreshCommunityWorldsForLobby();
+}
+
+function goToPlay(worldData, worldId){
+  App.mode = 'play';
+  App.currentWorldId = worldId;
+  goalReached = false;
+  App.yaw = 0.3; App.pitch = -0.18;
+  buildPlayScene(worldData);
+  const sp = worldData.spawn || {x:0,y:1,z:0};
+  spawnLocalAvatar(App.scene, { x:sp.x+0.5, y:sp.y+0.05, z:sp.z+0.5 });
+  App.playStart = App.clockT;
+  showHudFor('play', worldData);
+}
+
+function goToStudio(){
+  App.mode = 'studio';
+  buildStudioScene();
+  App.studioPos = null;
+  App.yaw = 0.4; App.pitch = -0.55;
+  showHudFor('studio');
+  refreshMyWorldsForStudio();
+}
+
+function backToMenu(){
+  App.mode = 'boot';
+  teardownScene();
+  hideBattleHud();
+  if(document.pointerLockElement) document.exitPointerLock();
+  showScreen('boot');
+}
+
+// === SECTION:UI ===
+
+function showScreen(name){
+  document.getElementById('screen-boot').hidden = name!=='boot';
+  document.getElementById('hud').hidden = name==='boot';
+}
+
+function showToast(msg){
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = 'toast panel'; el.textContent = msg;
+  stack.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),320); }, 2200);
+}
+
+function showBanner(title, sub){
+  const b = document.getElementById('centerBanner');
+  document.getElementById('bannerTitle').textContent = title;
+  document.getElementById('bannerSub').textContent = sub||'';
+  b.hidden = false;
+  clearTimeout(b._t);
+  b._t = setTimeout(()=>{ b.hidden = true; }, 7000);
+}
+
+function renderPlayerList(){
+  const list = document.getElementById('playerList');
+  const rows = [];
+  rows.push(`<div class="player-row me"><span class="swatch-mini" style="background:${Profile.shirt}"></span><span class="who">${escapeHtml(Profile.name)}</span><span class="badge">YOU</span></div>`);
+  App.bots.forEach(b=>{
+    rows.push(`<div class="player-row bot"><span class="swatch-mini" style="background:#${b.shirt.toString(16).padStart(6,'0')}"></span><span class="who">${b.name}</span><span class="badge">BOT</span></div>`);
+  });
+  Object.entries(App.remoteAvatars).forEach(([id,av])=>{
+    const inviteBtn = Net.connected ? `<button class="icon-btn interactive invite-btn" data-pid="${id}" title="Invite to party" style="width:22px;height:22px;font-size:11px;">➕</button>` : '';
+    rows.push(`<div class="player-row"><span class="swatch-mini" style="background:${av.rig.group.userData.shirtColor||'#4de3ff'}"></span><span class="who">${escapeHtml(av._name||'Player')}</span><span class="badge">LIVE</span>${inviteBtn}</div>`);
+  });
+  list.innerHTML = rows.join('');
+  list.querySelectorAll('.invite-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); netSend({ t:'party_invite', targetId: btn.dataset.pid }); showToast('Party invite sent!'); });
+  });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// === SECTION:PARTY-UI (persistent party / chat / voice dock) ===
+const ChatLogs = { party: [], global: [] };
+let chatActiveScope = 'party';
+
+const Voice = { active:false, muted:false, localStream:null, pcs:{} };
+const ICE_SERVERS = [{ urls:'stun:stun.l.google.com:19302' }, { urls:'stun:stun1.l.google.com:19302' }];
+
+function initPartyUI(){
+  const dock = document.getElementById('partyDock');
+  const panel = document.getElementById('partyPanel');
+  const dot = document.getElementById('partyDot');
+  const cnt = document.getElementById('partyCnt');
+  const statusDot = document.getElementById('partyStatusDot');
+  const statusText = document.getElementById('partyStatusText');
+  const bodyOffline = document.getElementById('partyBodyOffline');
+  const bodyOnline = document.getElementById('partyBodyOnline');
+  const noPartyRow = document.getElementById('partyNoPartyRow');
+  const hasPartyRow = document.getElementById('partyHasPartyRow');
+
+  function refreshConnUI(){
+    const online = Net.connected;
+    dot.classList.toggle('live', online);
+    statusDot.classList.toggle('live', online);
+    statusText.textContent = online ? 'online' : 'offline';
+    bodyOffline.hidden = online;
+    bodyOnline.hidden = !online;
+  }
+  refreshConnUI();
+  netOn('connection', refreshConnUI);
+
+  dock.addEventListener('click', ()=>{ panel.hidden = !panel.hidden; if(!panel.hidden) renderChatLog(); });
+  document.getElementById('btnClosePartyPanel').addEventListener('click', ()=>{ panel.hidden = true; });
+
+  document.getElementById('btnCreateParty').addEventListener('click', ()=> netSend({ t:'party_create' }));
+  document.getElementById('btnJoinParty').addEventListener('click', ()=>{
+    const code = document.getElementById('partyJoinCode').value.trim().toUpperCase();
+    if(code) netSend({ t:'party_join', code });
+  });
+  document.getElementById('btnLeaveParty').addEventListener('click', ()=>{
+    if(Voice.active) voiceLeave();
+    netSend({ t:'party_leave' });
+  });
+  document.getElementById('btnCopyPartyCode').addEventListener('click', ()=>{
+    if(Net.party) {
+      const doCopy = navigator.clipboard && navigator.clipboard.writeText
+        ? navigator.clipboard.writeText(Net.party.code)
+        : Promise.reject();
+      doCopy.then(()=>showToast('Party code copied!')).catch(()=>showToast('Code: '+Net.party.code));
+    }
+  });
+
+  function renderParty(party){
+    Net.party = party;
+    const cntEl = cnt;
+    if(party){
+      noPartyRow.hidden = true; hasPartyRow.hidden = false;
+      document.getElementById('partyCodeLabel').textContent = party.code;
+      document.getElementById('partyMembers').innerHTML = party.members.map(m=>{
+        const shirt = (m.avatar&&m.avatar.shirt) || '#4de3ff';
+        const you = m.id===Net.id ? ' (you)' : '';
+        return `<div class="party-member"><span class="swatch-mini" style="background:${shirt}"></span><span class="who">${escapeHtml(m.name||'Player')}${you}</span><span class="mic${m.inVoice?' on':''}">${m.inVoice?'🎙️':'🔈'}</span></div>`;
+      }).join('');
+      cntEl.hidden = party.members.length<=1; cntEl.textContent = party.members.length;
+    } else {
+      noPartyRow.hidden = false; hasPartyRow.hidden = true;
+      cntEl.hidden = true;
+      if(Voice.active) voiceLeave();
+    }
+  }
+  netOn('party', renderParty);
+  netOn('party_error', (reason, code)=>{ showToast(reason==='not_found' ? ('No party found for '+code) : 'Party error'); });
+  netOn('party_invited', (msg)=>{
+    showToast((msg.name||'Someone')+' invited you to their party — code '+msg.code);
+    const inp = document.getElementById('partyJoinCode');
+    if(inp) inp.value = msg.code;
+    panel.hidden = false;
+  });
+
+  // ---- chat ----
+  document.getElementById('chatTabParty').addEventListener('click', ()=> setChatScope('party'));
+  document.getElementById('chatTabGlobal').addEventListener('click', ()=> setChatScope('global'));
+  function setChatScope(scope){
+    chatActiveScope = scope;
+    document.getElementById('chatTabParty').classList.toggle('active', scope==='party');
+    document.getElementById('chatTabGlobal').classList.toggle('active', scope==='global');
+    renderChatLog();
+  }
+  function pushChat(msg){
+    (ChatLogs[msg.scope]||ChatLogs.global).push(msg);
+    if(msg.scope===chatActiveScope) renderChatLog();
+  }
+  netOn('chat', pushChat);
+  function renderChatLog(){
+    const log = document.getElementById('chatLog');
+    const msgs = ChatLogs[chatActiveScope]||[];
+    if(!msgs.length){ log.innerHTML = '<div class="chat-empty">No messages yet — say hi!</div>'; return; }
+    log.innerHTML = msgs.map(m=>`<div class="chat-msg${m.from===Net.id?' me':''}"><span class="who">${escapeHtml(m.name||'Player')}:</span> ${escapeHtml(m.text)}</div>`).join('');
+    log.scrollTop = log.scrollHeight;
+  }
+  function sendChat(){
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    if(handleChatCommand(text)){ input.value = ''; return; }
+    netSend({ t:'chat', scope:chatActiveScope, text });
+    input.value = '';
+  }
+  document.getElementById('btnSendChat').addEventListener('click', sendChat);
+  document.getElementById('chatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendChat(); e.stopPropagation(); });
+
+  // ---- voice ----
+  document.getElementById('btnToggleVoice').addEventListener('click', ()=>{
+    if(Voice.active) voiceLeave(); else voiceJoin();
+  });
+  document.getElementById('btnToggleMute').addEventListener('click', (e)=>{
+    Voice.muted = !Voice.muted;
+    if(Voice.localStream) Voice.localStream.getAudioTracks().forEach(t=> t.enabled = !Voice.muted);
+    e.target.textContent = Voice.muted ? '🔈 Unmute' : '🔇 Mute';
+  });
+
+  async function voiceJoin(){
+    if(!Net.party){ showToast('Join or create a party first'); return; }
+    try{
+      Voice.localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+    }catch(e){ showToast('Microphone access denied'); return; }
+    Voice.active = true;
+    document.getElementById('btnToggleVoice').textContent = '🎙️ Leave voice';
+    document.getElementById('btnToggleMute').hidden = false;
+    netSend({ t:'voice_join' });
+  }
+  function voiceLeave(){
+    Voice.active = false;
+    document.getElementById('btnToggleVoice').textContent = '🎙️ Join voice';
+    document.getElementById('btnToggleMute').hidden = true;
+    if(Voice.localStream){ Voice.localStream.getTracks().forEach(t=>t.stop()); Voice.localStream = null; }
+    Object.keys(Voice.pcs).forEach(closeVoicePeer);
+    netSend({ t:'voice_leave' });
+  }
+  function closeVoicePeer(id){
+    const entry = Voice.pcs[id];
+    if(!entry) return;
+    try{ entry.pc.close(); }catch(e){}
+    if(entry.audioEl){ entry.audioEl.srcObject = null; entry.audioEl.remove(); }
+    delete Voice.pcs[id];
+  }
+  function ensureVoicePeer(id){
+    if(Voice.pcs[id]) return Voice.pcs[id];
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const entry = { pc, audioEl:null };
+    Voice.pcs[id] = entry;
+    if(Voice.localStream) Voice.localStream.getTracks().forEach(t=> pc.addTrack(t, Voice.localStream));
+    pc.onicecandidate = (ev)=>{ if(ev.candidate) netSend({ t:'rtc_signal', to:id, data:{ candidate: ev.candidate } }); };
+    pc.ontrack = (ev)=>{
+      let el = entry.audioEl;
+      if(!el){ el = entry.audioEl = document.createElement('audio'); el.autoplay = true; document.body.appendChild(el); }
+      el.srcObject = ev.streams[0];
+    };
+    return entry;
+  }
+  netOn('voice_roster', async (peerIds)=>{
+    for(const id of peerIds){
+      const entry = ensureVoicePeer(id);
+      const offer = await entry.pc.createOffer();
+      await entry.pc.setLocalDescription(offer);
+      netSend({ t:'rtc_signal', to:id, data:{ sdp: offer } });
+    }
+  });
+  netOn('voice_peer_join', ()=>{ /* the newcomer will send us an offer — just wait */ });
+  netOn('voice_peer_leave', (id)=> closeVoicePeer(id));
+  netOn('rtc_signal', async (from, data)=>{
+    const entry = ensureVoicePeer(from);
+    if(data.sdp){
+      await entry.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      if(data.sdp.type==='offer'){
+        const answer = await entry.pc.createAnswer();
+        await entry.pc.setLocalDescription(answer);
+        netSend({ t:'rtc_signal', to:from, data:{ sdp:answer } });
+      }
+    } else if(data.candidate){
+      try{ await entry.pc.addIceCandidate(new RTCIceCandidate(data.candidate)); }catch(e){}
+    }
+  });
+
+  netOn('connection', (online)=>{ if(!online && Voice.active) voiceLeave(); });
+}
+
+function showHudFor(mode, data){
+  document.getElementById('modeTopBar').hidden = mode==='lobby';
+  document.getElementById('lobbyNav').hidden = mode!=='lobby';
+  document.getElementById('playerPanel').hidden = mode!=='lobby';
+  document.getElementById('worldPanel').hidden = mode!=='studio';
+  document.getElementById('studioToolbar').hidden = mode!=='studio';
+  document.getElementById('emoteBar').style.display = (mode==='lobby'||mode==='play') ? 'flex' : 'none';
+  document.getElementById('hintBar').style.display = mode==='lobby' ? 'none' : 'flex';
+  document.getElementById('timerChip').hidden = mode!=='play';
+  document.getElementById('centerBanner').hidden = true;
+  document.getElementById('worldPanel').querySelector('.t').textContent = 'My builds';
+  closeLocker(); closeWorldsOverlay();
+  document.getElementById('touchControls').hidden = !(isTouchDevice() && (mode==='play' || mode==='studio'));
+
+  const nameEl = document.getElementById('modeName'), subEl = document.getElementById('modeSub');
+  if(mode==='lobby'){ nameEl.textContent='NEOBLOX'; subEl.textContent='Central Lobby'; }
+  else if(mode==='play'){ nameEl.textContent=(data&&data.name)||'World'; subEl.textContent = data && data.authorName ? 'by '+data.authorName : 'Neoblox original'; }
+  else if(mode==='studio'){ nameEl.textContent='NEOSTUDIO'; subEl.textContent='Build mode'; }
+  else if(mode==='battle'){ nameEl.textContent='THUNDER BATTLE'; subEl.textContent='First-person arena'; }
+
+  const hint = document.getElementById('hintBar');
+  hint.textContent = isTouchDevice() ? 'Drag to look · joystick to move · ▲ to jump' : 'Click the scene to look around';
+
+  if(mode==='lobby'){
+    setActiveTab('play');
+    refreshLobbyIdentityUI();
+    if(!App.worldCarousel.length){
+      App.worldCarousel = [{ kind:'builtin', id:'skyrush', name:'Sky Rush', data:SKYRUSH_WORLD }];
+      App.selectedWorldIdx = 0;
+    }
+    refreshWorldCard();
+  }
+}
+
+// ---- lobby nav: tabs, name plate, world carousel, locker & worlds overlays ----
+function setActiveTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+}
+
+function refreshLobbyIdentityUI(){
+  const swatchEls = [document.getElementById('profileChipSwatch'), document.getElementById('namePlateSwatch')];
+  swatchEls.forEach(el=>{ if(el) el.style.background = Profile.shirt; });
+  const nameEls = [document.getElementById('profileChipName'), document.getElementById('namePlateName')];
+  nameEls.forEach(el=>{ if(el) el.textContent = Profile.name; });
+}
+
+function refreshWorldCard(){
+  const entry = App.worldCarousel[App.selectedWorldIdx];
+  if(!entry) return;
+  const eyebrow = document.getElementById('worldCardEyebrow');
+  const title = document.getElementById('worldCardTitle');
+  const status = document.getElementById('worldCardStatus');
+  if(entry.kind==='builtin'){
+    eyebrow.textContent = 'NEOBLOX ORIGINAL · OBSTACLE COURSE';
+    title.textContent = entry.name.toUpperCase();
+    status.textContent = Profile.bestTime ? ('Your best: ' + Profile.bestTime + 's') : 'No runs yet — go for it';
+  } else {
+    const d = entry.data || {};
+    eyebrow.textContent = 'COMMUNITY · by ' + (d.authorName || 'a builder');
+    title.textContent = (entry.name || 'Untitled').toUpperCase();
+    status.textContent = (d.blocks||[]).length + ' blocks';
+  }
+}
+
+function cycleWorldCard(delta){
+  if(!App.worldCarousel.length) return;
+  App.selectedWorldIdx = (App.selectedWorldIdx + delta + App.worldCarousel.length) % App.worldCarousel.length;
+  refreshWorldCard();
+}
+
+function playSelectedWorld(){
+  const entry = App.worldCarousel[App.selectedWorldIdx];
+  if(!entry) return;
+  enterPortal({ kind:entry.kind, id:entry.id, data:entry.data });
+}
+
+// -- locker overlay --
+let lockerPreviewCtx = null;
+function initLockerPreview(){
+  const canvas = document.getElementById('lockerPreview');
+  const w = canvas.clientWidth||360, h = canvas.clientHeight||180;
+  canvas.width = w*Math.min(devicePixelRatio||1,2); canvas.height = h*Math.min(devicePixelRatio||1,2);
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setSize(w,h,false);
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xdfefff,0x1a2036,1.1));
+  const sun = new THREE.DirectionalLight(0xffffff,0.7); sun.position.set(3,6,4); scene.add(sun);
+  const camera = new THREE.PerspectiveCamera(38, w/h, 0.1, 20);
+  camera.position.set(0,1.7,4.4);
+  const rig = buildAvatar(Profile);
+  scene.add(rig.group);
+  lockerPreviewCtx = { renderer, scene, camera, rig };
+  let t=0;
+  function loop(){
+    if(!lockerPreviewCtx) return;
+    requestAnimationFrame(loop);
+    t += 0.016;
+    lockerPreviewCtx.rig.group.rotation.y = Math.sin(t*0.5)*0.5;
+    animateAvatar(lockerPreviewCtx.rig, t, { speedFactor:0, jumping:false, emote:null });
+    lockerPreviewCtx.renderer.render(lockerPreviewCtx.scene, lockerPreviewCtx.camera);
+  }
+  loop();
+}
+function refreshLockerPreview(){
+  if(!lockerPreviewCtx) return;
+  lockerPreviewCtx.scene.remove(lockerPreviewCtx.rig.group);
+  disposeObj(lockerPreviewCtx.rig.group);
+  const rig = buildAvatar(Profile);
+  lockerPreviewCtx.scene.add(rig.group);
+  lockerPreviewCtx.rig = rig;
+}
+
+function syncAllSwatchSelections(){
+  [['skinRow','skin'],['shirtRow','shirt'],['pantsRow','pants'],['lockerSkinRow','skin'],['lockerShirtRow','shirt'],['lockerPantsRow','pants']].forEach(([id,key])=>{
+    const el = document.getElementById(id); if(!el) return;
+    el.querySelectorAll('.swatch').forEach(s=> s.classList.toggle('selected', s.dataset.color===Profile[key]));
+  });
+}
+
+function onProfileVisualChange(){
+  syncAllSwatchSelections();
+  refreshAvatarPreview();
+  refreshLockerPreview();
+  refreshLobbyIdentityUI();
+  syncProfileToNet();
+}
+
+function openLocker(){
+  if(document.pointerLockElement) document.exitPointerLock();
+  App.overlayOpen = true;
+  document.getElementById('lockerOverlay').hidden = false;
+  document.getElementById('lockerNameInput').value = Profile.name;
+  if(!lockerPreviewCtx) initLockerPreview(); else refreshLockerPreview();
+  syncAllSwatchSelections();
+  setActiveTab('locker');
+}
+function closeLocker(){
+  const el = document.getElementById('lockerOverlay');
+  if(el && !el.hidden) el.hidden = true;
+  App.overlayOpen = !document.getElementById('worldsOverlay').hidden ? true : false;
+  if(App.mode==='lobby' && !App.overlayOpen) setActiveTab('play');
+}
+
+// -- worlds overlay --
+function openWorldsOverlay(){
+  if(document.pointerLockElement) document.exitPointerLock();
+  App.overlayOpen = true;
+  document.getElementById('worldsOverlay').hidden = false;
+  setActiveTab('worlds');
+  renderWorldsOverlayList();
+  refreshCommunityWorldsForLobby();
+}
+function closeWorldsOverlay(){
+  const el = document.getElementById('worldsOverlay');
+  if(el && !el.hidden) el.hidden = true;
+  App.overlayOpen = !document.getElementById('lockerOverlay').hidden ? true : false;
+  if(App.mode==='lobby' && !App.overlayOpen) setActiveTab('play');
+}
+function renderWorldsOverlayList(){
+  const list = document.getElementById('worldsOverlayList');
+  if(!list) return;
+  if(App.worldCarousel.length <= 1){
+    list.innerHTML = '<div style="padding:10px;color:var(--ink-faint);font-size:12px;">No community worlds published yet — be the first!</div>';
+    return;
+  }
+  list.innerHTML = App.worldCarousel.map((e,i)=>{
+    const meta = e.kind==='builtin' ? 'Built-in obstacle course' : ((e.data.blocks||[]).length+' blocks · by '+(e.data.authorName||'a builder'));
+    return `<div class="world-row"><div class="wtext"><div class="t">${escapeHtml(e.name)}</div><div class="m">${escapeHtml(meta)}</div></div><button class="btn small primary" data-idx="${i}">Play</button></div>`;
+  }).join('');
+  list.querySelectorAll('button[data-idx]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      App.selectedWorldIdx = parseInt(btn.dataset.idx,10);
+      closeWorldsOverlay();
+      refreshWorldCard();
+      playSelectedWorld();
+    });
+  });
+}
+
+// ---- capability-backed world lists ----
+async function refreshCommunityWorldsForLobby(){
+  const col = worldsCol(); if(!col) return;
+  try{
+    const snap = await col.orderBy('createdAt','desc').limit(12).get();
+    if(App.mode!=='lobby') return;
+    const worlds = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    refreshCommunityPortals(worlds);
+    const prevSelected = App.worldCarousel[App.selectedWorldIdx];
+    App.worldCarousel = [{ kind:'builtin', id:'skyrush', name:'Sky Rush', data:SKYRUSH_WORLD }]
+      .concat(worlds.map(w=>({ kind:'community', id:w.id, name:w.name, data:w })));
+    const keepIdx = prevSelected ? App.worldCarousel.findIndex(e=>e.kind===prevSelected.kind && e.id===prevSelected.id) : 0;
+    App.selectedWorldIdx = keepIdx>=0 ? keepIdx : 0;
+    refreshWorldCard();
+    renderWorldsOverlayList();
+  }catch(e){ /* db unavailable — lobby still fully playable without community portals */ }
+}
+
+async function refreshMyWorldsForStudio(){
+  const col = worldsCol(); const list = document.getElementById('worldList');
+  if(!col){ list.innerHTML = '<div style="padding:10px;color:var(--ink-faint);font-size:12px;">Publishing needs the live db — you can still build locally.</div>'; return; }
+  try{
+    const snap = await col.where('authorId','==',Profile.id).orderBy('updatedAt','desc').limit(20).get();
+    if(App.mode!=='studio') return;
+    const worlds = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    if(!worlds.length){ list.innerHTML = '<div style="padding:10px;color:var(--ink-faint);font-size:12px;">No published builds yet. Build something and hit Publish!</div>'; return; }
+    list.innerHTML = worlds.map(w=>`<div class="world-row" data-id="${w.id}"><div class="t">${escapeHtml(w.name)}</div><div class="m">${(w.blocks||[]).length} blocks</div></div>`).join('');
+    list.querySelectorAll('.world-row').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const w = worlds.find(x=>x.id===el.dataset.id);
+        loadWorldIntoStudio(w);
+      });
+    });
+  }catch(e){ list.innerHTML = '<div style="padding:10px;color:var(--ink-faint);font-size:12px;">Couldn\'t load your builds right now.</div>'; }
+}
+
+function loadWorldIntoStudio(w){
+  App.studio.worldId = w.id;
+  App.studio.blocks = deserializeBlocks(w.blocks);
+  App.studio.spawn = w.spawn || { x:0,y:1,z:0 };
+  App.studio.goal = w.goal || null;
+  buildStudioScene();
+  showToast('Loaded "'+w.name+'" for editing');
+}
+
+async function publishWorld(name){
+  const col = worldsCol();
+  if(!col){ showToast('Live publishing unavailable right now'); return; }
+  const payload = {
+    name, authorId:Profile.id, authorName:Profile.name,
+    blocks: serializeBlocks(App.studio.blocks),
+    spawn: App.studio.spawn, goal: App.studio.goal,
+    updatedAt: Date.now(),
+  };
+  try{
+    if(App.studio.worldId){
+      await col.doc(App.studio.worldId).update(payload);
+    } else {
+      payload.createdAt = Date.now();
+      const ref = await col.add(payload);
+      App.studio.worldId = ref.id;
+      MyWorlds.push({ id:ref.id, name });
+      saveLocal('nb_myworlds', MyWorlds);
+    }
+    SFX.publish();
+    showToast('Published "'+name+'" to Neoblox!');
+    refreshMyWorldsForStudio();
+  }catch(e){ showToast('Publish failed — try again'); }
+}
+
+// ---- avatar preview (boot screen) ----
+let previewCtx = null;
+function initAvatarPreview(){
+  const canvas = document.getElementById('avatarPreview');
+  const w = canvas.clientWidth||360, h = canvas.clientHeight||180;
+  canvas.width = w*Math.min(devicePixelRatio||1,2); canvas.height = h*Math.min(devicePixelRatio||1,2);
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setSize(w,h,false);
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xdfefff,0x1a2036,1.1));
+  const sun = new THREE.DirectionalLight(0xffffff,0.7); sun.position.set(3,6,4); scene.add(sun);
+  const camera = new THREE.PerspectiveCamera(38, w/h, 0.1, 20);
+  camera.position.set(0,1.7,4.4);
+  const rig = buildAvatar(Profile);
+  scene.add(rig.group);
+  previewCtx = { renderer, scene, camera, rig };
+  let t=0;
+  function loop(){
+    requestAnimationFrame(loop);
+    t += 0.016;
+    previewCtx.rig.group.rotation.y = Math.sin(t*0.5)*0.5;
+    animateAvatar(previewCtx.rig, t, { speedFactor:0, jumping:false, emote:null });
+    previewCtx.renderer.render(previewCtx.scene, previewCtx.camera);
+  }
+  loop();
+}
+function refreshAvatarPreview(){
+  if(!previewCtx) return;
+  previewCtx.scene.remove(previewCtx.rig.group);
+  disposeObj(previewCtx.rig.group);
+  const rig = buildAvatar(Profile);
+  previewCtx.scene.add(rig.group);
+  previewCtx.rig = rig;
+}
+
+function buildSwatchRow(containerId, colors, key){
+  const el = document.getElementById(containerId);
+  el.innerHTML = colors.map(c=>`<span class="swatch${Profile[key]===c?' selected':''}" style="background:${c}" data-color="${c}"></span>`).join('');
+  el.querySelectorAll('.swatch').forEach(sw=>{
+    sw.addEventListener('click', ()=>{
+      Profile[key] = sw.dataset.color;
+      saveLocal('nb_profile', Profile);
+      onProfileVisualChange();
+    });
+  });
+}
+
+function buildPaletteGrid(){
+  const el = document.getElementById('paletteGrid');
+  el.innerHTML = BLOCK_TYPES.map(t=>`<div class="block-swatch${t.id==='grass'?' selected':''}" data-id="${t.id}" style="background:#${t.color.toString(16).padStart(6,'0')}"><span class="lbl">${t.label}</span></div>`).join('');
+  el.querySelectorAll('.block-swatch').forEach(sw=>{
+    sw.addEventListener('click', ()=> selectPaletteBlock(sw.dataset.id));
+  });
+}
+
+function buildEmoteBar(){
+  const el = document.getElementById('emoteBar');
+  const emotes = [ ['wave','👋','1'], ['dance','🕺','2'], ['cheer','🙌','3'], ['spin','🌀','4'] ];
+  el.innerHTML = emotes.map(e=>`<button class="btn emote-btn" data-emote="${e[0]}" title="${e[0]} (${e[2]})">${e[1]}</button>`).join('');
+  el.querySelectorAll('.emote-btn').forEach(b=> b.addEventListener('click', ()=> triggerEmote(b.dataset.emote)));
+}
+
+function handleMenuClick(){
+  if(App.mode==='studio' && App.studio.blocks.size>0){
+    document.getElementById('modalExit').hidden = false;
+  } else {
+    backToMenu();
+  }
+}
+
+function wireUI(){
+  buildSwatchRow('skinRow', SKIN_TONES, 'skin');
+  buildSwatchRow('shirtRow', OUTFIT_COLORS, 'shirt');
+  buildSwatchRow('pantsRow', TRIM_COLORS, 'pants');
+  buildSwatchRow('lockerSkinRow', SKIN_TONES, 'skin');
+  buildSwatchRow('lockerShirtRow', OUTFIT_COLORS, 'shirt');
+  buildSwatchRow('lockerPantsRow', TRIM_COLORS, 'pants');
+  buildPaletteGrid();
+  buildEmoteBar();
+  initAvatarPreview();
+
+  const nameInput = document.getElementById('nameInput');
+  nameInput.value = Profile.name;
+  nameInput.addEventListener('input', ()=>{ Profile.name = nameInput.value.trim().slice(0,16) || Profile.name; saveLocal('nb_profile', Profile); });
+
+  document.getElementById('btnPlay').addEventListener('click', ()=>{
+    Profile.name = nameInput.value.trim().slice(0,16) || Profile.name;
+    saveLocal('nb_profile', Profile);
+    syncProfileToNet();
+    ensureRenderer(); installInputOnce();
+    showScreen('hud');
+    goToLobby();
+  });
+  document.getElementById('btnStudio').addEventListener('click', ()=>{
+    Profile.name = nameInput.value.trim().slice(0,16) || Profile.name;
+    saveLocal('nb_profile', Profile);
+    syncProfileToNet();
+    ensureRenderer(); installInputOnce();
+    showScreen('hud');
+    goToStudio();
+  });
+  document.getElementById('btnBattle').addEventListener('click', ()=>{
+    Profile.name = nameInput.value.trim().slice(0,16) || Profile.name;
+    saveLocal('nb_profile', Profile);
+    syncProfileToNet();
+    ensureRenderer(); installInputOnce();
+    showScreen('hud');
+    goToBattle();
+  });
+
+  document.getElementById('btnMenu').addEventListener('click', handleMenuClick);
+  document.getElementById('lobbyMenuBtn').addEventListener('click', handleMenuClick);
+  document.getElementById('btnCancelExit').addEventListener('click', ()=>{ document.getElementById('modalExit').hidden = true; });
+  document.getElementById('btnConfirmExit').addEventListener('click', ()=>{ document.getElementById('modalExit').hidden = true; backToMenu(); });
+
+  document.getElementById('toolPlace').addEventListener('click', ()=> setStudioTool('place'));
+  document.getElementById('toolErase').addEventListener('click', ()=> setStudioTool('erase'));
+  document.getElementById('toolSpawn').addEventListener('click', ()=> setStudioTool('spawn'));
+  document.getElementById('toolGoal').addEventListener('click', ()=> setStudioTool('goal'));
+  document.getElementById('btnClearWorld').addEventListener('click', ()=>{
+    App.studio.blocks.clear(); App.studio.goal = null; App.studio.spawn = {x:0,y:1,z:0};
+    App.studio.worldId = null; App.studio.lastName = '';
+    buildStudioScene(); showToast('Cleared — starting a fresh build');
+  });
+
+  document.getElementById('btnPublish').addEventListener('click', ()=>{
+    document.getElementById('worldNameInput').value = App.studio.lastName || '';
+    document.getElementById('modalPublish').hidden = false;
+  });
+  document.getElementById('btnCancelPublish').addEventListener('click', ()=>{ document.getElementById('modalPublish').hidden = true; });
+  document.getElementById('btnConfirmPublish').addEventListener('click', ()=>{
+    const val = document.getElementById('worldNameInput').value.trim().slice(0,24);
+    if(!val){ showToast('Give your world a name'); return; }
+    App.studio.lastName = val;
+    document.getElementById('modalPublish').hidden = true;
+    publishWorld(val);
+  });
+
+  setStudioTool('place');
+
+  // ---- lobby nav: tabs / name plate / world card / locker / worlds ----
+  document.getElementById('tabRow').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.tab-btn'); if(!btn) return;
+    const tab = btn.dataset.tab;
+    if(tab==='play'){ closeLocker(); closeWorldsOverlay(); setActiveTab('play'); }
+    else if(tab==='locker'){ openLocker(); }
+    else if(tab==='worlds'){ openWorldsOverlay(); }
+    else if(tab==='studio'){ goToStudio(); }
+  });
+  document.getElementById('profileChip').addEventListener('click', openLocker);
+  document.getElementById('btnCloseLocker').addEventListener('click', closeLocker);
+  document.getElementById('btnLockerDone').addEventListener('click', closeLocker);
+  const lockerNameInput = document.getElementById('lockerNameInput');
+  lockerNameInput.addEventListener('input', ()=>{
+    Profile.name = lockerNameInput.value.trim().slice(0,16) || Profile.name;
+    saveLocal('nb_profile', Profile);
+    document.getElementById('nameInput').value = Profile.name;
+    refreshLobbyIdentityUI();
+  });
+
+  document.getElementById('btnCloseWorlds').addEventListener('click', closeWorldsOverlay);
+  document.getElementById('btnPublishCTA').addEventListener('click', ()=>{ closeWorldsOverlay(); goToStudio(); });
+
+  document.getElementById('worldPrev').addEventListener('click', ()=> cycleWorldCard(-1));
+  document.getElementById('worldNext').addEventListener('click', ()=> cycleWorldCard(1));
+  document.getElementById('worldCardPlay').addEventListener('click', playSelectedWorld);
+}
+
+// === SECTION:THUNDER BATTLE (first-person arena mode) ===
+// Rides entirely on the existing 'chat' (scope:'game') relay — no server changes needed.
+// Events are tagged with GAME_EVT_PREFIX so they never render as literal chat text (intercepted
+// in netHandleMessage before they reach the chat log). Each client is authoritative over its OWN
+// health/death (a victim applies incoming damage to itself and, on death, credits the shooter) —
+// good enough for a fun match with friends over a relay server with no game-logic backend; it is
+// not a cheat-proof competitive mode, and deliberately has no aim-assist or auto-fire — see the
+// note in battleFire() below.
+const GAME_EVT_PREFIX = 'NBGAME';
+
+const WEAPON_TYPES = {
+  blaster: { id:'blaster', label:'Blaster',         dmg:12, fireRate:4.0, range:40, color:0x4de3ff },
+  shotgun: { id:'shotgun', label:'Scatter Shotgun',  dmg:26, fireRate:1.2, range:16, color:0xffb84d },
+  sniper:  { id:'sniper',  label:'Longshot Sniper',  dmg:55, fireRate:0.8, range:90, color:0xc8ff4d },
+  rocket:  { id:'rocket',  label:'Boom Launcher',    dmg:65, fireRate:0.6, range:55, color:0xff5c72 },
+  exotic:  { id:'exotic',  label:'Thunder Cannon',   dmg:34, fireRate:6.0, range:60, color:0xffe14d },
+};
+const WEAPON_ORDER = ['blaster','shotgun','sniper','rocket','exotic'];
+const LOOT_TABLE = [ ['blaster',40], ['shotgun',24], ['sniper',16], ['rocket',12], ['exotic',8] ];
+function rollLoot(){
+  const total = LOOT_TABLE.reduce((s,e)=>s+e[1],0);
+  let r = Math.random()*total;
+  for(const [id,w] of LOOT_TABLE){ if((r-=w)<=0) return id; }
+  return 'blaster';
+}
+
+// ---- Battle Pass: a lightweight progression ladder, saved locally on this device so it
+// carries across matches. Not a real economy/store — just XP for kills & loot that unlocks
+// a weapon skin tint per tier, shown on your own viewmodel gun. ----
+const BattlePass = loadLocal('nb_battlepass', null) || { xp:0 };
+const BATTLE_PASS_TIERS = [
+  { level:1, xp:0,    reward:'Default skin',        tint:null },
+  { level:2, xp:80,   reward:'Bronze weapon skin',   tint:0xb87333 },
+  { level:3, xp:220,  reward:'Silver weapon skin',   tint:0xd7d7e0 },
+  { level:4, xp:450,  reward:'Gold weapon skin',     tint:0xffd23f },
+  { level:5, xp:800,  reward:'Neon weapon skin',     tint:0x4de3ff },
+  { level:6, xp:1300, reward:'Thunder Ace skin',     tint:0xff2d95 },
+];
+function battlePassInfo(xp){
+  let tier = BATTLE_PASS_TIERS[0], idx = 0;
+  for(let i=0;i<BATTLE_PASS_TIERS.length;i++){ if(xp>=BATTLE_PASS_TIERS[i].xp){ tier=BATTLE_PASS_TIERS[i]; idx=i; } }
+  return { tier, next: BATTLE_PASS_TIERS[idx+1]||null };
+}
+function battlePassAddXp(amount){
+  const beforeLevel = battlePassInfo(BattlePass.xp).tier.level;
+  BattlePass.xp += amount;
+  saveLocal('nb_battlepass', BattlePass);
+  const after = battlePassInfo(BattlePass.xp);
+  if(after.tier.level > beforeLevel){
+    showBanner('🎫 Battle Pass — Tier '+after.tier.level, after.tier.reward+' unlocked!');
+  }
+  updateBattleHud();
+  updateWeaponViewmodelAppearance();
+}
+
+const THUNDER_SPAWNS = [
+  {x:-10,y:1,z:-10},{x:10,y:1,z:-10},{x:-10,y:1,z:10},{x:10,y:1,z:10},
+  {x:0,y:1,z:-13},{x:0,y:1,z:13},{x:-13,y:1,z:0},{x:13,y:1,z:0},
+];
+function battlePickSpawn(){ return THUNDER_SPAWNS[Math.floor(Math.random()*THUNDER_SPAWNS.length)]; }
+
+// ---- battle bus: flies a fixed diagonal line high over the arena at match start; jump off
+// whenever you want, free-fall, then glide in. Path stays within the arena's own floor extent
+// (R=13) so there's always real ground to land on at the far end. ----
+const BUS_PATH = { from:{x:-12,y:24,z:-12}, to:{x:12,y:24,z:12}, duration:16 };
+function busPositionAt(t){
+  return {
+    x: BUS_PATH.from.x + (BUS_PATH.to.x-BUS_PATH.from.x)*t,
+    y: BUS_PATH.from.y,
+    z: BUS_PATH.from.z + (BUS_PATH.to.z-BUS_PATH.from.z)*t,
+  };
+}
+function spawnBattleBus(){
+  if(App.battleBus && App.battleBus.parent) App.battleBus.parent.remove(App.battleBus);
+  const bus = makeBus();
+  bus.scale.set(1.5,1.5,1.5);
+  App.scene.add(bus);
+  App.battleBus = bus;
+}
+
+const THUNDER_LOOT_SPOTS = [
+  {x:-6,y:1,z:-6},{x:6,y:1,z:-6},{x:-6,y:1,z:6},{x:6,y:1,z:6},
+  {x:0,y:1,z:0},{x:-11,y:1,z:0},{x:11,y:1,z:0},{x:0,y:1,z:-11},{x:0,y:1,z:11},
+  {x:-8,y:3.2,z:0},{x:8,y:3.2,z:0},
+];
+
+const THUNDER_ARENA = (function(){
+  const blocks = [];
+  const R = 13;
+  for(let x=-R;x<=R;x++) for(let z=-R;z<=R;z++) blocks.push([x,0,z, ((x+z)%7===0)?'ice':'stone']);
+  function wall(cx,cz,len,axis,h,type){
+    for(let i=0;i<len;i++) for(let y=1;y<=h;y++){
+      const x = axis==='x' ? cx+i : cx, z = axis==='z' ? cz+i : cz;
+      blocks.push([x,y,z,type]);
+    }
+  }
+  wall(-8,-8,3,'x',2,'brick'); wall(5,-8,3,'x',2,'brick');
+  wall(-8,5,3,'x',2,'brick');  wall(5,5,3,'x',2,'brick');
+  wall(-1,-1,1,'x',3,'wood');  wall(1,1,1,'x',3,'wood');
+  wall(-9,-2,1,'z',2,'neon');  wall(9,-2,1,'z',2,'neon');
+  [[-8,0],[8,0]].forEach(([sx,sz])=>{
+    for(let i=0;i<3;i++) blocks.push([sx + (sx<0?i:-i), i+1, sz, 'wood']);
+    for(let x=sx-1;x<=sx+1;x++) for(let z=sz-1;z<=sz+1;z++) blocks.push([x,3,z,'wood']);
+  });
+  return { name:'Thunder Battle', builtin:true, blocks, spawn:{x:0,y:1,z:0} };
+})();
+
+function makeLootCrateMesh(){
+  const g = new THREE.Group();
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.62,0.5,0.62), new THREE.MeshLambertMaterial({ color:0xffd23f, emissive:0x6b4d00, emissiveIntensity:0.5 }));
+  box.position.y = 0.28;
+  g.add(box);
+  return g;
+}
+function spawnLootCrates(){
+  App.battleCrates = THUNDER_LOOT_SPOTS.map((pos,i)=>{
+    const m = makeLootCrateMesh();
+    m.position.set(pos.x, pos.y-0.72, pos.z);
+    App.scene.add(m);
+    return { i, pos, mesh:m, taken:false };
+  });
+}
+
+function goToBattle(){
+  App.mode = 'battle';
+  goalReached = false;
+  App.yaw = 0.3; App.pitch = -0.05;
+  buildPlayScene(THUNDER_ARENA);
+  spawnLootCrates();
+  spawnBattleBus();
+  const busStart = busPositionAt(0);
+  spawnLocalAvatar(App.scene, { x:busStart.x, y:busStart.y, z:busStart.z });
+  App.battle = {
+    health:100, alive:true, weapon:'blaster', owned:{ blaster:true },
+    lastShot:0, buildMode:false, buildType:'wood',
+    kills:0, deaths:0, placed:[],
+    phase:'bus', busStart: App.clockT, fallVel:0,
+  };
+  App.playStart = App.clockT;
+  showHudFor('battle', { name:'Thunder Battle' });
+  ensureBattleHud(); showBattleHud(); updateBattleHud(); updateBattlePhaseHud();
+  spawnWeaponViewmodel();
+  showToast('🚌 The battle bus is flying over the arena — press SPACE to jump!');
+}
+
+function updateBattle(dt, pos){
+  const b = App.battle; if(!b || !b.alive) return;
+  (App.battleCrates||[]).forEach(c=>{
+    if(c.taken) return;
+    const dx = pos.x-c.pos.x, dz = pos.z-c.pos.z;
+    if(dx*dx+dz*dz < 1.3*1.3){
+      c.taken = true;
+      if(c.mesh) c.mesh.visible = false;
+      grantWeapon(rollLoot(), true);
+      battlePassAddXp(8);
+      netSend({ t:'chat', scope:'game', text: GAME_EVT_PREFIX+JSON.stringify({ k:'crate', i:c.i }) });
+    }
+  });
+  updateWeaponViewmodelTransform(dt);
+}
+
+// ---- battle bus intro: bus ride -> free-fall -> glide -> landed. Runs instead of the normal
+// grounded movement/camera code (see the early-return at the top of updateAvatarController)
+// until the player actually touches down, then hands off to normal battle movement. ----
+function updateBattleIntroPhase(dt){
+  const p = App.player, b = App.battle;
+  if(!p || !b) return;
+  const camDir = camDirFromYawPitch(App.yaw, App.pitch);
+  p.rig.group.visible = true;
+  if(p.rig.headPivot) p.rig.headPivot.visible = false;
+
+  if(b.phase==='bus'){
+    const t = Math.min(1, (App.clockT - b.busStart) / BUS_PATH.duration);
+    const bp = busPositionAt(t);
+    if(App.battleBus){
+      App.battleBus.position.set(bp.x, bp.y, bp.z);
+      App.battleBus.rotation.y = Math.atan2(BUS_PATH.to.x-BUS_PATH.from.x, BUS_PATH.to.z-BUS_PATH.from.z);
+    }
+    p.pos.set(bp.x, bp.y-0.9, bp.z);
+    p.vel.set(0,0,0);
+    if(App.input.jump || t>=1){
+      b.phase = 'falling'; b.fallVel = 2;
+      showToast('🪂 Jumped! Steer with WASD, free-falling...');
+    }
+  } else if(b.phase==='falling' || b.phase==='gliding'){
+    const forward = new THREE.Vector3(Math.sin(App.yaw),0,Math.cos(App.yaw));
+    const right = new THREE.Vector3(Math.sin(App.yaw+Math.PI/2),0,Math.cos(App.yaw+Math.PI/2));
+    const mv = new THREE.Vector3();
+    if(App.input.forward) mv.add(forward);
+    if(App.input.back) mv.sub(forward);
+    if(App.input.right) mv.add(right);
+    if(App.input.left) mv.sub(right);
+    if(mv.lengthSq()>0) mv.normalize();
+
+    let groundLevel = columnTopAt(p.pos.x, p.pos.z);
+    if(groundLevel===null) groundLevel = -999;
+    const heightAboveGround = p.pos.y - groundLevel;
+
+    if(groundLevel<=-900 && p.pos.y < -8){
+      // drifted off the playable arena entirely — safety net, don't fall forever
+      const sp = battlePickSpawn();
+      p.pos.set(sp.x+0.5, sp.y, sp.z+0.5);
+      b.phase = 'landed'; p.vel.set(0,0,0);
+      showToast('🎯 Landed! Fight on.');
+    } else {
+      if(b.phase==='falling' && heightAboveGround < 14){
+        b.phase = 'gliding';
+        showToast('🪂 Chute open!');
+      }
+      if(b.phase==='falling'){
+        b.fallVel = Math.min(b.fallVel + 30*dt, 26);
+        p.pos.x += mv.x*7*dt; p.pos.z += mv.z*7*dt;
+      } else {
+        b.fallVel = Math.min(b.fallVel + 8*dt, 4.5);
+        p.pos.x += mv.x*9*dt; p.pos.z += mv.z*9*dt;
+      }
+      p.pos.y -= b.fallVel*dt;
+
+      if(heightAboveGround <= 0.15){
+        p.pos.y = groundLevel + 0.05;
+        b.phase = 'landed'; p.vel.set(0,0,0);
+        showToast('🎯 Landed! Fight on.');
+      }
+    }
+  }
+
+  p.rig.group.position.copy(p.pos);
+  p.rig.group.rotation.y = App.yaw;
+  animateAvatar(p.rig, App.clockT, { speedFactor:0, jumping:true, emote:null });
+
+  const headPos = new THREE.Vector3(p.pos.x, p.pos.y+1.55, p.pos.z);
+  App.camera.position.copy(headPos);
+  App.camera.lookAt(headPos.clone().add(camDir));
+
+  updateBattlePhaseHud();
+  sendPresence();
+}
+
+let battlePhaseHudInstalled = false;
+function ensureBattlePhaseHud(){
+  if(battlePhaseHudInstalled) return; battlePhaseHudInstalled = true;
+  const el = document.createElement('div');
+  el.id = 'bhPhase';
+  el.style.cssText = 'position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:41; color:#fff; font-weight:700; font-size:15px; text-shadow:0 1px 3px rgba(0,0,0,.8); pointer-events:none; display:none; text-align:center;';
+  document.body.appendChild(el);
+}
+function updateBattlePhaseHud(){
+  ensureBattlePhaseHud();
+  const el = document.getElementById('bhPhase'); if(!el) return;
+  const b = App.battle;
+  if(!b || b.phase==='landed'){ el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if(b.phase==='bus') el.textContent = '🚌 On the battle bus — press SPACE to jump';
+  else if(b.phase==='falling') el.textContent = '🪂 Free-falling — WASD to steer';
+  else if(b.phase==='gliding') el.textContent = '🪂 Gliding in — WASD to steer';
+}
+
+function grantWeapon(id, announce){
+  const b = App.battle; if(!b || !WEAPON_TYPES[id]) return;
+  b.owned[id] = true;
+  b.weapon = id;
+  updateBattleHud();
+  updateWeaponViewmodelAppearance();
+  if(announce) showToast('🎁 Picked up the '+WEAPON_TYPES[id].label+'!');
+}
+
+// ---- first-person weapon viewmodel: a real visible gun, not just a HUD label. Positioned
+// each frame relative to the camera (rather than parented to it) so it works regardless of
+// whether the renderer expects the camera to be part of the scene graph. ----
+function makeWeaponMesh(colorHex){
+  const g = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color:colorHex, emissive:colorHex, emissiveIntensity:0.28 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.09,0.09,0.34), mat);
+  body.position.z = -0.1;
+  g.add(body);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.22,8), mat);
+  barrel.rotation.x = Math.PI/2;
+  barrel.position.set(0, 0.01, -0.36);
+  g.add(barrel);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.18,0.07), new THREE.MeshLambertMaterial({ color:0x222226 }));
+  grip.position.set(0, -0.13, 0.05);
+  grip.rotation.x = 0.3;
+  g.add(grip);
+  g.userData.mat = mat;
+  return g;
+}
+function spawnWeaponViewmodel(){
+  if(App.weaponViewmodel && App.weaponViewmodel.parent) App.weaponViewmodel.parent.remove(App.weaponViewmodel);
+  const vm = makeWeaponMesh(0x4de3ff);
+  vm.visible = false; // stays hidden until you've landed — no gun out while skydiving
+  App.scene.add(vm);
+  App.weaponViewmodel = vm;
+  App.weaponKick = 0;
+  updateWeaponViewmodelAppearance();
+}
+function updateWeaponViewmodelAppearance(){
+  const vm = App.weaponViewmodel; if(!vm || !vm.userData.mat) return;
+  const b = App.battle; if(!b) return;
+  const w = WEAPON_TYPES[b.weapon]; if(!w) return;
+  const tierInfo = battlePassInfo(BattlePass.xp);
+  const color = (tierInfo.tier.tint != null) ? tierInfo.tier.tint : w.color;
+  vm.userData.mat.color.setHex(color);
+  vm.userData.mat.emissive.setHex(color);
+}
+function updateWeaponViewmodelTransform(dt){
+  const vm = App.weaponViewmodel; const b = App.battle;
+  if(!vm || !b || !App.camera) return;
+  vm.visible = b.alive && !b.buildMode;
+  if(App.weaponKick===undefined) App.weaponKick = 0;
+  App.weaponKick *= Math.max(0, 1 - dt*10);
+  const offset = new THREE.Vector3(0.33, -0.27, -0.55 + App.weaponKick*0.12);
+  const worldOffset = offset.applyQuaternion(App.camera.quaternion);
+  vm.position.copy(App.camera.position).add(worldOffset);
+  vm.quaternion.copy(App.camera.quaternion);
+}
+
+function battleHandleClick(button){
+  const b = App.battle; if(!b || !b.alive) return;
+  if(b.buildMode){
+    if(button===0) battlePlaceBlock();
+    else if(button===2) battleBreakBlock();
+    return;
+  }
+  if(button===0) battleFire();
+}
+
+// Deliberately no aim-assist / auto-fire here: every shot is a real raycast from wherever the
+// camera is actually pointed, rate-limited by the equipped weapon's own fire rate — same rules
+// for every player. Blocks the arena itself is built from can absorb a shot (closer hit wins),
+// so cover actually works.
+function battleFire(){
+  const b = App.battle; if(!b || !b.alive) return;
+  const w = WEAPON_TYPES[b.weapon]; if(!w) return;
+  const now = performance.now();
+  const cd = 1000 / w.fireRate;
+  if(now - b.lastShot < cd) return;
+  b.lastShot = now;
+  App.weaponKick = 1;
+  RAY.setFromCamera({x:0,y:0}, App.camera);
+  const playerTargets = [];
+  Object.entries(App.remoteAvatars).forEach(([id,av])=>{ av.rig.group.userData.peerId = id; playerTargets.push(av.rig.group); });
+  const blockTargets = App.blockGroup ? App.blockGroup.children : [];
+  const hits = RAY.intersectObjects(playerTargets.concat(blockTargets), true);
+  let hitPoint = null;
+  if(hits.length && hits[0].distance <= w.range){
+    hitPoint = hits[0].point;
+    let node = hits[0].object;
+    while(node && !(node.userData && node.userData.peerId)) node = node.parent;
+    if(node && node.userData && node.userData.peerId){
+      netSend({ t:'chat', scope:'game', text: GAME_EVT_PREFIX+JSON.stringify({ k:'hit', target:node.userData.peerId, by:Net.id, byName:Profile.name, dmg:w.dmg }) });
+      showToast('🎯 Hit!');
+    }
+  }
+  spawnTracerFx(hitPoint, w);
+}
+function spawnTracerFx(point, w){
+  if(!point || !App.scene || !App.camera) return;
+  const geo = new THREE.BufferGeometry().setFromPoints([App.camera.position.clone(), point]);
+  const mat = new THREE.LineBasicMaterial({ color:w.color });
+  const line = new THREE.Line(geo, mat);
+  App.scene.add(line);
+  setTimeout(()=>{ if(App.scene) App.scene.remove(line); geo.dispose(); mat.dispose(); }, 90);
+}
+
+function battlePlaceBlock(){
+  const b = App.battle; if(!b) return;
+  if(!b.placed) b.placed = [];
+  if(b.placed.length >= 40){ showToast('Build limit reached — break one first'); return; }
+  if(!App.blockGroup || !App.worldMeshes) return;
+  RAY.setFromCamera({x:0,y:0}, App.camera);
+  const targets = App.blockGroup.children.concat(App.groundMesh ? [App.groundMesh] : []);
+  const hits = RAY.intersectObjects(targets, false);
+  if(!hits.length) return;
+  const hit = hits[0];
+  let gx,gy,gz;
+  if(hit.object.userData.gx!==undefined){
+    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+    gx = hit.object.userData.gx + Math.round(n.x);
+    gy = hit.object.userData.gy + Math.round(n.y);
+    gz = hit.object.userData.gz + Math.round(n.z);
+  } else { gx = Math.floor(hit.point.x); gz = Math.floor(hit.point.z); gy = 0; }
+  const key = blockKey(gx,gy,gz);
+  if(App.worldMeshes.has(key)) return;
+  const type = b.buildType || 'wood';
+  const m = makeBlockMesh(type);
+  m.position.set(gx+0.5, gy+0.5, gz+0.5);
+  m.userData.gx=gx; m.userData.gy=gy; m.userData.gz=gz; m.userData.battlePlaced=true;
+  App.blockGroup.add(m);
+  App.worldMeshes.set(key, m);
+  b.placed.push(key);
+  SFX.place();
+  netSend({ t:'chat', scope:'game', text: GAME_EVT_PREFIX+JSON.stringify({ k:'build', op:'place', x:gx,y:gy,z:gz, type }) });
+}
+function battleBreakBlock(){
+  if(!App.blockGroup || !App.worldMeshes) return;
+  RAY.setFromCamera({x:0,y:0}, App.camera);
+  const hits = RAY.intersectObjects(App.blockGroup.children, false);
+  if(!hits.length) return;
+  const o = hits[0].object;
+  if(!o.userData.battlePlaced){ showToast("Can't break the arena itself — only builds"); return; }
+  const key = blockKey(o.userData.gx,o.userData.gy,o.userData.gz);
+  App.blockGroup.remove(o); App.worldMeshes.delete(key);
+  const b = App.battle;
+  if(b && b.placed){ const pi = b.placed.indexOf(key); if(pi>=0) b.placed.splice(pi,1); }
+  SFX.erase();
+  netSend({ t:'chat', scope:'game', text: GAME_EVT_PREFIX+JSON.stringify({ k:'build', op:'break', x:o.userData.gx,y:o.userData.gy,z:o.userData.gz }) });
+}
+function battleApplyRemoteBuild(evt){
+  if(App.mode!=='battle' || !App.blockGroup || !App.worldMeshes) return;
+  const key = blockKey(evt.x,evt.y,evt.z);
+  if(evt.op==='place'){
+    if(App.worldMeshes.has(key)) return;
+    const m = makeBlockMesh(evt.type||'wood');
+    m.position.set(evt.x+0.5, evt.y+0.5, evt.z+0.5);
+    m.userData.gx=evt.x; m.userData.gy=evt.y; m.userData.gz=evt.z; m.userData.battlePlaced=true;
+    App.blockGroup.add(m);
+    App.worldMeshes.set(key, m);
+  } else if(evt.op==='break'){
+    const m = App.worldMeshes.get(key);
+    if(m){ App.blockGroup.remove(m); App.worldMeshes.delete(key); }
+  }
+}
+
+function battleKeydown(code){
+  const b = App.battle; if(!b) return;
+  if(code==='KeyB'){
+    b.buildMode = !b.buildMode;
+    updateBattleHud();
+    showToast(b.buildMode ? '🧱 Build mode ON' : '🔫 Weapon mode ON');
+    return;
+  }
+  const idx = ['Digit1','Digit2','Digit3','Digit4','Digit5'].indexOf(code);
+  if(idx<0) return;
+  if(b.buildMode){
+    const mats = ['wood','stone','brick','ice','neon'];
+    if(mats[idx]){ b.buildType = mats[idx]; updateBattleHud(); }
+  } else {
+    const wid = WEAPON_ORDER[idx];
+    if(wid && b.owned[wid]){ b.weapon = wid; updateBattleHud(); }
+  }
+}
+
+function handleChatCommand(text){
+  const raw = text.trim();
+  const t = raw.toLowerCase();
+
+  // /admin and /kick work in any mode (lobby, play, or battle) — moderation shouldn't be
+  // locked to one game mode. The password itself is sent as its own message type, never as
+  // visible chat text, so it never appears in anyone's chat log.
+  if(t==='/admin' || t.indexOf('/admin ')===0){
+    const arg = raw.slice(6).trim();
+    if(arg.toLowerCase()==='logout'){
+      Admin.isAdmin = false;
+      saveLocal('nb_admin_pass', null);
+      // The admin skin is exclusive to real admins — drop it (and forget it as your saved
+      // pick) the moment you're not one anymore, instead of leaving it on a no-longer-verified
+      // account or letting it silently reappear next reload.
+      if(Profile.customSkin === 'admin'){ Profile.customSkin = null; saveLocal('nb_profile', Profile); }
+      if(App.player && App.player.rig && App.player.rig.usingCustomSkin === 'admin') revertToDefaultSkin(App.player.rig);
+      syncProfileToNet();
+      showToast('Logged out of admin on this device');
+      return true;
+    }
+    if(!arg){ showToast('Usage: /admin <password>  (or /admin logout)'); return true; }
+    if(!Net.connected){ showToast('Admin requires a live server connection'); return true; }
+    LastAdminPassAttempt = arg;
+    LastAdminAuthWasAutomatic = false;
+    netSend({ t:'admin_auth', pass: arg });
+    return true;
+  }
+  if(t==='/kick' || t.indexOf('/kick ')===0){
+    const name = raw.slice(5).trim();
+    if(!Admin.isAdmin){ showToast('🔒 /kick is admin-only — use /admin <password> first'); return true; }
+    if(!name){ showToast('Usage: /kick <player name>'); return true; }
+    const target = Object.values(Net.peers).find(p=>(p.name||'').toLowerCase()===name.toLowerCase());
+    if(!target){ showToast('No player named "'+name+'" found'); return true; }
+    netSend({ t:'admin_kick', targetId: target.id });
+    return true;
+  }
+
+  // /skin — unauthenticated, purely cosmetic personal choice (same trust level as picking a
+  // skin tone or outfit color). Available names come straight from SKIN_REGISTRY so a new skin
+  // added there is automatically selectable here too, without another code change.
+  if(t==='/skin' || t.indexOf('/skin ')===0){
+    const arg = raw.slice(5).trim().toLowerCase();
+    if(!arg){
+      showToast('Usage: /skin <name> — try: ' + Object.keys(SKIN_REGISTRY).join(', ') + ', or default');
+      return true;
+    }
+    if(arg==='default' || arg==='none' || arg==='off'){
+      Profile.customSkin = null;
+      saveLocal('nb_profile', Profile);
+      // "Default" means "no personal pick of your own" — that still leaves the admin skin
+      // showing as your fallback badge if you're actually an admin, plain box otherwise.
+      if(App.player && App.player.rig){
+        if(Admin.isAdmin) attachAdminSkin(App.player.rig); else revertToDefaultSkin(App.player.rig);
+      }
+      syncProfileToNet();
+      showToast('👤 Back to the default skin');
+      return true;
+    }
+    if(!SKIN_REGISTRY[arg]){
+      showToast('No skin named "'+arg+'" — try: ' + Object.keys(SKIN_REGISTRY).join(', ') + ', or default');
+      return true;
+    }
+    // The admin skin is reserved for real, server-verified admins — otherwise anyone could
+    // just type "/skin admin" and wear the exclusive look without actually being one.
+    if(arg==='admin' && !Admin.isAdmin){
+      showToast('🔒 The admin skin is admin-only — use /admin <password> first');
+      return true;
+    }
+    Profile.customSkin = arg;
+    saveLocal('nb_profile', Profile);
+    if(App.player && App.player.rig) attachSkin(App.player.rig, arg);
+    syncProfileToNet();
+    showToast('👤 Wearing the "'+arg+'" skin');
+    return true;
+  }
+
+  if(App.mode!=='battle' || !App.battle) return false;
+  if(t==='/loot' || t==='/loot exotic'){
+    const wid = t==='/loot exotic' ? 'exotic' : rollLoot();
+    grantWeapon(wid, false);
+    showToast('🎁 You got the '+WEAPON_TYPES[wid].label+'!');
+    // A plain (non-tagged) global chat line, on purpose: this is a transparent, equally-available
+    // "cheat code" anyone in the match can type — not a hidden advantage for one account.
+    netSend({ t:'chat', scope:'global', text: Profile.name+' looted a '+WEAPON_TYPES[wid].label+'! 🎁' });
+    return true;
+  }
+  return false;
+}
+
+function battleHandleEvent(evt){
+  const b = App.battle; if(!evt || !b) return;
+  if(evt.k==='hit'){
+    if(evt.target !== Net.id || !b.alive) return;
+    b.health = Math.max(0, b.health - evt.dmg);
+    updateBattleHud();
+    flashDamage();
+    if(b.health<=0){
+      b.alive = false;
+      b.deaths = (b.deaths||0)+1;
+      updateBattleHud();
+      showBanner('💀 Eliminated', 'by '+(evt.byName||'someone')+' — respawning in 3s');
+      netSend({ t:'chat', scope:'game', text: GAME_EVT_PREFIX+JSON.stringify({ k:'ko', by:evt.by, victimName:Profile.name }) });
+      setTimeout(()=>{
+        if(App.mode!=='battle') return;
+        const sp = battlePickSpawn();
+        if(App.player){ App.player.pos.set(sp.x+0.5, sp.y, sp.z+0.5); App.player.vel.set(0,0,0); }
+        b.health = 100; b.alive = true;
+        document.getElementById('centerBanner').hidden = true;
+        updateBattleHud();
+      }, 3000);
+    }
+  } else if(evt.k==='ko'){
+    if(evt.by === Net.id){
+      b.kills = (b.kills||0)+1;
+      updateBattleHud();
+      showToast('💥 Eliminated '+(evt.victimName||'a player')+'!');
+      battlePassAddXp(30);
+    }
+  } else if(evt.k==='crate'){
+    const c = (App.battleCrates||[]).find(c=>c.i===evt.i);
+    if(c && !c.taken){ c.taken = true; if(c.mesh) c.mesh.visible = false; }
+  } else if(evt.k==='build'){
+    battleApplyRemoteBuild(evt);
+  }
+}
+
+let battleHudInstalled = false;
+function ensureBattleHud(){
+  if(battleHudInstalled) return; battleHudInstalled = true;
+  const wrap = document.createElement('div');
+  wrap.id = 'battleHud';
+  wrap.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:40;font-family:inherit;display:none;';
+  wrap.innerHTML =
+    '<div id="bhFlash" style="position:absolute;inset:0;background:#ff2d4d;opacity:0;transition:opacity .12s;"></div>' +
+    '<div style="position:absolute;left:18px;bottom:18px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);">' +
+      '<div style="font-size:12px;opacity:.85;letter-spacing:.05em;">HEALTH</div>' +
+      '<div style="width:180px;height:14px;background:rgba(255,255,255,.15);border-radius:7px;overflow:hidden;margin:3px 0 8px;">' +
+        '<div id="bhHealthBar" style="height:100%;width:100%;background:#4de3ff;"></div>' +
+      '</div>' +
+      '<div id="bhWeapon" style="font-size:15px;font-weight:700;"></div>' +
+      '<div id="bhBuild" style="font-size:12px;opacity:.85;margin-top:2px;max-width:320px;"></div>' +
+    '</div>' +
+    '<div style="position:absolute;right:18px;bottom:18px;color:#fff;text-align:right;text-shadow:0 1px 3px rgba(0,0,0,.8);">' +
+      '<div style="font-size:13px;">Kills <b id="bhKills">0</b> · Deaths <b id="bhDeaths">0</b></div>' +
+      '<div style="font-size:12px;opacity:.85;margin-top:4px;">🎫 Battle Pass Tier <b id="bhTier">1</b> <span id="bhTierReward"></span></div>' +
+      '<div style="width:150px;height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;margin:3px 0 0 auto;">' +
+        '<div id="bhXpBar" style="height:100%;width:0%;background:#ffd23f;"></div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(wrap);
+}
+function showBattleHud(){ const el=document.getElementById('battleHud'); if(el) el.style.display='block'; }
+function hideBattleHud(){ const el=document.getElementById('battleHud'); if(el) el.style.display='none'; }
+function updateBattleHud(){
+  const b = App.battle; if(!b) return;
+  const bar = document.getElementById('bhHealthBar');
+  if(bar){ bar.style.width = Math.max(0,b.health)+'%'; bar.style.background = b.health>50 ? '#4de3ff' : (b.health>20 ? '#ffb84d' : '#ff5c72'); }
+  const wEl = document.getElementById('bhWeapon');
+  if(wEl){ const w = WEAPON_TYPES[b.weapon]; wEl.textContent = w ? ('🔫 '+w.label) : ''; }
+  const bEl = document.getElementById('bhBuild');
+  if(bEl) bEl.textContent = b.buildMode ? ('🧱 Building: '+(b.buildType||'wood')+' — click to place, right-click to break') : 'Type /loot in chat for a random weapon';
+  const k = document.getElementById('bhKills'); if(k) k.textContent = b.kills||0;
+  const d = document.getElementById('bhDeaths'); if(d) d.textContent = b.deaths||0;
+  const info = battlePassInfo(BattlePass.xp);
+  const tEl = document.getElementById('bhTier'); if(tEl) tEl.textContent = info.tier.level;
+  const rEl = document.getElementById('bhTierReward'); if(rEl) rEl.textContent = info.next ? ('· next: '+info.next.reward) : '· max tier';
+  const xpBar = document.getElementById('bhXpBar');
+  if(xpBar){
+    if(info.next){
+      const span = info.next.xp - info.tier.xp;
+      const into = BattlePass.xp - info.tier.xp;
+      xpBar.style.width = Math.max(0,Math.min(100,(into/span)*100))+'%';
+    } else xpBar.style.width = '100%';
+  }
+}
+function flashDamage(){
+  const f = document.getElementById('bhFlash'); if(!f) return;
+  f.style.opacity = '0.35';
+  setTimeout(()=>{ f.style.opacity='0'; }, 140);
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  wireUI();
+  initIOSInstallPrompt();
+  registerServiceWorker();
+  await initCaps();
+  animate();
+});
+</script>
+</body>
+</html>
