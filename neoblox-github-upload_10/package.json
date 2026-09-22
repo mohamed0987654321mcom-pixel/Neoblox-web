@@ -1,0 +1,17 @@
+{
+  "name": "neoblox-server",
+  "version": "1.0.0",
+  "description": "Neoblox live server — realtime presence/multiplayer, party system, chat, and WebRTC voice signaling. Also serves the game's static files.",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}
