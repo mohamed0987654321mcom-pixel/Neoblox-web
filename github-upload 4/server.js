@@ -153,6 +153,31 @@ app.post('/api/mparadise/push', requireMparadiseKey, (req, res) => {
   res.json(result);
 });
 
+// ---- cross-play squads: team up with friends playing Storm Royale (the Roblox game or its
+// website). Storm Royale's server is the squad hub; these routes relay the signed-in Neoblox
+// player's squad actions to it over the MPARADISE link (the player's browser never talks to
+// Storm Royale directly). A Neoblox player is keyed `neoblox:<id>` on the hub; their restriction
+// flags (from an MPARADISE-linked kid account, if any) ride along so the hub can keep kids out.
+function crossIdentity(u, extra){
+  return Object.assign({ neobloxId: u.id, name: u.username, restricted: u.restricted || null }, extra || {});
+}
+async function relayCross(res, path, body){
+  try{
+    res.json(await accounts.callStorm(path, body));
+  }catch(err){
+    res.status(err.status || 502).json({ error: err.message || 'Couldn’t reach Storm Royale — try again.' });
+  }
+}
+
+app.post('/api/crossparty/create', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/create', crossIdentity(req.authedUser)));
+app.post('/api/crossparty/join', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/join', crossIdentity(req.authedUser, { code: req.body?.code })));
+app.post('/api/crossparty/leave', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/leave', { neobloxId: req.authedUser.id }));
+app.post('/api/crossparty/ready', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/ready', { neobloxId: req.authedUser.id, ready: req.body?.ready === true }));
+app.post('/api/crossparty/launch', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/launch', { neobloxId: req.authedUser.id }));
+app.post('/api/crossparty/chat', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/chat', crossIdentity(req.authedUser, { text: req.body?.text })));
+app.post('/api/crossparty/result', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/result', { neobloxId: req.authedUser.id, kills: req.body?.kills, placement: req.body?.placement, won: req.body?.won }));
+app.get('/api/crossparty/state', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/state', crossIdentity(req.authedUser, { status: 'On Neoblox' })));
+
 const avatarUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, accounts.AVATARS_DIR),

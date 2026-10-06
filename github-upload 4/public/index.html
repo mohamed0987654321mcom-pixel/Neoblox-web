@@ -503,6 +503,15 @@
   .chat-msg .who{ font-weight:700; color:var(--accent3); }
   .chat-msg.me .who{ color:var(--accent); }
   .chat-empty{ font-size:11.5px; color:var(--ink-faint); padding:8px 2px; }
+  .sq-launch{ background:rgba(255,210,63,0.16); border:1px solid #ffd23f; color:#ffe58a; font-weight:700; text-align:center; padding:8px; border-radius:8px; margin-top:8px; font-size:13px; }
+  .sq-member{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid var(--panel-border-soft); }
+  .sq-member .sq-badge{ font-size:18px; flex:none; width:24px; text-align:center; }
+  .sq-member .sq-info{ flex:1; min-width:0; }
+  .sq-member .sq-nm{ font-weight:700; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sq-member .sq-st{ font-size:11px; color:var(--ink-dim,#9fb0e0); }
+  .sq-member .sq-ready{ font-size:10px; font-weight:700; color:#0b2b12; background:#49d17a; padding:2px 6px; border-radius:6px; flex:none; }
+  .sq-result{ font-size:12px; background:rgba(255,255,255,0.04); border-radius:7px; padding:5px 9px; margin-top:4px; }
+  .sq-err{ color:#ff6b6b; font-size:11px; min-height:14px; margin-top:4px; }
   .chat-input-row{ display:flex; gap:6px; }
   .chat-input-row input{ flex:1; min-width:0; }
   .voice-row{ display:flex; align-items:center; gap:8px; }
@@ -698,6 +707,7 @@
           </div>
           <div class="acc-signed-in" id="accSignedInView" hidden>
             <div><div class="who" id="accWhoLabel">—</div><div class="tok">🪙 <span id="accTokenLabel">0</span> tokens</div></div>
+            <button class="btn small studio" id="btnOpenSquad" style="width:100%;margin-top:6px;">🌩️ Cross-play squad</button>
             <button class="btn small ghost" id="accLogoutBtn">Log out</button>
           </div>
           <div class="acc-mparadise" id="mpLinkBox" hidden style="margin-top:8px;">
@@ -982,6 +992,43 @@
   <button id="partyDock" title="Party & chat">
     💬<span class="dot" id="partyDot"></span><span class="cnt" id="partyCnt" hidden>0</span>
   </button>
+  <!-- ============ CROSS-PLAY SQUAD (team up with Storm Royale) ============ -->
+  <div class="modal-back" id="squadOverlay" hidden>
+    <div class="modal panel accent" style="width:min(440px,94vw);max-height:min(680px,88vh);overflow-y:auto;">
+      <div class="party-head">
+        <span class="t">🌩️ Cross-play squad</span>
+        <button class="icon-btn interactive" id="btnCloseSquad" style="width:26px;height:26px;">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink-dim,#9fb0e0);padding:4px 2px;">Team up with friends playing Storm Royale — the Roblox game or its website. Chat, ready up and launch together. You each play the match on your own platform, then compare results.</div>
+      <div id="sqOut">
+        <div class="party-row"><button class="btn small primary" id="btnSqCreate" style="flex:1;">➕ Create a squad</button></div>
+        <div class="party-row" style="margin-top:8px;"><input type="text" id="sqJoinCode" placeholder="Squad code" maxlength="8" style="text-transform:uppercase;"><button class="btn small ghost" id="btnSqJoin">Join</button></div>
+        <div class="sq-err" id="sqOutErr"></div>
+      </div>
+      <div id="sqIn" hidden>
+        <div class="party-row" style="align-items:center;margin-top:4px;">
+          <div style="flex:1;font-size:12px;color:var(--ink-dim);">Code: <b id="sqCodeLabel" style="color:var(--accent3);letter-spacing:0.08em;">—</b></div>
+          <button class="btn small ghost" id="btnSqCopy">Copy</button>
+          <button class="btn small danger" id="btnSqLeave">Leave</button>
+        </div>
+        <div class="sq-launch" id="sqLaunch" hidden>🚀 LAUNCH! Jump into a match now.</div>
+        <div class="party-members" id="sqMembers" style="margin-top:8px;"></div>
+        <div class="party-row" style="margin-top:8px;">
+          <button class="btn small studio" id="btnSqReady" style="flex:1;">Ready up</button>
+          <button class="btn small primary" id="btnSqLaunch" hidden>🚀 Launch</button>
+        </div>
+        <div id="sqResults" hidden style="margin-top:8px;"></div>
+        <div class="chat-log" id="sqChatLog" style="margin-top:10px;"><div class="chat-empty">No messages yet — say hi!</div></div>
+        <div class="chat-input-row" style="margin-top:6px;">
+          <input type="text" id="sqChatInput" placeholder="Message…" maxlength="200">
+          <button class="btn small primary" id="btnSqSend">Send</button>
+        </div>
+        <div class="sq-err" id="sqChatErr"></div>
+      </div>
+      <div style="font-size:11px;color:var(--ink-dim);padding-top:4px;">🛡️ Squad chat is checked by the same AI moderator Storm Royale uses. Kid-linked accounts can't use cross-play squads.</div>
+    </div>
+  </div>
+
   <button id="musicDock" title="Lobby music">🎵</button>
   <button id="tokenDock" title="Quests &amp; tokens" hidden>🪙 <span id="tokenDockCount">0</span></button>
   <div class="panel accent" id="questsPanel" hidden>
@@ -3969,6 +4016,86 @@ function initAccountUI(){
       showToast('Unlinked from Storm Royale.');
     }catch(e){ showToast(e.message || 'Could not unlink.'); }
   });
+
+  // ---- cross-play squad: team up with friends playing Storm Royale (the Roblox game or its
+  // website). The browser only talks to this Neoblox server (/api/crossparty/*); the server
+  // relays to Storm Royale's squad hub over the MPARADISE link. Polling keeps it live while open.
+  (function(){
+    const overlay = document.getElementById('squadOverlay');
+    if(!overlay) return;
+    const SURFACE = { storm:{emoji:'🌩️',label:'Storm Royale'}, roblox:{emoji:'🧱',label:'Roblox'}, neoblox:{emoji:'🟦',label:'Neoblox'} };
+    const $ = (id)=>document.getElementById(id);
+    let timer = null, lastLaunch = 0;
+    function open(){
+      if(!Session.token){ showToast('Log in first to squad up.'); return; }
+      overlay.hidden = false;
+      poll();
+      timer = setInterval(poll, 3000);
+    }
+    function close(){ overlay.hidden = true; clearInterval(timer); timer = null; }
+    const call = (path, body)=> apiFetch(path, { method:'POST', body: JSON.stringify(body||{}) });
+    async function poll(){
+      try{
+        const r = await fetch('/api/crossparty/state', { headers: Session.token ? { 'Authorization':'Bearer '+Session.token } : {} });
+        if(r.ok) render(await r.json());
+      }catch(e){}
+    }
+    function render(d){
+      const inSquad = !!(d && d.inSquad);
+      $('sqOut').hidden = inSquad;
+      $('sqIn').hidden = !inSquad;
+      if(!inSquad) return;
+      $('sqCodeLabel').textContent = d.code;
+      const launchOn = !!d.launch;
+      $('sqLaunch').hidden = !launchOn;
+      if(launchOn && d.launch.at > lastLaunch){ lastLaunch = d.launch.at; showToast('🚀 Squad launched — jump into a match!'); }
+      const mem = $('sqMembers'); mem.innerHTML = '';
+      (d.members||[]).forEach(m=>{
+        const s = SURFACE[m.surface] || { emoji:'🎮', label:m.surface };
+        const row = document.createElement('div'); row.className = 'sq-member';
+        row.innerHTML = '<span class="sq-badge"></span><div class="sq-info"><div class="sq-nm"></div><div class="sq-st"></div></div>';
+        const badge = row.querySelector('.sq-badge'); badge.textContent = s.emoji; badge.title = s.label;
+        row.querySelector('.sq-nm').textContent = m.name + (m.leader?' 👑':'') + (m.isYou?' (you)':'');
+        row.querySelector('.sq-st').textContent = m.status || 'In lobby';
+        if(m.ready){ const r=document.createElement('span'); r.className='sq-ready'; r.textContent='READY'; row.appendChild(r); }
+        mem.appendChild(row);
+      });
+      const me = (d.members||[]).find(m=>m.isYou);
+      $('btnSqReady').textContent = me && me.ready ? 'Not ready' : 'Ready up';
+      $('btnSqReady').dataset.ready = me && me.ready ? '1':'0';
+      $('btnSqLaunch').hidden = !d.isLeader;
+      const resWrap = $('sqResults');
+      if(d.results && d.results.length){
+        resWrap.hidden = false;
+        resWrap.innerHTML = '<div style="font-size:11px;color:var(--ink-dim);font-weight:700;">LAST MATCH</div>';
+        d.results.forEach(r=>{ const el=document.createElement('div'); el.className='sq-result'; el.textContent=(r.won?'🏆 ':'#'+r.placement+' ')+r.name+' — '+r.kills+' elim'+(r.kills===1?'':'s'); resWrap.appendChild(el); });
+      } else resWrap.hidden = true;
+      const log = $('sqChatLog');
+      if(!d.chat || !d.chat.length){ log.innerHTML = '<div class="chat-empty">No messages yet — say hi!</div>'; }
+      else {
+        log.innerHTML = '';
+        d.chat.forEach(c=>{
+          const el = document.createElement('div'); el.className = 'chat-msg';
+          if(c.system){ el.style.color = 'var(--ink-dim)'; el.textContent = c.text; }
+          else { const who=document.createElement('span'); who.className='who'; who.textContent=(SURFACE[c.surface]?SURFACE[c.surface].emoji:'')+' '+c.name+': '; el.appendChild(who); el.appendChild(document.createTextNode(c.text)); }
+          log.appendChild(el);
+        });
+        log.scrollTop = log.scrollHeight;
+      }
+    }
+    const openBtn = $('btnOpenSquad');
+    if(openBtn) openBtn.addEventListener('click', open);
+    $('btnCloseSquad').addEventListener('click', close);
+    $('btnSqCreate').addEventListener('click', async ()=>{ $('sqOutErr').textContent=''; try{ render((await call('/api/crossparty/create')).squad); }catch(e){ $('sqOutErr').textContent = e.message; } });
+    $('btnSqJoin').addEventListener('click', async ()=>{ $('sqOutErr').textContent=''; try{ render((await call('/api/crossparty/join',{ code: $('sqJoinCode').value.trim() })).squad); $('sqJoinCode').value=''; }catch(e){ $('sqOutErr').textContent = e.message; } });
+    $('btnSqLeave').addEventListener('click', async ()=>{ try{ await call('/api/crossparty/leave'); render({ inSquad:false }); }catch(e){} });
+    $('btnSqCopy').addEventListener('click', ()=>{ if(navigator.clipboard) navigator.clipboard.writeText($('sqCodeLabel').textContent).then(()=>showToast('Code copied')); });
+    $('btnSqReady').addEventListener('click', async ()=>{ const ready = $('btnSqReady').dataset.ready!=='1'; try{ render((await call('/api/crossparty/ready',{ ready })).squad); }catch(e){ showToast(e.message); } });
+    $('btnSqLaunch').addEventListener('click', async ()=>{ try{ render((await call('/api/crossparty/launch')).squad); }catch(e){ showToast(e.message); } });
+    function send(){ const t=$('sqChatInput').value.trim(); if(!t) return; $('sqChatErr').textContent=''; call('/api/crossparty/chat',{ text:t }).then(r=>{ $('sqChatInput').value=''; render(r.squad); }).catch(e=>{ $('sqChatErr').textContent = e.message; }); }
+    $('btnSqSend').addEventListener('click', send);
+    $('sqChatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
+  })();
 
   // ---- persistent token dock + quests panel ----
   const tokenDock = document.getElementById('tokenDock');

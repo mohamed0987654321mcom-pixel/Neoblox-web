@@ -316,10 +316,27 @@ async function pushTokensToStorm(u){
   }catch(e){ console.warn('[mparadise] push to Storm Royale failed:', e.message); }
 }
 
+// Generic server-to-server call to Storm Royale's MPARADISE API (used by the cross-play squad
+// relay in server.js). Same shared-secret auth as pushTokensToStorm; throws with the upstream
+// error message + status so the route can pass it straight back to the Neoblox player.
+async function callStorm(path, body){
+  if(!MPARADISE_LINK_KEY) throw Object.assign(new Error('Cross-play isn’t set up on this server yet.'), { status: 503 });
+  const res = await fetch(STORM_ROYALE_URL + path, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-mparadise-key': MPARADISE_LINK_KEY },
+    signal: AbortSignal.timeout(8000),
+    body: JSON.stringify(body || {}),
+  });
+  const data = await res.json().catch(() => null);
+  if(!res.ok) throw Object.assign(new Error((data && data.error) || ('Storm Royale ' + res.status)), { status: res.status, data });
+  return data;
+}
+
 module.exports = {
   AVATARS_DIR,
   register, login, getUser, createSession, userForToken, publicUser,
   noteLogin, noteChat, noteWorldVisit, noteMove, notePartyJoin, noteGVoiceJoin, noteAvatarUpload,
   claimQuest, saveNow, markDirty,
   MPARADISE_LINK_KEY, createLinkCode, redeemLinkCode, unlinkStorm, applyStormPush, pushTokensToStorm,
+  STORM_ROYALE_URL, callStorm,
 };
