@@ -40,7 +40,7 @@ function saveNow(){
 // instead, plus immediately after anything a player is actively waiting on (register/login/
 // claim/avatar upload all call saveNow() directly too).
 setInterval(saveNow, 15000);
-process.on('SIGTERM', saveNow);
+process.on('SIGTERM', () => { saveNow(); process.exit(0); });
 process.on('SIGINT', () => { saveNow(); process.exit(0); });
 
 const byId = new Map();

@@ -176,6 +176,15 @@ app.post('/api/crossparty/ready', requireAuth, (req, res) => relayCross(res, '/a
 app.post('/api/crossparty/launch', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/launch', { neobloxId: req.authedUser.id }));
 app.post('/api/crossparty/chat', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/chat', crossIdentity(req.authedUser, { text: req.body?.text })));
 app.post('/api/crossparty/result', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/result', { neobloxId: req.authedUser.id, kills: req.body?.kills, placement: req.body?.placement, won: req.body?.won }));
+// ---- tournaments: the leaderboard lives on Storm Royale (Roblox + Neoblox results together).
+// Anyone can look; logged-in players also get their own rank.
+app.get('/api/tournament', (req, res) => {
+  const h = req.headers.authorization || '';
+  const u = h.startsWith('Bearer ') ? accounts.userForToken(h.slice(7)) : null;
+  const body = u ? { neobloxId: u.id, restricted: u.restricted || null } : {};
+  if(req.query.id) body.id = String(req.query.id).slice(0, 12);
+  relayCross(res, '/api/mparadise/tournament', body);
+});
 app.get('/api/crossparty/state', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/state', crossIdentity(req.authedUser, { status: 'On Neoblox' })));
 
 const avatarUpload = multer({
@@ -327,6 +336,131 @@ setInterval(() => {
   }
 }, HEARTBEAT_MS);
 
+// ---- Thunder Battle rounds -------------------------------------------------------------------
+// Thunder Battle's combat runs in the players' browsers (each client applies hits and storm damage
+// to itself and announces its own eliminations), so on its own there was no match end, no
+// placement, and nothing a leaderboard could trust. The server now runs ROUNDS for everyone in the
+// battle world: one shared clock (so the storm closes at the same time for everybody), its own
+// count of eliminations from the relayed 'ko' events — with limits that make farming with a second
+// account pointless — and placements at the end. Logged-in players' results then go to Storm
+// Royale's cross-platform tournament (and to their squad, if they're in one).
+const GAME_EVT_PREFIX = 'NBGAME';
+const BATTLE_WORLD = 'battle';
+const ROUND_MS = Number(process.env.BATTLE_ROUND_MS) || 180000;
+const BREAK_MS = Number(process.env.BATTLE_BREAK_MS) || 8000;
+const MAX_HIT_DMG = 65;        // the strongest weapon (Boom Launcher)
+const MAX_HITS_PER_SEC = 8;
+const MAX_KILLS_PER_PAIR = 3;  // the same victim can only feed the same killer 3 times a round
+const MIN_DEATH_GAP_MS = Number(process.env.BATTLE_DEATH_GAP_MS) || 2500; // respawning takes 3 s
+const battle = { roundId: 0, state: 'idle', startedAt: 0, endsAt: 0, breakUntil: 0, stats: new Map() };
+
+function battlePlayers(){ return [...players.values()].filter(p => p.world === BATTLE_WORLD); }
+function battleStat(p){
+  let s = battle.stats.get(p.id);
+  if(!s){ s = { kills:0, deaths:0, lastDeathAt:0, pair:new Map() }; battle.stats.set(p.id, s); }
+  s.name = p.name; s.userId = p.userId;
+  return s;
+}
+function battleRoundMsg(){
+  const now = Date.now();
+  return {
+    t:'battle_round', roundId: battle.roundId, state: battle.state, durationMs: ROUND_MS,
+    elapsedMs: battle.state === 'live' ? now - battle.startedAt : 0,
+    nextInMs: battle.state === 'break' ? Math.max(0, battle.breakUntil - now) : 0,
+  };
+}
+function startBattleRound(){
+  battle.roundId += 1;
+  battle.state = 'live';
+  battle.startedAt = Date.now();
+  battle.endsAt = battle.startedAt + ROUND_MS;
+  battle.stats = new Map();
+  const here = battlePlayers();
+  here.forEach(battleStat);
+  const msg = battleRoundMsg();
+  here.forEach(p => send(p.ws, msg));
+}
+function endBattleRound(){
+  // placed: everyone still in the arena at the bell, by eliminations, then fewest deaths
+  const rows = battlePlayers().map(p => { const s = battleStat(p); return { id:p.id, name:p.name, userId:p.userId, kills:s.kills, deaths:s.deaths }; });
+  rows.sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
+  let place = 0;
+  rows.forEach((r, i) => { if(i === 0 || r.kills !== rows[i-1].kills || r.deaths !== rows[i-1].deaths) place = i + 1; r.placement = place; });
+  const tiedTop = rows.length > 1 && rows[1].placement === 1;
+  rows.forEach(r => { r.won = r.placement === 1 && r.kills > 0 && !tiedTop; });
+  battle.state = 'break';
+  battle.breakUntil = Date.now() + BREAK_MS;
+  const msg = { t:'battle_round_end', roundId: battle.roundId, size: rows.length, nextInMs: BREAK_MS,
+    results: rows.map(r => ({ id:r.id, name:r.name, kills:r.kills, deaths:r.deaths, placement:r.placement, won:r.won })) };
+  battlePlayers().forEach(p => send(p.ws, msg));
+  if(rows.length >= 2) rows.forEach(r => reportBattleResult(r, rows.length)); // a solo round isn't a match
+}
+function reportBattleResult(r, size){
+  if(!r.userId) return; // guests can play, but only accounts go on the leaderboard
+  const u = accounts.getUser(r.userId);
+  if(!u) return;
+  accounts.callStorm('/api/mparadise/tournament/result', { neobloxId:u.id, name:u.username, restricted:u.restricted || null, kills:r.kills, placement:r.placement, size, won:r.won }).catch(() => {});
+  // shows in their cross-play squad's "last match" too (the hub ignores it if they aren't in one)
+  accounts.callStorm('/api/mparadise/party/result', { neobloxId:u.id, kills:r.kills, placement:r.placement, won:r.won }).catch(() => {});
+}
+setInterval(() => {
+  if(!battlePlayers().length){ battle.state = 'idle'; battle.stats = new Map(); return; }
+  const now = Date.now();
+  if(battle.state === 'idle') startBattleRound();
+  else if(battle.state === 'live' && now >= battle.endsAt) endBattleRound();
+  else if(battle.state === 'break' && now >= battle.breakUntil) startBattleRound();
+}, 500);
+
+function battleEnter(player){
+  if(battle.state === 'idle') return startBattleRound(); // tells everyone in the arena, them included
+  if(battle.state === 'live') battleStat(player);
+  send(player.ws, battleRoundMsg());
+}
+
+// Thunder Battle's game events ride on 'game'-scope chat. The server now checks the two that decide
+// who wins — hits and eliminations — before passing anything on, and rewrites them with the names
+// it knows (so nobody can put words or kills in someone else's mouth).
+function handleGameEvent(player, raw){
+  if(raw.length > 2000) return;
+  let evt;
+  try{ evt = JSON.parse(raw.slice(GAME_EVT_PREFIX.length)); }catch(e){ return; }
+  if(!evt || typeof evt !== 'object' || typeof evt.k !== 'string') return;
+  const now = Date.now();
+  if(evt.k === 'hit'){
+    if(player.world !== BATTLE_WORLD || battle.state === 'break') return;
+    const dmg = Number(evt.dmg);
+    if(!(dmg > 0 && dmg <= MAX_HIT_DMG)) return;
+    const target = players.get(String(evt.target || ''));
+    if(!target || target.world !== BATTLE_WORLD || target.id === player.id) return;
+    player.hitTimes = (player.hitTimes || []).filter(t => now - t < 1000);
+    if(player.hitTimes.length >= MAX_HITS_PER_SEC) return;
+    player.hitTimes.push(now);
+    evt = { k:'hit', target:target.id, by:player.id, byName:player.name, dmg };
+  } else if(evt.k === 'ko'){
+    if(player.world !== BATTLE_WORLD) return;
+    // the sender is always the one eliminated; the killer has to be someone else in the arena
+    const k = evt.by ? players.get(String(evt.by)) : null;
+    const killer = k && k.world === BATTLE_WORLD && k.id !== player.id ? k : null;
+    if(battle.state === 'live'){
+      const v = battleStat(player);
+      if(now - v.lastDeathAt >= MIN_DEATH_GAP_MS){
+        v.lastDeathAt = now;
+        v.deaths += 1;
+        if(killer){
+          const ks = battleStat(killer);
+          const n = ks.pair.get(player.id) || 0;
+          if(n < MAX_KILLS_PER_PAIR){ ks.pair.set(player.id, n + 1); ks.kills += 1; }
+        }
+      }
+    }
+    evt = { k:'ko', by: killer ? killer.id : null, byName: killer ? killer.name : null, victimName: player.name };
+  } else if(evt.k === 'crate'){
+    evt = { k:'crate', i: Math.floor(Number(evt.i)) || 0 };
+  } // 'build' and anything else passes through unchanged
+  // everyone else in the world (the sender already applied it locally)
+  broadcastWorld(player.world, { t:'chat', scope:'game', from:player.id, name:player.name, text: GAME_EVT_PREFIX + JSON.stringify(evt), ts: now }, player.id);
+}
+
 wss.on('connection', (ws) => {
   const id = makeId();
   // world starts as null (not 'lobby') — the player is still on the name-entry screen until
@@ -389,6 +523,7 @@ wss.on('connection', (ws) => {
           }
           broadcastWorld(prevWorld, { t:'player_leave_world', id, world: prevWorld }, id);
           broadcastWorld(player.world, { t:'player_join_world', id, name:player.name, avatar:player.avatar, world:player.world, isAdmin:player.isAdmin }, id);
+          if(player.world === BATTLE_WORLD) battleEnter(player);
         }
         broadcastWorld(player.world, { t:'presence', id, x:player.x,y:player.y,z:player.z, ry:player.ry, anim:player.anim, world:player.world }, id);
         break;
@@ -422,6 +557,10 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'chat': {
+        if(msg.scope === 'game' && typeof msg.text === 'string' && msg.text.indexOf(GAME_EVT_PREFIX) === 0){
+          handleGameEvent(player, msg.text);
+          break;
+        }
         const text = String(msg.text || '').slice(0, 500);
         if(!text.trim()) break;
         if(player.userId){

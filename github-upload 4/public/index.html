@@ -127,7 +127,13 @@
     flex-direction:column;
     gap:28px;
     padding:24px;
+    /* scroll when the menu is taller than the window (laptops, phones) instead of cutting off the
+       buttons at the bottom; the auto margins below still center it whenever it does fit */
+    overflow-y:auto;
+    justify-content:flex-start;
   }
+  #screen-boot > :first-child{ margin-top:auto; }
+  #screen-boot > :last-child{ margin-bottom:auto; }
   .brandmark{ text-align:center; }
   .brandmark .logo{
     font-size:clamp(52px,10vw,108px);
@@ -512,6 +518,19 @@
   .sq-member .sq-ready{ font-size:10px; font-weight:700; color:#0b2b12; background:#49d17a; padding:2px 6px; border-radius:6px; flex:none; }
   .sq-result{ font-size:12px; background:rgba(255,255,255,0.04); border-radius:7px; padding:5px 9px; margin-top:4px; }
   .sq-err{ color:#ff6b6b; font-size:11px; min-height:14px; margin-top:4px; }
+  .cup-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:4px 2px; }
+  .cup-head b{ font-size:16px; color:#ffd23f; }
+  .cup-head span{ font-size:12px; color:var(--ink-dim,#9fb0e0); white-space:nowrap; }
+  .cup-others{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0; }
+  .cup-scoring{ font-size:11px; color:var(--ink-dim,#9fb0e0); line-height:1.4; margin:4px 2px 8px; }
+  .cup-you{ font-size:13px; background:rgba(255,210,63,0.12); border:1px solid rgba(255,210,63,0.4); border-radius:8px; padding:7px 10px; margin-bottom:8px; }
+  .cup-you.dim{ background:rgba(255,255,255,0.04); border-color:var(--panel-border-soft); color:var(--ink-dim,#9fb0e0); font-size:12px; }
+  .cup-row{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.03); margin-top:4px; font-size:12.5px; }
+  .cup-row.me{ background:rgba(255,210,63,0.16); }
+  .cup-row .r{ width:30px; font-weight:800; color:#ffd23f; flex:none; }
+  .cup-row .n{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+  .cup-row .p{ flex:none; font-weight:800; }
+  .cup-row .m{ flex:none; font-size:11px; color:var(--ink-dim,#9fb0e0); width:60px; text-align:right; }
   .chat-input-row{ display:flex; gap:6px; }
   .chat-input-row input{ flex:1; min-width:0; }
   .voice-row{ display:flex; align-items:center; gap:8px; }
@@ -751,6 +770,7 @@
         <button class="btn primary" id="btnPlay">Enter Lobby</button>
         <button class="btn studio" id="btnStudio">NeoStudio</button>
         <button class="btn" id="btnBattle" style="background:#3a2f08; border-color:#ffd23f; color:#ffe58a;">⚡ Thunder Battle</button>
+        <button class="btn" id="btnCup" style="background:#2a1f45; border-color:#b88cff; color:#e2d2ff;">🏆 Tournament</button>
       </div>
     </div>
     <div class="boot-foot">
@@ -992,6 +1012,17 @@
   <button id="partyDock" title="Party & chat">
     💬<span class="dot" id="partyDot"></span><span class="cnt" id="partyCnt" hidden>0</span>
   </button>
+  <!-- ============ TOURNAMENT (Roblox + Neoblox results on one leaderboard) ============ -->
+  <div class="modal-back" id="cupOverlay" hidden>
+    <div class="modal panel accent" style="width:min(460px,94vw);max-height:min(700px,90vh);overflow-y:auto;">
+      <div class="party-head">
+        <span class="t">🏆 Tournament</span>
+        <button class="icon-btn interactive" id="btnCloseCup" style="width:26px;height:26px;">✕</button>
+      </div>
+      <div id="cupBody"><div class="chat-empty">Loading…</div></div>
+    </div>
+  </div>
+
   <!-- ============ CROSS-PLAY SQUAD (team up with Storm Royale) ============ -->
   <div class="modal-back" id="squadOverlay" hidden>
     <div class="modal panel accent" style="width:min(440px,94vw);max-height:min(680px,88vh);overflow-y:auto;">
@@ -1634,6 +1665,12 @@ function netHandleMessage(msg){
         break;
       }
       netEmit('chat', msg);
+      break;
+    case 'battle_round':
+      battleOnRound(msg);
+      break;
+    case 'battle_round_end':
+      battleOnRoundEnd(msg);
       break;
     case 'party_update':
       Net.party = { code:msg.code, leader:msg.leader, members:msg.members };
@@ -4097,6 +4134,64 @@ function initAccountUI(){
     $('sqChatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
   })();
 
+  // ---- tournament leaderboard: Storm Royale's cross-platform cup (Roblox matches + Thunder Battle
+  // rounds on one board). Guests can look; logged-in players also see their own rank. ----
+  (function(){
+    const overlay = document.getElementById('cupOverlay');
+    const openBtn = document.getElementById('btnCup');
+    if(!overlay || !openBtn) return;
+    const body = document.getElementById('cupBody');
+    let tab = 'players', data = null, shownId = null, timer = null;
+    const BADGE = { roblox:'🧱', neoblox:'🟦' };
+    function timeLeft(ms){
+      const m = Math.max(0, Math.floor(ms/60000)), d = Math.floor(m/1440), h = Math.floor((m%1440)/60);
+      return d ? (d+'d '+h+'h') : h ? (h+'h '+(m%60)+'m') : ((m%60)+'m');
+    }
+    async function load(id){
+      try{
+        const r = await fetch('/api/tournament'+(id ? ('?id='+encodeURIComponent(id)) : ''), { headers: Session.token ? { 'Authorization':'Bearer '+Session.token } : {} });
+        const d = await r.json().catch(()=>null);
+        if(!r.ok || !d) throw new Error((d && d.error) || 'The tournament is unavailable right now.');
+        data = d; shownId = d.board ? d.board.tournament.id : null;
+        render();
+      }catch(e){ body.innerHTML = '<div class="chat-empty">'+nbEsc(e.message)+'</div>'; }
+    }
+    function render(){
+      const b = data && data.board;
+      if(!b){ body.innerHTML = '<div class="chat-empty">No tournament right now — check back soon!</div>'; return; }
+      const t = b.tournament;
+      const when = t.active ? ('⏳ '+timeLeft(t.endsInMs)+' left') : t.upcoming ? ('starts in '+timeLeft(t.startsInMs)) : 'finished';
+      let h = '<div class="cup-head"><b>'+nbEsc(t.name)+'</b><span>'+when+'</span></div>';
+      const others = (data.tournaments||[]).filter(x => x.id !== t.id).slice(0, 4);
+      if(others.length) h += '<div class="cup-others">'+others.map(o => '<button class="btn small ghost" data-cup="'+o.id+'">'+nbEsc(o.name)+(o.active ? '' : o.upcoming ? ' (soon)' : ' (ended)')+'</button>').join('')+'</div>';
+      h += '<div class="cup-scoring">'+nbEsc(b.scoring.text)+'. Roblox matches and Thunder Battle rounds both count.</div>';
+      if(b.you) h += '<div class="cup-you">You: <b>#'+b.you.rank+'</b> · '+b.you.score+' pts · '+b.you.matches+' match'+(b.you.matches===1?'':'es')+'</div>';
+      else if(!Session.user) h += '<div class="cup-you dim">Log in and play Thunder Battle rounds (2+ players) to get on the board.</div>';
+      else if(b.canCompete) h += '<div class="cup-you dim">Play Thunder Battle rounds with 2+ players to get on the board.</div>';
+      else h += '<div class="cup-you dim">This account can\u2019t be on public leaderboards.</div>';
+      if(Session.user && b.canCompete && !(Session.user.mparadise && Session.user.mparadise.linked)) h += '<div class="cup-scoring">Tip: link your Storm Royale account so your Roblox matches add to the same score.</div>';
+      h += '<div class="chat-tabs"><div class="chat-tab'+(tab==='players'?' active':'')+'" data-tab="players">PLAYERS ('+b.totalPlayers+')</div><div class="chat-tab'+(tab==='teams'?' active':'')+'" data-tab="teams">SQUADS ('+b.totalTeams+')</div></div>';
+      if(tab === 'players'){
+        h += b.players.length ? b.players.map(p => '<div class="cup-row'+(p.you?' me':'')+'"><span class="r">#'+p.rank+'</span><span class="n">'+(p.surfaces||[]).map(x=>BADGE[x]||'').join('')+' '+nbEsc(p.name)+'</span><span class="m">'+p.matches+' played</span><span class="p">'+p.score+'</span></div>').join('')
+          : '<div class="chat-empty">Nobody has scored yet — be the first!</div>';
+      } else {
+        h += b.teams.length ? b.teams.map(x => '<div class="cup-row'+(x.you?' me':'')+'"><span class="r">#'+x.rank+'</span><span class="n">'+(x.crossPlatform?'🌐 ':'')+nbEsc(x.members.join(' + '))+'</span><span class="m">'+x.matches+' played</span><span class="p">'+x.score+'</span></div>').join('')
+          : '<div class="chat-empty">No squad has scored yet. Results earned in a cross-play squad of 2+ count for the squad.</div>';
+      }
+      body.innerHTML = h;
+      body.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', ()=>{ tab = el.dataset.tab; render(); }));
+      body.querySelectorAll('[data-cup]').forEach(el => el.addEventListener('click', ()=> load(el.dataset.cup)));
+    }
+    openBtn.addEventListener('click', ()=>{
+      overlay.hidden = false;
+      body.innerHTML = '<div class="chat-empty">Loading…</div>';
+      load(shownId);
+      clearInterval(timer);
+      timer = setInterval(()=> load(shownId), 15000);
+    });
+    document.getElementById('btnCloseCup').addEventListener('click', ()=>{ overlay.hidden = true; clearInterval(timer); timer = null; });
+  })();
+
   // ---- persistent token dock + quests panel ----
   const tokenDock = document.getElementById('tokenDock');
   const questsPanel = document.getElementById('questsPanel');
@@ -5439,6 +5534,7 @@ function goToBattle(){
   updateStormHud(stormStateAt(0), 0, busPositionAt(0));
   spawnWeaponViewmodel();
   showToast('🚌 The battle bus is flying over the island — press SPACE to jump!');
+  if(pendingBattleRound) battleOnRound(pendingBattleRound);
 }
 
 // Shield absorbs damage before health does, whatever the source (a weapon hit or the storm) —
@@ -5499,10 +5595,11 @@ function updateBattle(dt, pos){
   const storm = stormStateAt(elapsed);
   updateStormVisual(storm.radius);
   updateStormHud(storm, elapsed, pos);
+  updateRoundHud();
   if(!b.alive){ updateWeaponViewmodelTransform(dt); return; }
 
   const distFromCenter = Math.hypot(pos.x-STORM_CENTER.x, pos.z-STORM_CENTER.z);
-  if(distFromCenter > storm.radius && storm.damage>0){
+  if(!b.inBreak && distFromCenter > storm.radius && storm.damage>0){
     battleApplyDamage(storm.damage*dt);
     if(App.clockT-(b.lastStormFlash||0) > 0.6){ flashDamage(); b.lastStormFlash = App.clockT; showToast('⚡ Outside the storm circle — get back in!'); }
     if(b.health<=0) battleEliminate(null, null);
@@ -6116,6 +6213,78 @@ function battleHandleEvent(evt){
   }
 }
 
+// ---- server-run rounds (see server.js): one clock for everybody in the arena, the server's own
+// count of eliminations, and placements at the end. Logged-in players' rounds count for the
+// cross-platform tournament on Storm Royale. ----
+let pendingBattleRound = null;
+function nbEsc(t){ return String(t==null?'':t).replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
+function battleOnRound(msg){
+  const b = App.battle;
+  if(App.mode !== 'battle' || !b){ pendingBattleRound = msg; return; }
+  pendingBattleRound = null;
+  if(msg.state === 'break'){
+    b.inBreak = true;
+    b.roundEndsAt = null;
+    b.nextRoundAt = App.clockT + (msg.nextInMs||0)/1000;
+    return;
+  }
+  const isNew = b.roundId != null && b.roundId !== msg.roundId;
+  b.inBreak = false;
+  b.nextRoundAt = null;
+  b.matchStart = App.clockT - (msg.elapsedMs||0)/1000; // the storm closes on the shared clock
+  b.roundEndsAt = App.clockT + Math.max(0, (msg.durationMs||0) - (msg.elapsedMs||0))/1000;
+  b.stormWarnedPhase = -1;
+  const board = document.getElementById('bhRoundBoard'); if(board) board.style.display = 'none';
+  if(isNew){
+    // fresh round: full health, fresh count, and (if you've already landed) a new spot
+    b.kills = 0; b.deaths = 0; b.health = 100; b.shield = 0; b.alive = true;
+    if(b.phase === 'landed' && App.player){
+      const sp = battlePickSpawn();
+      if(sp){ App.player.pos.set(sp.x+0.5, sp.y, sp.z+0.5); App.player.vel.set(0,0,0); }
+    }
+    const banner = document.getElementById('centerBanner'); if(banner) banner.hidden = true;
+    showToast('⚡ Round '+msg.roundId+' — go!');
+    updateBattleHud();
+  }
+  b.roundId = msg.roundId;
+}
+function battleOnRoundEnd(msg){
+  const b = App.battle;
+  if(App.mode !== 'battle' || !b) return;
+  b.inBreak = true;
+  b.roundEndsAt = null;
+  b.nextRoundAt = App.clockT + (msg.nextInMs||0)/1000;
+  const results = msg.results || [];
+  const me = results.find(r => r.id === Net.id);
+  let note;
+  if((msg.size||0) < 2) note = 'Solo round — rounds need 2+ players to count.';
+  else if(Session.user) note = '🏆 Counts for the tournament' + (msg.size < 4 ? ' (bonuses need 4+ players)' : '');
+  else note = 'Log in to put your rounds on the tournament leaderboard.';
+  const el = document.getElementById('bhRoundBoard');
+  if(el){
+    el.innerHTML = '<div class="rbTitle">ROUND OVER'+(me ? ' — you placed #'+me.placement : '')+'</div>' +
+      results.slice(0, 8).map(r => '<div class="rbRow'+(r.id===Net.id?' me':'')+'"><span>#'+r.placement+'</span><span>'+nbEsc(r.name)+(r.won?' 🏆':'')+'</span><span>'+r.kills+' KO · '+r.deaths+' ☠</span></div>').join('') +
+      '<div class="rbNote">'+nbEsc(note)+'</div><div class="rbNext" id="rbNext"></div>';
+    el.style.display = 'block';
+  }
+  if(me) showToast(me.won ? '🏆 You won the round!' : ('Round over — you placed #'+me.placement));
+  updateRoundHud();
+}
+function updateRoundHud(){
+  const b = App.battle; if(!b) return;
+  const el = document.getElementById('bhRound'); if(!el) return;
+  const fmt = (sec)=>{ sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); };
+  if(b.inBreak){
+    const left = b.nextRoundAt!=null ? b.nextRoundAt - App.clockT : 0;
+    el.textContent = '⏸ Next round in '+Math.max(0, Math.ceil(left))+'s';
+    const n = document.getElementById('rbNext'); if(n) n.textContent = 'Next round in '+Math.max(0, Math.ceil(left))+'s';
+  } else if(b.roundEndsAt!=null){
+    el.textContent = '⏱ Round '+(b.roundId||1)+' · '+fmt(b.roundEndsAt - App.clockT)+' left';
+  } else {
+    el.textContent = '';
+  }
+}
+
 let battleHudInstalled = false;
 function ensureBattleHud(){
   if(battleHudInstalled) return; battleHudInstalled = true;
@@ -6145,6 +6314,8 @@ function ensureBattleHud(){
       '</div>' +
     '</div>' +
     '<div id="bhStorm" style="position:absolute;top:68px;left:50%;transform:translateX(-50%);color:#fff;font-weight:700;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.85);background:rgba(20,10,30,.35);padding:4px 14px;border-radius:14px;white-space:nowrap;"></div>' +
+    '<div id="bhRound" style="position:absolute;top:98px;left:50%;transform:translateX(-50%);color:#ffe58a;font-weight:700;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.85);background:rgba(40,30,5,.45);padding:3px 12px;border-radius:12px;white-space:nowrap;"></div>' +
+    '<div id="bhRoundBoard" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);min-width:280px;max-width:90vw;background:rgba(10,14,34,.88);border:2px solid #ffd23f;border-radius:14px;padding:14px 18px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);"></div>' +
     '<div style="position:absolute;top:16px;right:16px;text-align:right;">' +
       '<canvas id="bhMinimap" width="132" height="132" style="border-radius:50%;border:2px solid rgba(255,255,255,.35);box-shadow:0 2px 10px rgba(0,0,0,.5);"></canvas>' +
       '<div id="bhKillFeed" style="margin-top:8px;text-align:right;"></div>' +
@@ -6157,7 +6328,13 @@ function ensureBattleHud(){
       '.bhMatChip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:38px;height:34px;border-radius:6px;background:rgba(0,0,0,.35);border:2px solid transparent;color:#fff;font-size:10px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.8);margin-right:5px;}' +
       '.bhMatChip.sel{border-color:#fff;}' +
       '.bhKillLine{color:#fff;font-size:12px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.85);background:rgba(20,10,30,.4);padding:2px 10px;border-radius:10px;margin-bottom:4px;animation:bhKillIn .2s ease-out;}' +
-      '@keyframes bhKillIn{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}';
+      '@keyframes bhKillIn{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}' +
+      '.rbTitle{font-weight:800;font-size:17px;color:#ffd23f;text-align:center;margin-bottom:8px;}' +
+      '.rbRow{display:flex;gap:10px;justify-content:space-between;font-size:13px;padding:3px 6px;border-radius:6px;}' +
+      '.rbRow.me{background:rgba(255,210,63,.18);color:#ffe58a;font-weight:700;}' +
+      '.rbRow span:nth-child(2){flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+      '.rbNote{font-size:12px;color:#9fb0e0;text-align:center;margin-top:8px;}' +
+      '.rbNext{font-size:12px;color:#ffe58a;text-align:center;margin-top:4px;}';
     document.head.appendChild(style);
   }
 }
