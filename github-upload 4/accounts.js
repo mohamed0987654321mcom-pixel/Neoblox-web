@@ -45,7 +45,12 @@ process.on('SIGINT', () => { saveNow(); process.exit(0); });
 
 const byId = new Map();
 const byUsernameLower = new Map();
-function indexUser(u){ byId.set(u.id, u); byUsernameLower.set(u.username.toLowerCase(), u); }
+const byStormId = new Map();
+function indexUser(u){
+  byId.set(u.id, u);
+  byUsernameLower.set(u.username.toLowerCase(), u);
+  if(u.stormUserId) byStormId.set(String(u.stormUserId), u);
+}
 users.forEach(indexUser);
 
 let nextUserId = users.reduce((m,u)=>Math.max(m, parseInt(u.id,10)||0), 0) + 1;
@@ -106,6 +111,13 @@ function publicUser(u){
     tokens: u.tokens || 0,
     avatarUrl: u.avatarFile ? ('/api/avatars/' + u.id + '.glb') : null,
     quests: questProgressFor(u),
+    mparadise: {
+      linked: !!u.stormUserId,
+      stormUsername: u.stormUsername || null,
+      stormCoins: u.stormCoinsMirror || 0,
+      sharedTotal: (u.tokens || 0) + (u.stormCoinsMirror || 0),
+      restricted: u.restricted || null,
+    },
   };
 }
 
@@ -125,6 +137,11 @@ function register(username, password){
     stats: freshStats(),
     claimedQuests: {},
     createdAt: Date.now(),
+    // MPARADISE cross-platform link (Storm Royale) — all null/0 until the player links an account
+    stormUserId: null,
+    stormUsername: null,
+    stormCoinsMirror: 0,
+    restricted: null, // {isKid, allowChat, allowVoice} mirrored from Storm Royale's own kid-safety flags
   };
   users.push(u); indexUser(u); markDirty(); saveNow();
   return { user: u };
@@ -197,7 +214,106 @@ function claimQuest(u, questId){
   u.claimedQuests[q.id] = q.repeat==='daily' ? todayKey() : true;
   u.tokens = (u.tokens||0) + q.reward;
   markDirty(); saveNow();
+  pushTokensToStorm(u); // best-effort, not awaited — see pushTokensToStorm's own comment
   return { user: u, reward: q.reward };
+}
+
+// ---------------------------------------------------------------------------
+// MPARADISE link: one shared identity + token balance with Storm Royale (the
+// Roblox game + its companion website). Mirrors the exact code-based linking
+// flow Storm Royale already uses for its own Roblox link (a short code,
+// redeemed on the other side), authenticated server-to-server with a shared
+// secret (MPARADISE_LINK_KEY, set the same on both Railway services) rather
+// than ever trusting anything the browser says about the other account.
+//
+// Each side only ever WRITES its own mirror field (stormCoinsMirror here,
+// neoblox_tokens_mirror on Storm Royale) — never the other side's number —
+// so there's no race to reconcile: the "shared total" shown to the player is
+// just tokens + stormCoinsMirror, always safe to recompute.
+//
+// Storm Royale has its own under-13-with-parent-approval safety system;
+// Neoblox has none. Linking is allowed for every account, kids included (no
+// exceptions), but a linked kid identity carries Storm Royale's own chat/
+// voice restrictions over to Neoblox too, rather than handing a parent-
+// approved, locked-down kid account a free pass into Neoblox's unmoderated
+// chat/voice/avatar-upload. See `restrictionsFor` below.
+const MPARADISE_LINK_KEY = process.env.MPARADISE_LINK_KEY || null;
+const STORM_ROYALE_URL = process.env.STORM_ROYALE_URL || 'https://stormroyale.mparadiseplatrforms.com';
+if(!MPARADISE_LINK_KEY) console.warn('[mparadise] MPARADISE_LINK_KEY not set: Storm Royale linking is off.');
+
+const linkCodes = new Map(); // code -> { userId, exp }
+setInterval(() => {
+  const now = Date.now();
+  for(const [code, d] of linkCodes) if(d.exp < now) linkCodes.delete(code);
+}, 60000).unref();
+
+function restrictionsFor(ageGroup, kidSettings){
+  const isKid = ageGroup === 'kid';
+  return {
+    isKid,
+    allowChat: !isKid || !!(kidSettings && kidSettings.chat),
+    allowVoice: !isKid || !!(kidSettings && kidSettings.voice),
+  };
+}
+
+// Neoblox generates the code (shown to the player: "enter this on the Storm Royale website").
+function createLinkCode(userId){
+  const code = 'nb-' + crypto.randomBytes(4).toString('hex');
+  linkCodes.set(code, { userId, exp: Date.now() + 15*60*1000 });
+  return code;
+}
+
+// Called by Storm Royale's server (never the browser) once the player enters the code there.
+function redeemLinkCode(code, storm){
+  const pending = linkCodes.get(String(code||''));
+  if(!pending) return { error:'That code is wrong or expired.' };
+  linkCodes.delete(code);
+  const u = byId.get(pending.userId);
+  if(!u) return { error:'Neoblox account not found.' };
+  if(u.stormUserId && String(u.stormUserId) !== String(storm.stormUserId)) byStormId.delete(String(u.stormUserId));
+  u.stormUserId = String(storm.stormUserId);
+  u.stormUsername = storm.stormUsername || null;
+  u.stormCoinsMirror = Number(storm.coinsSeed) || 0;
+  u.restricted = restrictionsFor(storm.ageGroup, storm.kidSettings);
+  byStormId.set(u.stormUserId, u);
+  markDirty(); saveNow();
+  return { neobloxId: u.id, neobloxUsername: u.username, neobloxTokens: u.tokens || 0 };
+}
+
+function unlinkStorm(u){
+  if(!u || !u.stormUserId) return;
+  byStormId.delete(String(u.stormUserId));
+  u.stormUserId = null; u.stormUsername = null; u.stormCoinsMirror = 0; u.restricted = null;
+  markDirty(); saveNow();
+}
+
+// Storm Royale pushes its latest known Coins total (and current safety flags) for a linked
+// player roughly every ~10s while they're online in-game — this just mirrors it, it's never
+// the trigger for a Neoblox-side award.
+function applyStormPush(stormUserId, { stormCoinsMirror, ageGroup, kidSettings }){
+  const u = byStormId.get(String(stormUserId));
+  if(!u) return { error:'not linked' };
+  if(typeof stormCoinsMirror === 'number') u.stormCoinsMirror = Math.max(0, Math.floor(stormCoinsMirror));
+  if(ageGroup) u.restricted = restrictionsFor(ageGroup, kidSettings);
+  markDirty();
+  return { ok:true };
+}
+
+// After Neoblox itself awards tokens (claimQuest), best-effort tell Storm Royale the new
+// total so its website can show the same combined number. Fire-and-forget: if Storm Royale
+// (or the network) is briefly down, the next award call tries again with the latest number —
+// nothing here is load-bearing for Neoblox's own (always-authoritative) token balance.
+async function pushTokensToStorm(u){
+  if(!u || !u.stormUserId || !MPARADISE_LINK_KEY) return;
+  try{
+    const res = await fetch(STORM_ROYALE_URL + '/api/mparadise/push', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-mparadise-key': MPARADISE_LINK_KEY },
+      signal: AbortSignal.timeout(5000),
+      body: JSON.stringify({ neobloxId: u.id, neobloxTokens: u.tokens || 0 }),
+    });
+    if(!res.ok) console.warn('[mparadise] push to Storm Royale failed:', res.status);
+  }catch(e){ console.warn('[mparadise] push to Storm Royale failed:', e.message); }
 }
 
 module.exports = {
@@ -205,4 +321,5 @@ module.exports = {
   register, login, getUser, createSession, userForToken, publicUser,
   noteLogin, noteChat, noteWorldVisit, noteMove, notePartyJoin, noteGVoiceJoin, noteAvatarUpload,
   claimQuest, saveNow, markDirty,
+  MPARADISE_LINK_KEY, createLinkCode, redeemLinkCode, unlinkStorm, applyStormPush, pushTokensToStorm,
 };

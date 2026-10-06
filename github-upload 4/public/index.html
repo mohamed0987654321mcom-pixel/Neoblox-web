@@ -700,6 +700,19 @@
             <div><div class="who" id="accWhoLabel">—</div><div class="tok">🪙 <span id="accTokenLabel">0</span> tokens</div></div>
             <button class="btn small ghost" id="accLogoutBtn">Log out</button>
           </div>
+          <div class="acc-mparadise" id="mpLinkBox" hidden style="margin-top:8px;">
+            <div id="mpUnlinkedView">
+              <button class="btn small ghost" id="mpStartLinkBtn" style="width:100%;">🌪️ Link Storm Royale account</button>
+              <div id="mpCodeView" hidden style="font-size:12px; margin-top:6px; color:var(--text-dim,#9fb0e0);">
+                Enter this code on the Storm Royale website (Profile → Link Neoblox): <b id="mpCodeText" style="letter-spacing:1px;"></b>
+                <br><button class="btn small ghost" id="mpRefreshLinkBtn" style="width:100%; margin-top:4px;">I entered it — refresh</button>
+              </div>
+            </div>
+            <div id="mpLinkedView" hidden style="font-size:12px; color:var(--text-dim,#9fb0e0);">
+              🌪️ Linked to <b id="mpStormName">—</b> · shared total 🪙 <b id="mpSharedTotal">0</b>
+              <button class="btn small ghost" id="mpUnlinkBtn" style="width:100%; margin-top:4px;">Unlink</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="field">
@@ -3934,6 +3947,29 @@ function initAccountUI(){
     showToast('Logged out.');
   });
 
+  // ---- MPARADISE link: one shared identity + token balance with Storm Royale ----
+  document.getElementById('mpStartLinkBtn').addEventListener('click', async ()=>{
+    try{
+      const data = await apiFetch('/api/mparadise/link-code', { method:'POST' });
+      document.getElementById('mpCodeText').textContent = data.code;
+      document.getElementById('mpCodeView').hidden = false;
+    }catch(e){ showToast(e.message || 'Could not start linking.'); }
+  });
+  document.getElementById('mpRefreshLinkBtn').addEventListener('click', async ()=>{
+    await refreshSessionUser();
+    refreshAccountUI();
+    if(Session.user && Session.user.mparadise && Session.user.mparadise.linked) showToast('🌪️ Linked to Storm Royale!');
+    else showToast("Not linked yet — enter the code on Storm Royale's website first.");
+  });
+  document.getElementById('mpUnlinkBtn').addEventListener('click', async ()=>{
+    try{
+      const data = await apiFetch('/api/mparadise/unlink', { method:'POST' });
+      Session.user = data.user;
+      refreshAccountUI();
+      showToast('Unlinked from Storm Royale.');
+    }catch(e){ showToast(e.message || 'Could not unlink.'); }
+  });
+
   // ---- persistent token dock + quests panel ----
   const tokenDock = document.getElementById('tokenDock');
   const questsPanel = document.getElementById('questsPanel');
@@ -3986,11 +4022,23 @@ function refreshAccountUI(){
     document.getElementById('accTokenLabel').textContent = Session.user.tokens;
     tokenDock.hidden = false;
     tokenDockCount.textContent = Session.user.tokens;
+    const mp = Session.user.mparadise;
+    const mpBox = document.getElementById('mpLinkBox');
+    mpBox.hidden = false;
+    const linked = !!(mp && mp.linked);
+    document.getElementById('mpUnlinkedView').hidden = linked;
+    document.getElementById('mpLinkedView').hidden = !linked;
+    if(!linked) document.getElementById('mpCodeView').hidden = true; // reset until a new code is requested
+    if(linked){
+      document.getElementById('mpStormName').textContent = mp.stormUsername || 'a Storm Royale account';
+      document.getElementById('mpSharedTotal').textContent = mp.sharedTotal;
+    }
   } else {
     guestView.hidden = false;
     signedInView.hidden = true;
     tokenDock.hidden = true;
     document.getElementById('questsPanel').hidden = true;
+    document.getElementById('mpLinkBox').hidden = true;
   }
   renderQuests();
 }

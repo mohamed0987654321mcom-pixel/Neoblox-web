@@ -113,6 +113,46 @@ app.post('/api/quests/:id/claim', requireAuth, (req, res) => {
   res.json({ user: accounts.publicUser(req.authedUser), reward: result.reward });
 });
 
+// ---- MPARADISE link: one shared identity + token balance with Storm Royale. ----
+
+// Browser-facing: the signed-in Neoblox player asks for a code to type into the Storm Royale website.
+app.post('/api/mparadise/link-code', requireAuth, (req, res) => {
+  if(req.authedUser.stormUserId) return res.status(400).json({ error:'Already linked to a Storm Royale account.' });
+  res.json({ code: accounts.createLinkCode(req.authedUser.id) });
+});
+
+app.post('/api/mparadise/unlink', requireAuth, (req, res) => {
+  accounts.unlinkStorm(req.authedUser);
+  res.json({ user: accounts.publicUser(req.authedUser) });
+});
+
+// Server-to-server only (never the browser): Storm Royale's server calls these, authenticated
+// with the shared MPARADISE_LINK_KEY (same convention as Storm Royale's own GAME_API_KEY).
+function requireMparadiseKey(req, res, next){
+  const key = req.headers['x-mparadise-key'];
+  if(!accounts.MPARADISE_LINK_KEY || !key || key !== accounts.MPARADISE_LINK_KEY) return res.status(401).json({ error:'bad key' });
+  next();
+}
+
+// Called once, when a Storm Royale player redeems the code shown on Neoblox.
+app.post('/api/mparadise/redeem', requireMparadiseKey, (req, res) => {
+  const { code, stormUserId, stormUsername, ageGroup, kidSettings, coinsSeed } = req.body || {};
+  if(!code || !stormUserId) return res.status(400).json({ error:'missing code/stormUserId' });
+  const result = accounts.redeemLinkCode(code, { stormUserId, stormUsername, ageGroup, kidSettings, coinsSeed });
+  if(result.error) return res.status(400).json({ error: result.error });
+  res.json(result);
+});
+
+// Called roughly every ~10s while a linked player is online in Storm Royale: mirrors their
+// current Roblox coin total (and refreshes the kid-safety flags) — never an award trigger here.
+app.post('/api/mparadise/push', requireMparadiseKey, (req, res) => {
+  const { stormUserId, stormCoinsMirror, ageGroup, kidSettings } = req.body || {};
+  if(!stormUserId) return res.status(400).json({ error:'missing stormUserId' });
+  const result = accounts.applyStormPush(stormUserId, { stormCoinsMirror, ageGroup, kidSettings });
+  if(result.error) return res.status(404).json(result);
+  res.json(result);
+});
+
 const avatarUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, accounts.AVATARS_DIR),
@@ -126,6 +166,12 @@ const avatarUpload = multer({
 }).single('model');
 
 app.post('/api/avatar', requireAuth, (req, res) => {
+  // A Storm Royale-linked kid account carries over the same no-custom-content restriction
+  // Storm Royale itself enforces (owned Roblox items only, no arbitrary uploads) — linking
+  // doesn't give a parent-approved, locked-down kid account a free pass into this instead.
+  if(req.authedUser.restricted && req.authedUser.restricted.isKid){
+    return res.status(403).json({ error:'Avatar uploads are off for linked kid accounts.' });
+  }
   avatarUpload(req, res, (err) => {
     if(err) return res.status(400).json({ error: err.message || 'Upload failed.' });
     if(!req.file) return res.status(400).json({ error: 'No file received.' });
@@ -355,6 +401,7 @@ wss.on('connection', (ws) => {
         if(!text.trim()) break;
         if(player.userId){
           const u = accounts.getUser(player.userId);
+          if(u && u.restricted && !u.restricted.allowChat){ send(ws, { t:'chat_blocked', reason:'Chat is off for this linked kid account.' }); break; }
           if(u) accounts.noteChat(u);
         }
         const scope = msg.scope === 'party' ? 'party' : msg.scope === 'game' ? 'game' : 'global';
@@ -408,6 +455,10 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'gvoice_join': {
+        if(player.userId){
+          const u0 = accounts.getUser(player.userId);
+          if(u0 && u0.restricted && !u0.restricted.allowVoice){ send(ws, { t:'voice_blocked', reason:'Voice is off for this linked kid account.' }); break; }
+        }
         if(!globalVoice.has(id) && globalVoice.size >= MAX_GLOBAL_VOICE){ send(ws, { t:'gvoice_full' }); break; }
         if(player.userId){ const u = accounts.getUser(player.userId); if(u) accounts.noteGVoiceJoin(u); }
         globalVoice.add(id);
@@ -425,6 +476,10 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'voice_join': {
+        if(player.userId){
+          const u0 = accounts.getUser(player.userId);
+          if(u0 && u0.restricted && !u0.restricted.allowVoice){ send(ws, { t:'voice_blocked', reason:'Voice is off for this linked kid account.' }); break; }
+        }
         const party = partyOf(id);
         if(!party) break;
         party.voice.add(id);
