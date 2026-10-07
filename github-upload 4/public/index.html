@@ -739,6 +739,9 @@
             </div>
             <div id="mpLinkedView" hidden style="font-size:12px; color:var(--text-dim,#9fb0e0);">
               🌪️ Linked to <b id="mpStormName">—</b> · shared total 🪙 <b id="mpSharedTotal">0</b>
+              <button class="btn small primary" id="mpPlayRobloxBtn" style="width:100%; margin-top:6px;">🎮 Play Storm Royale on Roblox</button>
+              <label style="display:flex; align-items:center; gap:6px; margin-top:4px; cursor:pointer;"><input type="checkbox" id="mpWearLook" checked> Wear my Neoblox look there</label>
+              <div id="mpPlayMsg" style="margin-top:4px; color:#ffb3b3;"></div>
               <button class="btn small ghost" id="mpUnlinkBtn" style="width:100%; margin-top:4px;">Unlink</button>
             </div>
           </div>
@@ -1055,6 +1058,8 @@
           <button class="btn small primary" id="btnSqSend">Send</button>
         </div>
         <div class="sq-err" id="sqChatErr"></div>
+        <button class="btn small primary" id="sqRobloxBtn" hidden style="width:100%;margin-top:8px;">▶ Play with them on Roblox</button>
+        <div id="sqRobloxHint" hidden style="font-size:11px;color:var(--ink-dim);margin-top:4px;">Your squad has Roblox players. This opens Storm Royale on Roblox in your squad and takes you to their server, so you're in the same match. You'll need the Roblox app.</div>
       </div>
       <div style="font-size:11px;color:var(--ink-dim);padding-top:4px;">🛡️ Squad chat is checked by the same AI moderator Storm Royale uses. Kid-linked accounts can't use cross-play squads.</div>
     </div>
@@ -4054,6 +4059,43 @@ function initAccountUI(){
     }catch(e){ showToast(e.message || 'Could not unlink.'); }
   });
 
+  // ---- play Storm Royale on Roblox, as yourself: Storm Royale's server checks the links (Neoblox →
+  // Storm Royale → Roblox), dresses your Storm Royale character in your Neoblox colors, and gives back
+  // the Roblox launch link (straight into your squad, if you're in one). `fallbackUrl`: if the links
+  // aren't set up yet, still open the game straight into the squad, just without the Neoblox look.
+  async function playOnRoblox(fallbackUrl){
+    const wearBox = document.getElementById('mpWearLook');
+    const wear = wearBox ? wearBox.checked : true;
+    const win = window.open('about:blank', '_blank'); // opened right away so the browser doesn't block it
+    const go = (url)=>{ if(win && !win.closed) win.location.href = url; else location.href = url; };
+    try{
+      const data = await apiFetch('/api/play-roblox', { method:'POST', body: JSON.stringify({ look: wear ? { skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants } : null }) });
+      go(data.url);
+      showToast(data.wearingLook ? '🎮 Opening Storm Royale on Roblox — in your Neoblox look!' : '🎮 Opening Storm Royale on Roblox…');
+      return { ok:true };
+    }catch(e){
+      if(fallbackUrl){
+        go(fallbackUrl);
+        showToast('🎮 Opening Storm Royale on Roblox. Link your accounts to wear your Neoblox look there.');
+        return { ok:true, fallback:true, error:e.message };
+      }
+      if(win && !win.closed) win.close();
+      return { error: e.message || 'Couldn\u2019t open Storm Royale right now.' };
+    }
+  }
+  const mpPlayBtn = document.getElementById('mpPlayRobloxBtn');
+  if(mpPlayBtn) mpPlayBtn.addEventListener('click', async ()=>{
+    const msg = document.getElementById('mpPlayMsg');
+    if(msg) msg.textContent = '';
+    const r = await playOnRoblox(null);
+    if(r.error && msg) msg.textContent = r.error;
+  });
+  const wearBox = document.getElementById('mpWearLook');
+  if(wearBox){
+    wearBox.checked = loadLocal('nb_wear_look', true) !== false;
+    wearBox.addEventListener('change', ()=> saveLocal('nb_wear_look', wearBox.checked));
+  }
+
   // ---- cross-play squad: team up with friends playing Storm Royale (the Roblox game or its
   // website). The browser only talks to this Neoblox server (/api/crossparty/*); the server
   // relays to Storm Royale's squad hub over the MPARADISE link. Polling keeps it live while open.
@@ -4062,7 +4104,7 @@ function initAccountUI(){
     if(!overlay) return;
     const SURFACE = { storm:{emoji:'🌩️',label:'Storm Royale'}, roblox:{emoji:'🧱',label:'Roblox'}, neoblox:{emoji:'🟦',label:'Neoblox'} };
     const $ = (id)=>document.getElementById(id);
-    let timer = null, lastLaunch = 0;
+    let timer = null, lastLaunch = 0, robloxFallback = null;
     function open(){
       if(!Session.token){ showToast('Log in first to squad up.'); return; }
       overlay.hidden = false;
@@ -4083,6 +4125,11 @@ function initAccountUI(){
       $('sqIn').hidden = !inSquad;
       if(!inSquad) return;
       $('sqCodeLabel').textContent = d.code;
+      // Roblox players in the squad: hop into Roblox to be in the same match as them
+      const placeId = d.roblox && d.roblox.placeId;
+      $('sqRobloxBtn').hidden = !placeId;
+      $('sqRobloxHint').hidden = !placeId;
+      robloxFallback = placeId ? ('https://www.roblox.com/games/start?placeId='+encodeURIComponent(placeId)+'&launchData='+encodeURIComponent('sq:'+d.code)) : null;
       const launchOn = !!d.launch;
       $('sqLaunch').hidden = !launchOn;
       if(launchOn && d.launch.at > lastLaunch){ lastLaunch = d.launch.at; showToast('🚀 Squad launched — jump into a match!'); }
@@ -4132,6 +4179,10 @@ function initAccountUI(){
     function send(){ const t=$('sqChatInput').value.trim(); if(!t) return; $('sqChatErr').textContent=''; call('/api/crossparty/chat',{ text:t }).then(r=>{ $('sqChatInput').value=''; render(r.squad); }).catch(e=>{ $('sqChatErr').textContent = e.message; }); }
     $('btnSqSend').addEventListener('click', send);
     $('sqChatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
+    $('sqRobloxBtn').addEventListener('click', async ()=>{
+      const r = await playOnRoblox(robloxFallback);
+      if(r.error && !r.ok) $('sqChatErr').textContent = r.error;
+    });
   })();
 
   // ---- tournament leaderboard: Storm Royale's cross-platform cup (Roblox matches + Thunder Battle

@@ -176,6 +176,14 @@ app.post('/api/crossparty/ready', requireAuth, (req, res) => relayCross(res, '/a
 app.post('/api/crossparty/launch', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/launch', { neobloxId: req.authedUser.id }));
 app.post('/api/crossparty/chat', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/chat', crossIdentity(req.authedUser, { text: req.body?.text })));
 app.post('/api/crossparty/result', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/result', { neobloxId: req.authedUser.id, kills: req.body?.kills, placement: req.body?.placement, won: req.body?.won }));
+// ---- play Storm Royale on Roblox: Storm Royale's server checks the links (Neoblox → Storm Royale →
+// Roblox), puts this player's Neoblox look on their Storm Royale character, and returns the Roblox
+// launch link (with their squad's code, if they're in one).
+app.post('/api/play-roblox', requireAuth, (req, res) => {
+  const look = req.body && req.body.look && typeof req.body.look === 'object' ? req.body.look : null;
+  relayCross(res, '/api/mparadise/play', { neobloxId: req.authedUser.id, look: look ? { skin: look.skin, shirt: look.shirt, pants: look.pants } : null });
+});
+
 // ---- tournaments: the leaderboard lives on Storm Royale (Roblox + Neoblox results together).
 // Anyone can look; logged-in players also get their own rank.
 app.get('/api/tournament', (req, res) => {
