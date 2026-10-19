@@ -153,3 +153,7 @@ body.rbx-studio #rbxPlayers{ top:196px; }
   .rbx-menu-tab{ padding:8px 10px; font-size:14px; }
   .rbx-big-btn{ min-width:0; flex:1; }
 }
+
+/* lobby music + the token counter aren't needed inside a game (and the music button sat on top
+   of the touch jump button) */
+body.rbx-exp #musicDock, body.rbx-exp #tokenDock{ display:none !important; }
