@@ -485,8 +485,8 @@
       if(k !== S.battleStatKey){ S.battleStatKey = k; if(Net.connected) netSend({ t:'pstate', stats: myStats() }); renderPlayers(true); }
       renderHotbar();
     }
-    S.plTimer -= dt;
-    if(S.plTimer <= 0){ S.plTimer = 0.4; renderPlayers(false); }
+    const now = performance.now();
+    if(now - (S.plAt||0) > 400){ S.plAt = now; renderPlayers(false); }
   };
 
   // other players knocked out / respawned

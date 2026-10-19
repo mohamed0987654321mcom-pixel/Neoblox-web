@@ -1,5 +1,27 @@
 # Neoblox server — real online multiplayer, party & voice chat
 
+## What's in Neoblox
+
+- **Home** — a game platform front page: who's online (and what they're playing), Continue
+  and Recommended rows with live 3D thumbnails, Discover (Popular / Top Rated / New / Most
+  Visited + search), a page for every experience with a big Play button, thumbs up/down,
+  visits and active players.
+- **Avatar** — blocky characters with a smiley face, body colors, your owned items, the
+  Ender skin or your own uploaded `.glb`.
+- **Avatar Shop** — hats, faces, glasses, backpacks, capes and wings bought with tokens.
+  Tokens come from **Quests** (new accounts get a 50-token welcome gift).
+- **Experiences** — Neoblox Lobby (the Fortnite-style hub), Sky Rush (a checkpoint obby),
+  Thunder Battle, and every world people publish. In-game: menu (Players / Settings /
+  Help, Reset Character, Leave), chat with bubble chat, a player list with leaderstats,
+  health, falling apart and respawning at your checkpoint, an orbit camera (right-drag,
+  wheel zoom, Shift for shift-lock).
+- **NeoStudio** — a game-studio editor: Toolbox, Explorer, Properties, Output; Select /
+  Move / Rotate / Build / Delete; block, wedge, sphere and cylinder parts with any color
+  and material; kill bricks, checkpoints, jump pads; touch scripts; day/sunset/night
+  lighting; Play test with F5; Publish.
+
+Run the server checks with `npm test`.
+
 This is what makes Neoblox *actually* online: a small Node.js server that the game
 connects to automatically once you deploy it. It gives you:
 
@@ -150,9 +172,11 @@ for your players, look into adding a TURN provider and add its `urls`/`username`
 
 ## Data
 
-Published worlds live in `data/worlds.json`, created automatically. Back this file up
-if you care about not losing published builds — it's the only thing this server
-persists to disk.
+Everything the server keeps lives in `data/` (created automatically): published worlds
+(`worlds.json`), accounts with tokens, quests and Avatar Shop items (`users.json`),
+uploaded avatars (`avatars/`) and game stats — visits and thumbs up/down
+(`gamestats.json`). Put `data/` on a persistent volume (a Railway Volume) or it resets on
+every redeploy.
 
 ## Files
 
@@ -161,7 +185,10 @@ persists to disk.
 - `public/` — the game client itself (same file the Electron app and claude.ai
   artifact use), plus `manifest.json` and app icons for PWA install.
 - `public/battle-assets/` — 3D model assets used by Thunder Battle.
-- `data/worlds.json` — published worlds (created on first publish).
+- `public/rbx/` — the home page (`home.js/css`), the in-game UI + camera (`hud.js/css`)
+  and NeoStudio's editor (`studio.js/css`).
+- `accounts.js` — accounts, tokens, quests and the Avatar Shop catalog.
+- `test/api.test.js` — server checks (`npm test`).
 
 ## Credits
 
