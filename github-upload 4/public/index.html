@@ -15,7 +15,6 @@
 </script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800;900&display=swap">
 <link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="rbx/hud.css">
 <meta name="theme-color" content="#0a0d18">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -659,6 +658,8 @@
   }
   .touch-jump-btn:active{ background:var(--accent); color:var(--accent-ink); }
 </style>
+<link rel="stylesheet" href="rbx/hud.css">
+<link rel="stylesheet" href="rbx/home.css">
 </head>
 <body>
 <div id="app">
@@ -682,66 +683,136 @@
   <canvas id="gamecanvas"></canvas>
   <div id="worldUiLayer"></div>
 
-  <!-- ============ BOOT / MAIN MENU ============ -->
+  <!-- ============ HOME (the app's front page: games, avatar, shop, quests, create) ============ -->
   <div class="screen" id="screen-boot">
-    <div class="brandmark">
-      <div class="logo display">NEOBLOX</div>
-      <div class="tag">build a world. drop into the lobby.</div>
+    <div class="nh" id="nbHome">
+      <header class="nh-top">
+        <button class="nh-burger" id="nhBurger" aria-label="Menu">&#9776;</button>
+        <div class="nh-logo" id="nhLogo"><span class="mark">N</span>NEOBLOX</div>
+        <nav class="nh-topnav" id="nhTopnav">
+          <a data-go="home">Home</a><a data-go="discover">Discover</a><a data-go="shop">Avatar Shop</a><a data-go="create">Create</a>
+        </nav>
+        <label class="nh-search"><span aria-hidden="true">&#128269;</span><input id="nhSearch" type="text" placeholder="Search experiences" autocomplete="off"></label>
+        <div class="nh-right" id="nhRight"></div>
+      </header>
+      <aside class="nh-side" id="nhSide">
+        <div class="me" id="nhSideMe"><img id="nhSideHead" alt=""><div><b id="nhSideName">Guest</b><small id="nhSideSub">Not logged in</small></div></div>
+        <button class="nh-link" data-go="home"><span class="ic">&#127968;</span>Home</button>
+        <button class="nh-link" data-go="discover"><span class="ic">&#129517;</span>Discover</button>
+        <button class="nh-link" data-go="avatar"><span class="ic">&#129489;</span>Avatar</button>
+        <button class="nh-link" data-go="shop"><span class="ic">&#128717;&#65039;</span>Avatar Shop</button>
+        <button class="nh-link" data-go="quests"><span class="ic">&#127919;</span>Quests<span class="pill" id="nhQuestPill" hidden>0</span></button>
+        <button class="nh-link" data-go="create"><span class="ic">&#128736;&#65039;</span>Create</button>
+        <button class="nh-link" id="nhPartyLink"><span class="ic">&#128172;</span>Party &amp; Chat</button>
+        <div class="foot"><span class="dot" id="nhConnDot"></span><span id="connFlag">connecting…</span></div>
+      </aside>
+      <main class="nh-main" id="nhMain">
+        <section class="nh-page" data-page="home">
+          <div class="nh-hello"><img id="nhHelloHead" alt=""><div><h1 id="nhHello">Hello!</h1><div class="sub" id="nhHelloSub">Ready to play?</div></div></div>
+          <h2>Online now <span class="sub" id="nhOnlineCount" style="font-size:14px;"></span></h2>
+          <div class="nh-online" id="nhOnline"></div>
+          <h2>Continue</h2>
+          <div class="nh-grid" id="nhContinue"></div>
+          <h2>Recommended For You <a class="more" data-go="discover">See All &rsaquo;</a></h2>
+          <div class="nh-grid" id="nhRecommended"></div>
+        </section>
+        <section class="nh-page" data-page="discover">
+          <h1>Discover</h1>
+          <div class="nh-chips" id="nhSortChips">
+            <button class="nh-chip on" data-sort="popular">Popular</button>
+            <button class="nh-chip" data-sort="rated">Top Rated</button>
+            <button class="nh-chip" data-sort="new">New</button>
+            <button class="nh-chip" data-sort="visits">Most Visited</button>
+          </div>
+          <div class="nh-grid" id="nhDiscoverGrid"></div>
+        </section>
+        <section class="nh-page" data-page="game"><div id="nhGame"></div></section>
+        <section class="nh-page" data-page="avatar">
+          <h1>Avatar</h1>
+          <div class="nh-avatar" style="margin-top:14px;">
+            <div class="stage"><canvas id="avatarPreview"></canvas><div class="hint">Drag to spin</div></div>
+            <div>
+              <div class="nh-tabs" id="nhAvTabs">
+                <button class="nh-tab on" data-avtab="body">Body</button>
+                <button class="nh-tab" data-avtab="accessories">Accessories</button>
+                <button class="nh-tab" data-avtab="characters">Characters</button>
+              </div>
+              <div data-avpane="body">
+                <div class="nh-field"><label for="nameInput">Display name</label><input id="nameInput" type="text" maxlength="16" placeholder="Runner" autocomplete="off"></div>
+                <div class="nh-field"><label>Skin color (head &amp; arms)</label><div class="swatch-row" id="skinRow"></div></div>
+                <div class="nh-field"><label>Shirt color</label><div class="swatch-row" id="shirtRow"></div></div>
+                <div class="nh-field"><label>Pants color</label><div class="swatch-row" id="pantsRow"></div></div>
+              </div>
+              <div data-avpane="accessories" hidden><div id="nhAccPane"></div></div>
+              <div data-avpane="characters" hidden><div id="nhCharPane"></div></div>
+            </div>
+          </div>
+        </section>
+        <section class="nh-page" data-page="shop">
+          <h1>Avatar Shop</h1>
+          <div class="sub">Spend tokens on hats, faces and gear. Earn tokens from <a data-go="quests" style="color:#fff;text-decoration:underline;">quests</a>.</div>
+          <div class="nh-chips" id="nhShopChips" style="margin-top:16px;">
+            <button class="nh-chip on" data-kind="all">All</button>
+            <button class="nh-chip" data-kind="hat">Hats</button>
+            <button class="nh-chip" data-kind="face">Faces</button>
+            <button class="nh-chip" data-kind="face_acc">Glasses</button>
+            <button class="nh-chip" data-kind="back">Back</button>
+          </div>
+          <div class="nh-items" id="nhShopGrid"></div>
+        </section>
+        <section class="nh-page" data-page="quests">
+          <h1>Quests</h1>
+          <div class="sub" style="margin-bottom:18px;">Finish quests to earn tokens for the Avatar Shop.</div>
+          <div id="nhQuests"></div>
+        </section>
+        <section class="nh-page" data-page="create">
+          <div class="nh-create-hero">
+            <div>
+              <h1>Create with NeoStudio</h1>
+              <p>Build your own obby, hangout or adventure out of parts — kill bricks, checkpoints, jump pads, scripts and on-screen buttons — then publish it so everyone can play.</p>
+              <button class="nh-cta green" id="nhStartCreating">Start Creating</button>
+            </div>
+            <img id="nhCreateArt" alt="">
+          </div>
+          <h2>Your creations</h2>
+          <div class="nh-grid" id="nhMyGames"></div>
+        </section>
+      </main>
+      <nav class="nh-bottom" id="nhBottom">
+        <button data-go="home"><span class="ic">&#127968;</span>Home</button>
+        <button data-go="discover"><span class="ic">&#129517;</span>Discover</button>
+        <button data-go="avatar"><span class="ic">&#129489;</span>Avatar</button>
+        <button data-go="shop"><span class="ic">&#128717;&#65039;</span>Shop</button>
+        <button data-go="create"><span class="ic">&#128736;&#65039;</span>Create</button>
+      </nav>
     </div>
 
-    <div class="boot-card panel accent">
-      <div class="field">
-        <label>Account &mdash; earn tokens from quests &amp; upload your own avatar</label>
-        <div class="account-box" id="accountBox">
-          <div id="accGuestView">
-            <div class="acc-tabs">
-              <div class="acc-tab active" id="accTabLogin" data-mode="login">Log in</div>
-              <div class="acc-tab" id="accTabRegister" data-mode="register">Sign up</div>
-            </div>
-            <input type="text" id="accUsername" placeholder="Username" autocomplete="username" maxlength="20">
-            <input type="password" id="accPassword" placeholder="Password" autocomplete="current-password">
-            <div class="acc-error" id="accError"></div>
-            <button class="btn small primary" id="accSubmit" style="width:100%;">Log in</button>
+    <!-- log in / sign up -->
+    <div class="nh-modal" id="nhLoginModal" hidden>
+      <div class="nh-login">
+        <button class="close" id="nhLoginClose" aria-label="Close">&#10005;</button>
+        <h3 id="nhLoginTitle">Log in to Neoblox</h3>
+        <div id="accGuestView">
+          <div class="acc-tabs">
+            <div class="acc-tab active" id="accTabLogin" data-mode="login">Log In</div>
+            <div class="acc-tab" id="accTabRegister" data-mode="register">Sign Up</div>
           </div>
-          <div class="acc-signed-in" id="accSignedInView" hidden>
-            <div><div class="who" id="accWhoLabel">—</div><div class="tok">🪙 <span id="accTokenLabel">0</span> tokens</div></div>
-            <button class="btn small ghost" id="accLogoutBtn">Log out</button>
-          </div>
+          <input type="text" id="accUsername" placeholder="Username" autocomplete="username" maxlength="20">
+          <input type="password" id="accPassword" placeholder="Password" autocomplete="current-password">
+          <div class="acc-error" id="accError"></div>
+          <button id="accSubmit">Log in</button>
+          <div class="fine">Accounts keep your tokens, quests, Avatar Shop items and uploaded avatar.</div>
+        </div>
+        <div id="accSignedInView" hidden>
+          <div style="text-align:center;font-weight:800;">Logged in as <b id="accWhoLabel">—</b> · <span class="nh-coin">N</span> <span id="accTokenLabel">0</span></div>
+          <button id="accLogoutBtn" class="nh-cta" style="width:100%;margin-top:14px;">Log out</button>
         </div>
       </div>
-      <div class="field">
-        <label for="nameInput">Player name</label>
-        <input id="nameInput" type="text" maxlength="16" placeholder="Runner" autocomplete="off">
-      </div>
-
-      <div class="avatar-preview-wrap panel" style="clip-path:none; border:1px solid var(--panel-border-soft);">
-        <canvas id="avatarPreview" style="width:100%; height:100%; display:block;"></canvas>
-      </div>
-
-      <div class="field">
-        <label>Skin tone</label>
-        <div class="swatch-row" id="skinRow"></div>
-      </div>
-      <div class="field">
-        <label>Outfit color</label>
-        <div class="swatch-row" id="shirtRow"></div>
-      </div>
-      <div class="field">
-        <label>Trim color</label>
-        <div class="swatch-row" id="pantsRow"></div>
-      </div>
-
-      <div class="menu-actions">
-        <button class="btn primary" id="btnPlay">Enter Lobby</button>
-        <button class="btn studio" id="btnStudio">NeoStudio</button>
-        <button class="btn" id="btnBattle" style="background:#3a2f08; border-color:#ffd23f; color:#ffe58a;">⚡ Thunder Battle</button>
-      </div>
     </div>
-    <div class="boot-foot">
-      <span id="connFlag">connecting…</span>
-      <span>WASD move · mouse look · space jump</span>
-    </div>
+    <!-- older entry points, kept so every existing launcher keeps working -->
+    <div hidden><button id="btnPlay"></button><button id="btnStudio"></button><button id="btnBattle"></button></div>
   </div>
+  <div id="nhJoin" hidden><img id="nhJoinImg" alt=""><div class="t" id="nhJoinTitle">Joining…</div><div class="spin"></div><div class="s">Joining experience…</div></div>
 
   <!-- ============ HUD (used across lobby / world / studio) ============ -->
   <div id="hud" hidden>
@@ -1072,9 +1143,10 @@
 
 // === SECTION:STATE ===
 
-const SKIN_TONES   = ['#ffd9b3','#f0b98d','#c68642','#8d5524','#6b3f22','#3a2417'];
-const OUTFIT_COLORS= ['#4de3ff','#c8ff4d','#ff5c72','#b06bff','#ffb84d','#ffffff','#2a3350','#ff4de3'];
-const TRIM_COLORS  = ['#0a0d18','#ffffff','#c8ff4d','#4de3ff','#ff5c72','#b06bff'];
+// body colors (the first entries are the originals, so saved avatars keep matching a swatch)
+const SKIN_TONES   = ['#ffd9b3','#f0b98d','#c68642','#8d5524','#6b3f22','#3a2417','#f5cd30','#ffcc99','#cc8e69','#a1785c'];
+const OUTFIT_COLORS= ['#4de3ff','#c8ff4d','#ff5c72','#b06bff','#ffb84d','#ffffff','#2a3350','#ff4de3','#0d69ac','#287f47','#c4281c','#f5cd30','#1b2a35','#a3a2a5','#da8541','#6b327c'];
+const TRIM_COLORS  = ['#0a0d18','#ffffff','#c8ff4d','#4de3ff','#ff5c72','#b06bff','#0d69ac','#287f47','#a3a2a5','#7c5c46','#1b2a35','#da8541'];
 
 // Part materials, Roblox-style: each has a default color and a surface look (studded plastic,
 // wood planks, bricks, diamond-plate metal…). A part's color can be overridden per part in
@@ -1196,6 +1268,8 @@ const Profile = loadLocal('nb_profile', null) || {
   customSkin: 'ender',
 };
 if(!Profile.id) Profile.id = uid();
+if(!Array.isArray(Profile.accessories)) Profile.accessories = [];
+if(Profile.face === undefined) Profile.face = null;
 // One-time migration: profiles saved before the personal-skin feature existed have no
 // customSkin field at all — default THOSE to 'ender' too (this is what makes "make this my
 // avatar" apply immediately), while leaving alone anyone who has since explicitly picked one
@@ -1459,7 +1533,7 @@ function initNet(){
     const to = setTimeout(()=>{ if(!settled){ settled=true; try{ws.close();}catch(e){} resolve(false); } }, 3000);
     ws.addEventListener('open', ()=>{
       Net.ws = ws;
-      netSend({ t:'hello', name:Profile.name, session:Session.token||null, avatar:{ skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants, customSkin:Profile.customSkin||null } });
+      netSend({ t:'hello', name:Profile.name, session:Session.token||null, avatar:myAvatarNet() });
       // Remembered admin login — saved locally the first time /admin succeeds (see 'admin_ok'
       // below), so you don't have to retype the password every time you open the game. Still a
       // real server-side check every time, just automatic instead of manual.
@@ -1502,7 +1576,7 @@ function netSend(msg){ if(Net.ws && Net.ws.readyState===1) Net.ws.send(JSON.stri
 // or any Locker change) so other players & your party actually see the right name/colors.
 function syncProfileToNet(){
   if(Net.connected){
-    netSend({ t:'hello', name:Profile.name, session:Session.token||null, avatar:{ skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants, customSkin:Profile.customSkin||null } });
+    netSend({ t:'hello', name:Profile.name, session:Session.token||null, avatar:myAvatarNet() });
   }
 }
 
@@ -1637,6 +1711,13 @@ function netHandleMessage(msg){
 // ---- worlds REST adapter — mirrors the slice of the claude.ai `db` API this game uses,
 // so publishing/browsing worlds works identically whether it's backed by claude.ai or by
 // your own deployed neoblox-server. ----
+// Publishing while logged in ties the world to your account (only you can update it, and it
+// counts for the World Builder quest).
+function worldsHeaders(){
+  const h = { 'Content-Type':'application/json' };
+  if(Session.token) h['Authorization'] = 'Bearer ' + Session.token;
+  return h;
+}
 function makeNetWorldsCol(){
   function build(state){
     return {
@@ -1656,13 +1737,13 @@ function makeNetWorldsCol(){
       doc(id){
         return {
           update: async (payload) => {
-            const res = await fetch(netHttpBase()+'/api/worlds/'+encodeURIComponent(id), { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-            if(!res.ok) throw new Error('update failed');
+            const res = await fetch(netHttpBase()+'/api/worlds/'+encodeURIComponent(id), { method:'PUT', headers:worldsHeaders(), body:JSON.stringify(payload) });
+            if(!res.ok){ let msg = 'update failed'; try{ msg = (await res.json()).error || msg; }catch(e){} throw new Error(msg); }
           },
         };
       },
       async add(payload){
-        const res = await fetch(netHttpBase()+'/api/worlds', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        const res = await fetch(netHttpBase()+'/api/worlds', { method:'POST', headers:worldsHeaders(), body:JSON.stringify(payload) });
         if(!res.ok) throw new Error('publish failed');
         return await res.json();
       },
@@ -1741,22 +1822,89 @@ const HEAD_GEO = (function(){
 // The face is a thin curved decal wrapped around the front of the head (+Z is forward).
 const FACE_GEO = new THREE.CylinderGeometry(HEAD_R+0.004, HEAD_R+0.004, RIG.headS*0.78, 20, 1, true, -1.05, 2.1);
 FACE_GEO.userData.keep = true;
-let _faceMat = null;
-function faceMaterial(){
-  if(_faceMat) return _faceMat;
+const _faceMats = {};
+// Faces: the default smile plus a few you can get in the Avatar Shop.
+function faceMaterial(faceId){
+  const id = FACE_DRAW[faceId] ? faceId : 'smile';
+  if(_faceMats[id]) return _faceMats[id];
   const c = document.createElement('canvas'); c.width = 256; c.height = 128;
   const x = c.getContext('2d');
-  x.fillStyle = '#141414';
-  // two tall oval eyes
-  [[100,48],[156,48]].forEach(([ex,ey])=>{ x.beginPath(); x.ellipse(ex, ey, 9, 15, 0, 0, Math.PI*2); x.fill(); });
-  // a wide, simple smile
-  x.strokeStyle = '#141414'; x.lineWidth = 8; x.lineCap = 'round';
-  x.beginPath(); x.arc(128, 62, 40, 0.18*Math.PI, 0.82*Math.PI); x.stroke();
+  x.fillStyle = '#141414'; x.strokeStyle = '#141414'; x.lineCap = 'round';
+  FACE_DRAW[id](x);
   const tex = new THREE.CanvasTexture(c);
-  _faceMat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false });
-  _faceMat.userData.keep = true;
-  return _faceMat;
+  const m = new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false });
+  m.userData.keep = true;
+  _faceMats[id] = m;
+  return m;
 }
+const FACE_DRAW = {
+  smile: (x)=>{ [[100,48],[156,48]].forEach(([ex,ey])=>{ x.beginPath(); x.ellipse(ex, ey, 9, 15, 0, 0, Math.PI*2); x.fill(); });
+    x.lineWidth = 8; x.beginPath(); x.arc(128, 62, 40, 0.18*Math.PI, 0.82*Math.PI); x.stroke(); },
+  face_grin: (x)=>{ [[100,44],[156,44]].forEach(([ex,ey])=>{ x.beginPath(); x.ellipse(ex, ey, 9, 14, 0, 0, Math.PI*2); x.fill(); });
+    x.beginPath(); x.moveTo(84,72); x.lineTo(172,72); x.quadraticCurveTo(170,118,128,118); x.quadraticCurveTo(86,118,84,72); x.fill();
+    x.fillStyle = '#ffffff'; x.fillRect(92,74,72,10); },
+  face_wink: (x)=>{ x.beginPath(); x.ellipse(100, 48, 9, 15, 0, 0, Math.PI*2); x.fill();
+    x.lineWidth = 7; x.beginPath(); x.moveTo(142,50); x.quadraticCurveTo(156,40,170,50); x.stroke();
+    x.lineWidth = 8; x.beginPath(); x.arc(132, 64, 34, 0.15*Math.PI, 0.75*Math.PI); x.stroke(); },
+  face_shocked: (x)=>{ [[98,46],[158,46]].forEach(([ex,ey])=>{ x.beginPath(); x.ellipse(ex, ey, 11, 16, 0, 0, Math.PI*2); x.fill(); });
+    x.lineWidth = 6; x.beginPath(); x.moveTo(84,20); x.lineTo(110,14); x.moveTo(146,14); x.lineTo(172,20); x.stroke();
+    x.beginPath(); x.ellipse(128, 96, 13, 17, 0, 0, Math.PI*2); x.fill(); },
+  face_chill: (x)=>{ x.lineWidth = 8; [[100,50],[156,50]].forEach(([ex,ey])=>{ x.beginPath(); x.moveTo(ex-14,ey); x.lineTo(ex+14,ey); x.stroke(); x.beginPath(); x.arc(ex, ey, 10, 0, Math.PI); x.fill(); });
+    x.beginPath(); x.moveTo(104,90); x.quadraticCurveTo(140,104,162,82); x.stroke(); },
+};
+// Accessories from the Avatar Shop, built from simple shapes. `on` says what they ride on:
+// the head (hats, glasses) or the torso (backpacks, capes, wings).
+const ACCESSORY_BUILDERS = {
+  cap_red: { on:'head', build:()=>{ const g = new THREE.Group(); const m = plasticMat(0xe53935);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.27, 20, 10, 0, Math.PI*2, 0, Math.PI/2), m); dome.scale.y = 0.62; dome.position.y = 0.1; g.add(dome);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 18, 1, false, -Math.PI/2, Math.PI), m); brim.position.set(0, 0.11, 0.2); g.add(brim);
+    const btn = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), plasticMat(0xffffff)); btn.position.y = 0.27; g.add(btn); return g; } },
+  party_hat: { on:'head', build:()=>{ const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d');
+    ['#ff5c72','#ffd23f','#4dabf7','#69db7c'].forEach((col,i)=>{ x.fillStyle = col; x.fillRect(0, i*16, 64, 16); });
+    const m = new THREE.MeshPhongMaterial({ map:new THREE.CanvasTexture(c), shininess:30 });
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.42, 20), m); cone.position.y = 0.42; cone.rotation.z = 0.12;
+    const pom = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), plasticMat(0xffffff)); pom.position.set(-0.025, 0.21, 0); cone.add(pom);
+    const g = new THREE.Group(); g.add(cone); return g; } },
+  top_hat: { on:'head', build:()=>{ const g = new THREE.Group(); const black = plasticMat(0x1d1d1f);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.36, 22), black); crown.position.y = 0.42; g.add(crown);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.03, 26), black); brim.position.y = 0.245; g.add(brim);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.195, 0.06, 22), plasticMat(0xc0392b)); band.position.y = 0.29; g.add(band); return g; } },
+  viking_helm: { on:'head', build:()=>{ const g = new THREE.Group(); const metal = new THREE.MeshStandardMaterial({ color:0x9aa1a8, metalness:0.7, roughness:0.35 });
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.275, 20, 10, 0, Math.PI*2, 0, Math.PI/2), metal); dome.position.y = 0.06; g.add(dome);
+    const horn = plasticMat(0xf1e6c8);
+    [-1,1].forEach(sx=>{ const h = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.32, 12), horn); h.position.set(sx*0.3, 0.24, 0); h.rotation.z = -sx*0.9; g.add(h); });
+    return g; } },
+  royal_crown: { on:'head', build:()=>{ const g = new THREE.Group(); const gold = new THREE.MeshStandardMaterial({ color:0xffc83d, metalness:0.75, roughness:0.25, emissive:0x3a2500 });
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.12, 24, 1, true), gold); ring.material.side = THREE.DoubleSide; ring.position.y = 0.28; g.add(ring);
+    for(let i=0;i<6;i++){ const a = i/6*Math.PI*2; const sp = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.12, 8), gold); sp.position.set(Math.sin(a)*0.21, 0.39, Math.cos(a)*0.21); g.add(sp);
+      const gem = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), new THREE.MeshStandardMaterial({ color:[0xe53935,0x1e88e5,0x43a047][i%3], roughness:0.2 })); gem.position.set(Math.sin(a)*0.225, 0.28, Math.cos(a)*0.225); g.add(gem); }
+    return g; } },
+  bunny_ears: { on:'head', build:()=>{ const g = new THREE.Group();
+    [-1,1].forEach(sx=>{ const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), plasticMat(0xffffff)); ear.scale.set(0.8, 2.6, 0.45); ear.position.set(sx*0.1, 0.4, -0.02); ear.rotation.z = -sx*0.18; g.add(ear);
+      const inner = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), plasticMat(0xff9ec4)); inner.scale.set(0.7, 2.5, 0.3); inner.position.set(sx*0.1, 0.4, 0.012); inner.rotation.z = -sx*0.18; g.add(inner); });
+    return g; } },
+  neon_halo: { on:'head', build:()=>{ const g = new THREE.Group();
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.028, 10, 32), new THREE.MeshStandardMaterial({ color:0xfff3a0, emissive:0xffe14d, emissiveIntensity:1 }));
+    halo.rotation.x = Math.PI/2; halo.position.y = 0.42; g.add(halo); g.userData.bob = halo; return g; } },
+  headphones: { on:'head', build:()=>{ const g = new THREE.Group(); const dark = plasticMat(0x2b2d31), accent = plasticMat(0x00b06f);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 8, 24, Math.PI), dark); band.position.y = 0.02; g.add(band);
+    [-1,1].forEach(sx=>{ const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.07, 18), accent); cup.rotation.z = Math.PI/2; cup.position.set(sx*0.28, 0.0, 0); g.add(cup); });
+    return g; } },
+  pixel_shades: { on:'head', build:()=>{ const g = new THREE.Group(); const black = new THREE.MeshPhongMaterial({ color:0x111111, shininess:80, specular:0x666666 });
+    [-1,1].forEach(sx=>{ const lens = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.02), black); lens.position.set(sx*0.085, 0.045, 0.255); g.add(lens); });
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.025, 0.02), black); bridge.position.set(0, 0.075, 0.256); g.add(bridge); return g; } },
+  backpack: { on:'torso', build:()=>{ const g = new THREE.Group(); const brown = plasticMat(0x8d5a2b);
+    const bag = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.56, 0.2), brown); bag.position.set(0, 0, -RIG.torsoD/2-0.1); g.add(bag);
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.18, 0.21), plasticMat(0x6d4320)); flap.position.set(0, 0.2, -RIG.torsoD/2-0.1); g.add(flap); return g; } },
+  hero_cape: { on:'torso', build:()=>{ const g = new THREE.Group();
+    const cape = new THREE.Mesh(new THREE.BoxGeometry(0.66, 1.0, 0.03), plasticMat(0xd62828)); cape.position.set(0, -0.12, -RIG.torsoD/2-0.05); cape.rotation.x = 0.12; g.add(cape);
+    g.userData.cape = cape; return g; } },
+  sky_wings: { on:'torso', build:()=>{ const g = new THREE.Group();
+    const shape = new THREE.Shape(); shape.moveTo(0,0); shape.bezierCurveTo(0.3,0.35,0.75,0.45,0.95,0.3); shape.bezierCurveTo(0.7,0.15,0.75,-0.1,0.55,-0.2); shape.bezierCurveTo(0.35,-0.1,0.2,-0.15,0,0);
+    const mat = new THREE.MeshPhongMaterial({ color:0xffffff, side:THREE.DoubleSide, shininess:20, emissive:0x223344 });
+    [-1,1].forEach(sx=>{ const w = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat); w.scale.set(sx, 1, 1); w.position.set(sx*0.06, 0.12, -RIG.torsoD/2-0.06); w.rotation.y = sx*0.35; g.add(w); });
+    g.userData.wings = true; return g; } },
+};
 function plasticMat(color){
   return new THREE.MeshPhongMaterial({ color, shininess:28, specular:0x1e1e1e });
 }
@@ -1805,14 +1953,35 @@ function buildAvatar(profile){
   const head = new THREE.Mesh(HEAD_GEO, skinMat);
   head.castShadow = true;
   headPivot.add(head);
-  const face = new THREE.Mesh(FACE_GEO, faceMaterial());
+  const face = new THREE.Mesh(FACE_GEO, faceMaterial(profile.face));
   face.position.y = -0.01;
   headPivot.add(face);
   g.add(headPivot);
 
+  // shop accessories (hats ride on the head, backpacks/capes/wings on the torso)
+  (Array.isArray(profile.accessories) ? profile.accessories : []).slice(0,6).forEach(id=>{
+    const def = ACCESSORY_BUILDERS[id]; if(!def) return;
+    const acc = def.build();
+    acc.userData.accessoryId = id;
+    acc.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+    if(def.on==='torso') torso.add(acc); else headPivot.add(acc);
+  });
+
   g.traverse(o=>{ if(o.isMesh) o.receiveShadow = false; });
 
   return { group:g, leftLeg, rightLeg, leftArm, rightArm, headPivot, torso, cape:null, face };
+}
+// The local player's avatar as others will see it: shop items only if this account owns them.
+function myAvatarProfile(){
+  const inv = new Set((Session.user && Session.user.inventory) || []);
+  return Object.assign({}, Profile, {
+    accessories: (Profile.accessories||[]).filter(id=>inv.has(id)),
+    face: Profile.face && inv.has(Profile.face) ? Profile.face : null,
+  });
+}
+function myAvatarNet(extra){
+  const a = myAvatarProfile();
+  return Object.assign({ skin:a.skin, shirt:a.shirt, pants:a.pants, customSkin:Profile.customSkin||null, accessories:a.accessories, face:a.face }, extra||{});
 }
 
 // ---- custom glTF skins — cosmetic replacements for the box-avatar rig ----
@@ -3353,7 +3522,7 @@ function applyEquippedSkin(rig){
 }
 
 function spawnLocalAvatar(scene, pos){
-  const rig = buildAvatar(Profile);
+  const rig = buildAvatar(myAvatarProfile());
   scene.add(rig.group);
   App.player = { pos: new THREE.Vector3(pos.x,pos.y,pos.z), vel:new THREE.Vector3(0,0,0), grounded:false, rig };
   rig.group.position.copy(App.player.pos);
@@ -3365,7 +3534,7 @@ function spawnLocalAvatar(scene, pos){
 }
 
 function spawnRemoteAvatar(peerId, presence){
-  const prof = { skin:presence.skin||SKIN_TONES[1], shirt:presence.shirt||OUTFIT_COLORS[0], pants:presence.pants||TRIM_COLORS[0] };
+  const prof = { skin:presence.skin||SKIN_TONES[1], shirt:presence.shirt||OUTFIT_COLORS[0], pants:presence.pants||TRIM_COLORS[0], accessories:presence.accessories||[], face:presence.face||null };
   const rig = buildAvatar(prof);
   App.scene.add(rig.group);
   const label = makeNameSprite(presence.name||'Player');
@@ -3490,7 +3659,7 @@ function syncRemotePeers(dt){
       seen.add(p.id);
       const av2 = (p.avatar)||{};
       let av = App.remoteAvatars[p.id];
-      if(!av){ av = App.remoteAvatars[p.id] = spawnRemoteAvatar(p.id, { skin:av2.skin, shirt:av2.shirt, pants:av2.pants, customSkin:av2.customSkin, uploadedAvatarUrl:av2.uploadedAvatarUrl, name:p.name, x:p.x, y:p.y, z:p.z, ry:p.ry, isAdmin:p.isAdmin }); }
+      if(!av){ av = App.remoteAvatars[p.id] = spawnRemoteAvatar(p.id, { skin:av2.skin, shirt:av2.shirt, pants:av2.pants, customSkin:av2.customSkin, uploadedAvatarUrl:av2.uploadedAvatarUrl, accessories:av2.accessories, face:av2.face, name:p.name, x:p.x, y:p.y, z:p.z, ry:p.ry, isAdmin:p.isAdmin }); }
       av.target.set(p.x||0, p.y||0, p.z||0);
       av.yaw = p.ry||0;
       av._name = p.name || 'Player';
@@ -4656,6 +4825,7 @@ function refreshAccountUI(){
     document.getElementById('questsPanel').hidden = true;
   }
   renderQuests();
+  if(window.NeoHome) NeoHome.onAccount();
 }
 
 function renderQuests(){
@@ -5190,7 +5360,7 @@ function initLockerPreview(){
   scene.add(buildLockerRoomBackdrop());
   const camera = new THREE.PerspectiveCamera(42, w/h, 0.1, 20);
   camera.position.set(0,1.7,4.4);
-  const rig = buildAvatar(Profile);
+  const rig = buildAvatar(myAvatarProfile());
   scene.add(rig.group);
   applyEquippedSkin(rig);
   lockerPreviewCtx = { renderer, scene, camera, rig };
@@ -5209,7 +5379,7 @@ function refreshLockerPreview(){
   if(!lockerPreviewCtx) return;
   lockerPreviewCtx.scene.remove(lockerPreviewCtx.rig.group);
   disposeObj(lockerPreviewCtx.rig.group);
-  const rig = buildAvatar(Profile);
+  const rig = buildAvatar(myAvatarProfile());
   lockerPreviewCtx.scene.add(rig.group);
   applyEquippedSkin(rig);
   lockerPreviewCtx.rig = rig;
@@ -5436,7 +5606,7 @@ function initAvatarPreview(){
   const sun = new THREE.DirectionalLight(0xffffff,0.7); sun.position.set(3,6,4); scene.add(sun);
   const camera = new THREE.PerspectiveCamera(38, w/h, 0.1, 20);
   camera.position.set(0,1.7,4.4);
-  const rig = buildAvatar(Profile);
+  const rig = buildAvatar(myAvatarProfile());
   scene.add(rig.group);
   applyEquippedSkin(rig);
   previewCtx = { renderer, scene, camera, rig };
@@ -5444,7 +5614,7 @@ function initAvatarPreview(){
   function loop(){
     requestAnimationFrame(loop);
     t += 0.016;
-    previewCtx.rig.group.rotation.y = Math.sin(t*0.5)*0.5;
+    previewCtx.rig.group.rotation.y = (previewCtx.spin||0) + Math.sin(t*0.5)*0.12;
     animateAvatar(previewCtx.rig, t, { speedFactor:0, jumping:false, emote:null });
     previewCtx.renderer.render(previewCtx.scene, previewCtx.camera);
   }
@@ -5454,7 +5624,7 @@ function refreshAvatarPreview(){
   if(!previewCtx) return;
   previewCtx.scene.remove(previewCtx.rig.group);
   disposeObj(previewCtx.rig.group);
-  const rig = buildAvatar(Profile);
+  const rig = buildAvatar(myAvatarProfile());
   previewCtx.scene.add(rig.group);
   applyEquippedSkin(rig);
   previewCtx.rig = rig;
@@ -5897,7 +6067,7 @@ function goToBattle(){
   // never a flash of our normal skin first. Deliberately not routed through
   // trySetPersonalSkin/Profile — this is a temporary, per-match presentation, not a real
   // personal choice, so it must never get saved to this device as one.
-  if(Net.connected) netSend({ t:'hello', name:Profile.name, session:Session.token||null, avatar:{ skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants, customSkin:'thunderbot' } });
+  if(Net.connected) netSend({ t:'hello', name:Profile.name, session:Session.token||null, avatar:myAvatarNet({ customSkin:'thunderbot' }) });
 
   App.mode = 'battle';
   goalReached = false;
@@ -6824,5 +6994,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 });
 </script>
 <script src="rbx/hud.js"></script>
+<script src="rbx/home.js"></script>
 </body>
 </html>

@@ -78,6 +78,10 @@ function todayKey(){ return new Date().toISOString().slice(0,10); }
 // Server is the single source of truth for what counts as "done" and what it pays — the client
 // only ever displays progress it's told, never decides completion or awards itself tokens.
 const QUESTS = [
+  { id:'welcome',        title:'Welcome Gift',       desc:'Thanks for joining Neoblox!',    reward:50, repeat:'once',  goal:1,   stat:()=>1 },
+  { id:'sky_rusher',     title:'Obby Time',          desc:'Play Sky Rush',                  reward:20, repeat:'once',  goal:1,   stat:s=>(s.worldsVisited||[]).includes('play:sky') ? 1 : 0 },
+  { id:'thunder_rookie', title:'Into the Storm',     desc:'Play Thunder Battle',            reward:20, repeat:'once',  goal:1,   stat:s=>(s.worldsVisited||[]).includes('battle') ? 1 : 0 },
+  { id:'world_builder',  title:'World Builder',      desc:'Publish a world from NeoStudio', reward:60, repeat:'once',  goal:1,   stat:s=>s.worldsPublished||0 },
   { id:'first_steps',    title:'First Steps',        desc:'Send your first chat message',  reward:20, repeat:'once',  goal:1,   stat:s=>s.chatCount||0 },
   { id:'chatterbox',     title:'Chatterbox',         desc:'Send 25 chat messages',          reward:50, repeat:'once',  goal:25,  stat:s=>s.chatCount||0 },
   { id:'world_traveler', title:'World Traveler',     desc:'Visit 3 different worlds',       reward:40, repeat:'once',  goal:3,   stat:s=>(s.worldsVisited||[]).length },
@@ -108,6 +112,48 @@ function questProgressFor(u){
   });
 }
 
+// ---- Avatar Shop: accessories and faces bought with tokens. The server is the only one that
+// decides prices and what you own; the client just draws the items. ----
+const SHOP_ITEMS = [
+  { id:'cap_red',      name:'Sporty Cap',          kind:'hat',  price:40  },
+  { id:'party_hat',    name:'Party Hat',           kind:'hat',  price:30  },
+  { id:'top_hat',      name:'Fancy Top Hat',       kind:'hat',  price:75  },
+  { id:'viking_helm',  name:'Viking Helm',         kind:'hat',  price:120 },
+  { id:'royal_crown',  name:'Royal Crown',         kind:'hat',  price:250 },
+  { id:'bunny_ears',   name:'Bunny Ears',          kind:'hat',  price:45  },
+  { id:'neon_halo',    name:'Neon Halo',           kind:'hat',  price:200 },
+  { id:'headphones',   name:'Pro Headphones',      kind:'hat',  price:90  },
+  { id:'pixel_shades', name:'Pixel Shades',        kind:'face_acc', price:60 },
+  { id:'backpack',     name:'Adventurer Backpack', kind:'back', price:50  },
+  { id:'hero_cape',    name:'Hero Cape',           kind:'back', price:80  },
+  { id:'sky_wings',    name:'Sky Wings',           kind:'back', price:300 },
+  { id:'face_grin',    name:'Big Grin',            kind:'face', price:20  },
+  { id:'face_wink',    name:'Wink',                kind:'face', price:25  },
+  { id:'face_shocked', name:'Shocked',             kind:'face', price:25  },
+  { id:'face_chill',   name:'Chill',               kind:'face', price:40  },
+];
+const SHOP_BY_ID = new Map(SHOP_ITEMS.map(i => [i.id, i]));
+function buyItem(u, itemId){
+  if(!u) return { error:'Log in to buy items.' };
+  const item = SHOP_BY_ID.get(String(itemId||''));
+  if(!item) return { error:'That item isn\'t in the shop.' };
+  u.inventory = Array.isArray(u.inventory) ? u.inventory : [];
+  if(u.inventory.includes(item.id)) return { error:'You already own this.' };
+  if((u.tokens||0) < item.price) return { error:'Not enough tokens — finish quests to earn more!' };
+  u.tokens -= item.price;
+  u.inventory.push(item.id);
+  markDirty(); saveNow();
+  return { user:u, item };
+}
+// What a player may actually show on their avatar: only items their account owns.
+function ownedCosmetics(u, wanted){
+  const inv = new Set(u && Array.isArray(u.inventory) ? u.inventory : []);
+  const acc = Array.isArray(wanted && wanted.accessories) ? wanted.accessories.filter(id => typeof id === 'string' && inv.has(id)).slice(0, 6) : [];
+  const face = wanted && typeof wanted.face === 'string' && inv.has(wanted.face) ? wanted.face : null;
+  return { accessories: acc, face };
+}
+function noteWorldPublish(u){ if(!u) return; u.stats = u.stats||freshStats(); u.stats.worldsPublished = (u.stats.worldsPublished||0)+1; markDirty(); }
+
 function publicUser(u){
   return {
     id: u.id,
@@ -115,6 +161,7 @@ function publicUser(u){
     tokens: u.tokens || 0,
     avatarUrl: u.avatarFile ? ('/api/avatars/' + u.id + '.glb') : null,
     quests: questProgressFor(u),
+    inventory: Array.isArray(u.inventory) ? u.inventory.slice() : [],
   };
 }
 
@@ -133,6 +180,7 @@ function register(username, password){
     avatarFile: null,
     stats: freshStats(),
     claimedQuests: {},
+    inventory: [],
     createdAt: Date.now(),
   };
   users.push(u); indexUser(u); markDirty(); saveNow();
@@ -214,4 +262,5 @@ module.exports = {
   register, login, getUser, createSession, userForToken, publicUser,
   noteLogin, noteChat, noteWorldVisit, noteMove, notePartyJoin, noteGVoiceJoin, noteAvatarUpload,
   claimQuest, saveNow, markDirty,
+  SHOP_ITEMS, buyItem, ownedCosmetics, noteWorldPublish,
 };

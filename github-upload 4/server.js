@@ -59,20 +59,80 @@ app.get('/api/worlds', (req, res) => {
   res.json(list.slice(0, limit));
 });
 
+function optionalUser(req){
+  const h = req.headers.authorization || '';
+  return h.startsWith('Bearer ') ? accounts.userForToken(h.slice(7)) : null;
+}
+// Fields a client may never set on a world itself (ids, timestamps, the owning account, stats).
+function worldBody(body){
+  const b = Object.assign({}, body || {});
+  delete b.id; delete b.createdAt; delete b.updatedAt; delete b.ownerUserId; delete b.visits;
+  return b;
+}
 app.post('/api/worlds', (req, res) => {
+  const u = optionalUser(req);
   const id = String(nextWorldId++);
-  const world = Object.assign({}, req.body, { id, createdAt: Date.now(), updatedAt: Date.now() });
+  const world = Object.assign(worldBody(req.body), { id, createdAt: Date.now(), updatedAt: Date.now(), ownerUserId: u ? u.id : null });
   worlds.push(world);
   saveWorlds(worlds);
+  if(u) accounts.noteWorldPublish(u);
   res.json({ id });
 });
 
 app.put('/api/worlds/:id', (req, res) => {
   const idx = worlds.findIndex(w => w.id === req.params.id);
   if(idx < 0) return res.status(404).json({ error:'not found' });
-  worlds[idx] = Object.assign({}, worlds[idx], req.body, { updatedAt: Date.now() });
+  // A world published from an account can only be updated by that same account.
+  const u = optionalUser(req);
+  if(worlds[idx].ownerUserId && (!u || u.id !== worlds[idx].ownerUserId)) return res.status(403).json({ error:'Only the creator can update this world.' });
+  worlds[idx] = Object.assign({}, worlds[idx], worldBody(req.body), { updatedAt: Date.now() });
   saveWorlds(worlds);
   res.json({ ok:true });
+});
+
+// ---- game stats: visits, thumbs up/down and who's playing right now (the Home page tiles) ----
+const GAMESTATS_FILE = path.join(DATA_DIR, 'gamestats.json');
+let gameStats = (()=>{ try{ return JSON.parse(fs.readFileSync(GAMESTATS_FILE, 'utf8')) || {}; }catch(e){ return {}; } })();
+let gameStatsDirty = false;
+function gameStat(key){ return gameStats[key] || (gameStats[key] = { visits:0, votes:{} }); }
+function saveGameStats(){
+  if(!gameStatsDirty) return;
+  try{ fs.mkdirSync(DATA_DIR, { recursive:true }); fs.writeFileSync(GAMESTATS_FILE, JSON.stringify(gameStats)); gameStatsDirty = false; }
+  catch(e){ console.error('failed to save gamestats.json', e); }
+}
+setInterval(saveGameStats, 15000).unref();
+// accounts.js exits on SIGTERM/SIGINT after saving users — save game stats first
+process.prependListener('SIGTERM', saveGameStats);
+process.prependListener('SIGINT', saveGameStats);
+// which game a websocket "world" label belongs to: lobby, battle, play:sky (Sky Rush), play:<world id>
+function gameKeyForWorld(world){
+  if(world === 'lobby' || world === 'battle') return world;
+  if(typeof world === 'string' && world.indexOf('play:') === 0) return world.slice(5);
+  return null;
+}
+function gameSummary(key, u){
+  const st = gameStats[key] || { visits:0, votes:{} };
+  let up = 0, down = 0;
+  Object.values(st.votes || {}).forEach(v => { if(v > 0) up++; else if(v < 0) down++; });
+  let playing = 0;
+  for(const p of players.values()) if(gameKeyForWorld(p.world) === key) playing++;
+  return { key, visits: st.visits || 0, up, down, playing, myVote: u ? ((st.votes||{})[u.id] || 0) : 0 };
+}
+app.get('/api/games', (req, res) => {
+  const u = optionalUser(req);
+  const keys = ['lobby', 'sky', 'battle'].concat(worlds.map(w => w.id));
+  res.json(keys.map(k => gameSummary(k, u)));
+});
+app.post('/api/games/:key/vote', requireAuth, (req, res) => {
+  const key = String(req.params.key);
+  const known = ['lobby','sky','battle'].includes(key) || worlds.some(w => w.id === key);
+  if(!known) return res.status(404).json({ error:'No such game.' });
+  const v = Number(req.body && req.body.v);
+  const st = gameStat(key);
+  st.votes = st.votes || {};
+  if(v === 1 || v === -1) st.votes[req.authedUser.id] = v; else delete st.votes[req.authedUser.id];
+  gameStatsDirty = true;
+  res.json(gameSummary(key, req.authedUser));
 });
 
 // ---- accounts, tokens, quests, avatar uploads (see accounts.js) ----
@@ -111,6 +171,13 @@ app.post('/api/quests/:id/claim', requireAuth, (req, res) => {
   const result = accounts.claimQuest(req.authedUser, req.params.id);
   if(result.error) return res.status(400).json({ error: result.error });
   res.json({ user: accounts.publicUser(req.authedUser), reward: result.reward });
+});
+
+app.get('/api/shop', (req, res) => res.json(accounts.SHOP_ITEMS));
+app.post('/api/shop/buy/:id', requireAuth, (req, res) => {
+  const result = accounts.buyItem(req.authedUser, req.params.id);
+  if(result.error) return res.status(400).json({ error: result.error });
+  res.json({ user: accounts.publicUser(req.authedUser), item: result.item });
 });
 
 const avatarUpload = multer({
@@ -414,6 +481,8 @@ wss.on('connection', (ws) => {
         player.avatar = Object.assign({}, avatarIn, authedUser
           ? { uploadedAvatarUrl: authedUser.avatarFile ? ('/api/avatars/' + authedUser.id + '.glb') : null }
           : {});
+        // shop accessories/faces show only if this account really owns them (guests own none)
+        Object.assign(player.avatar, accounts.ownedCosmetics(authedUser, avatarIn));
         broadcastAll({ t:'player_join', id, name:player.name, avatar:player.avatar, world:player.world, isAdmin:player.isAdmin }, id);
         break;
       }
@@ -438,6 +507,8 @@ wss.on('connection', (ws) => {
             if(other.id !== id && other.world === player.world && other.pstate) send(ws, { t:'pstate', id:other.id, dead:other.pstate.dead, stats:other.pstate.stats });
           }
           if(player.world === BATTLE_WORLD) battleEnter(player);
+          const gk = gameKeyForWorld(player.world);
+          if(gk){ gameStat(gk).visits++; gameStatsDirty = true; }
         }
         broadcastWorld(player.world, { t:'presence', id, x:player.x,y:player.y,z:player.z, ry:player.ry, anim:player.anim, world:player.world }, id);
         break;
