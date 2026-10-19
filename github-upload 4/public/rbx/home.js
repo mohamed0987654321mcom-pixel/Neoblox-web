@@ -186,6 +186,25 @@
     disposeObj(scene);
     return url;
   }
+  // a quick picture of any set of parts (NeoStudio's Toolbox uses this for its models)
+  NH.blocksThumb = function(blocks, w, h){
+    const R = thumbRenderer(); R.setSize(w, h, false);
+    const scene = new THREE.Scene();
+    scene.background = makeSkyTexture('#3f7fc9','#cfe6fb');
+    const box = new THREE.Box3();
+    deserializeBlocks(blocks).forEach((v,k)=>{
+      const [x,y,z] = k.split(',').map(Number);
+      const m = makeBlockMesh(v.type, v.props); m.position.set(x+0.5, y+0.5, z+0.5); scene.add(m);
+      box.expandByPoint(new THREE.Vector3(x,y,z)); box.expandByPoint(new THREE.Vector3(x+1,y+1,z+1));
+    });
+    if(box.isEmpty()) box.set(new THREE.Vector3(-1,0,-1), new THREE.Vector3(1,1,1));
+    lightScene(scene, 'day', Math.max(6, box.getSize(new THREE.Vector3()).length()));
+    const cam = frameCamera(scene, box, w, h, new THREE.Vector3(1, 0.9, 1.3));
+    R.render(scene, cam);
+    const url = R.domElement.toDataURL('image/jpeg', 0.85);
+    disposeObj(scene);
+    return url;
+  };
   // headshots (profile pictures) of avatars — your own and everyone online
   const headCache = {};
   function headshot(prof, size){

@@ -660,6 +660,7 @@
 </style>
 <link rel="stylesheet" href="rbx/hud.css">
 <link rel="stylesheet" href="rbx/home.css">
+<link rel="stylesheet" href="rbx/studio.css">
 </head>
 <body>
 <div id="app">
@@ -884,70 +885,155 @@
       <div class="body" id="worldList"></div>
     </div>
 
-    <!-- NeoStudio's editor chrome: a game-studio-style ribbon (tabs + tool groups) with
-         docked Explorer/Properties panels either side of the 3D viewport. Generic IDE-panel
-         look (own colors/branding), not a copy of Studio's actual artwork. -->
+    <!-- NeoStudio: a game-studio layout — title bar with tabs, a ribbon of tool groups, Toolbox on
+         the left, Explorer + Properties on the right, Output along the bottom. Own icons/colors. -->
     <div class="studio-ide" id="studioIde" hidden>
-      <div class="studio-ribbon panel interactive" id="studioRibbon">
+      <div class="sd-titlebar interactive">
+        <button class="sd-file" id="sdFileBtn">File</button>
         <div class="ribbon-tabs">
-          <button class="ribbon-tab active" data-ribtab="home" id="ribTabHome">Home</button>
-          <button class="ribbon-tab" data-ribtab="test" id="ribTabTest">Test</button>
+          <button class="ribbon-tab active" data-ribtab="home" id="ribTabHome">HOME</button>
+          <button class="ribbon-tab" data-ribtab="model" id="ribTabModel">MODEL</button>
+          <button class="ribbon-tab" data-ribtab="test" id="ribTabTest">TEST</button>
+          <button class="ribbon-tab" data-ribtab="view" id="ribTabView">VIEW</button>
         </div>
+        <div class="sd-title" id="sdTitle">Untitled Place</div>
+        <button class="sd-top-btn primary" id="sdPublishTop">Publish</button>
+        <button class="sd-top-btn" id="sdExit">Exit</button>
+      </div>
+      <div class="studio-ribbon interactive" id="studioRibbon">
         <div class="ribbon-groups" id="ribbonHome">
           <div class="ribbon-group">
             <div class="ribbon-buttons">
-              <button class="rib-btn tool-btn" id="toolSelect" data-tool="select" title="Select (C)"><span class="rib-ic">🖱</span><span>Select</span></button>
-              <button class="rib-btn tool-btn" id="toolPlace" data-tool="place" title="Build (B)"><span class="rib-ic">▦</span><span>Build</span></button>
-              <button class="rib-btn tool-btn" id="toolErase" data-tool="erase" title="Erase (X)"><span class="rib-ic">✕</span><span>Erase</span></button>
+              <button class="rib-btn" id="sdCopy" title="Copy (Ctrl+C)"><span class="rib-ic">⧉</span><span>Copy</span></button>
+              <button class="rib-btn" id="sdPaste" title="Paste (Ctrl+V)"><span class="rib-ic">📋</span><span>Paste</span></button>
+              <button class="rib-btn" id="sdDuplicate" title="Duplicate (Ctrl+D)"><span class="rib-ic">⊕</span><span>Duplicate</span></button>
+            </div>
+            <div class="ribbon-label">Clipboard</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn tool-btn" id="toolSelect" data-tool="select" title="Select (C)"><span class="rib-ic">↖</span><span>Select</span></button>
+              <button class="rib-btn tool-btn" id="toolMove" data-tool="move" title="Move (M) — then drag the arrows"><span class="rib-ic">✥</span><span>Move</span></button>
+              <button class="rib-btn tool-btn" id="toolRotate" data-tool="rotate" title="Rotate (R) — click a part to turn it"><span class="rib-ic">⟳</span><span>Rotate</span></button>
+              <button class="rib-btn tool-btn" id="toolPlace" data-tool="place" title="Build (B) — click to add parts"><span class="rib-ic">▦</span><span>Build</span></button>
+              <button class="rib-btn tool-btn" id="toolErase" data-tool="erase" title="Delete (X)"><span class="rib-ic">✕</span><span>Delete</span></button>
             </div>
             <div class="ribbon-label">Tools</div>
           </div>
           <div class="ribbon-group">
             <div class="ribbon-buttons">
-              <button class="rib-btn tool-btn" id="toolSpawn" data-tool="spawn" title="Set spawn (V)"><span class="rib-ic">★</span><span>Spawn</span></button>
-              <button class="rib-btn tool-btn" id="toolGoal" data-tool="goal" title="Set goal (G)"><span class="rib-ic">⚑</span><span>Goal</span></button>
+              <button class="rib-btn" id="sdToolboxBtn" title="Toolbox"><span class="rib-ic">🧰</span><span>Toolbox</span></button>
+              <div class="sd-drop">
+                <button class="rib-btn" id="sdPartBtn" title="Part shape"><span class="rib-ic" id="sdPartIcon">■</span><span>Part ▾</span></button>
+                <div class="sd-menu" id="sdPartMenu" hidden></div>
+              </div>
+              <button class="rib-btn" id="btnInsertLabel" title="Add an on-screen text label"><span class="rib-ic">🏷</span><span>Label</span></button>
+              <button class="rib-btn" id="btnInsertButton" title="Add a clickable on-screen button"><span class="rib-ic">🔘</span><span>Button</span></button>
             </div>
-            <div class="ribbon-label">World</div>
-          </div>
-          <div class="ribbon-group ribbon-group-insert">
-            <div class="palette-grid" id="paletteGrid"></div>
             <div class="ribbon-label">Insert</div>
           </div>
           <div class="ribbon-group">
             <div class="ribbon-buttons">
-              <button class="rib-btn" id="btnInsertLabel" title="Add an on-screen text label"><span class="rib-ic">🏷</span><span>+ Label</span></button>
-              <button class="rib-btn" id="btnInsertButton" title="Add a clickable on-screen button"><span class="rib-ic">🔘</span><span>+ Button</span></button>
+              <div class="sd-drop">
+                <button class="rib-btn" id="sdMaterialBtn" title="Material"><span class="rib-ic" id="sdMaterialIcon">◼</span><span>Material ▾</span></button>
+                <div class="sd-menu sd-menu-wide" id="sdMaterialMenu" hidden><div class="palette-grid" id="paletteGrid"></div></div>
+              </div>
+              <div class="sd-drop">
+                <button class="rib-btn" id="sdColorBtn" title="Color"><span class="rib-ic"><span class="sd-colordot" id="sdColorDot"></span></span><span>Color ▾</span></button>
+                <div class="sd-menu sd-menu-wide" id="sdColorMenu" hidden></div>
+              </div>
             </div>
-            <div class="ribbon-label">UI</div>
+            <div class="ribbon-label">Edit</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn tool-btn" id="toolSpawn" data-tool="spawn" title="Set spawn (V)"><span class="rib-ic">★</span><span>Spawn</span></button>
+              <button class="rib-btn tool-btn" id="toolGoal" data-tool="goal" title="Set the win pad (G)"><span class="rib-ic">🏆</span><span>Goal</span></button>
+            </div>
+            <div class="ribbon-label">World</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn primary" id="sdPlayHome" title="Play (F5)"><span class="rib-ic">▶</span><span>Play</span></button>
+            </div>
+            <div class="ribbon-label">Test</div>
+          </div>
+        </div>
+        <div class="ribbon-groups" id="ribbonModel" hidden>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn" data-quick="kill" title="Insert a kill brick"><span class="rib-ic" style="color:#ff4040">■</span><span>Kill Brick</span></button>
+              <button class="rib-btn" data-quick="checkpoint" title="Insert a checkpoint"><span class="rib-ic" style="color:#2fbf5b">⚑</span><span>Checkpoint</span></button>
+              <button class="rib-btn" data-quick="bounce" title="Insert a jump pad"><span class="rib-ic" style="color:#ffc93c">⤒</span><span>Jump Pad</span></button>
+              <button class="rib-btn" data-quick="neon" title="Insert a glowing neon part"><span class="rib-ic" style="color:#c8ff4d">✦</span><span>Neon</span></button>
+              <button class="rib-btn" data-quick="glass" title="Insert see-through glass"><span class="rib-ic" style="color:#bfe3ff">◇</span><span>Glass</span></button>
+            </div>
+            <div class="ribbon-label">Gameplay Parts</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons" id="sdShapeButtons"></div>
+            <div class="ribbon-label">Shapes</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn" id="sdBaseplateBtn" title="Show or remove the baseplate"><span class="rib-ic">▭</span><span>Baseplate</span></button>
+              <button class="rib-btn ghost" id="btnClearWorld" title="Clear all parts"><span class="rib-ic">🗑</span><span>Clear All</span></button>
+            </div>
+            <div class="ribbon-label">Place</div>
           </div>
         </div>
         <div class="ribbon-groups" id="ribbonTest" hidden>
           <div class="ribbon-group">
             <div class="ribbon-buttons">
-              <button class="rib-btn primary" id="btnPlayTest" title="Play test your build"><span class="rib-ic">▶</span><span>Play</span></button>
-              <button class="rib-btn" id="btnStopTest" title="Stop testing" hidden><span class="rib-ic">■</span><span>Stop</span></button>
+              <button class="rib-btn primary" id="btnPlayTest" title="Play test your build (F5)"><span class="rib-ic">▶</span><span>Play</span></button>
+              <button class="rib-btn" id="btnStopTest" title="Stop testing (Shift+F5)" hidden><span class="rib-ic" style="color:#ff5c5c">■</span><span>Stop</span></button>
             </div>
-            <div class="ribbon-label">Test</div>
+            <div class="ribbon-label">Simulation</div>
           </div>
           <div class="ribbon-group">
             <div class="ribbon-buttons">
               <button class="rib-btn primary" id="btnPublish" title="Publish this world"><span class="rib-ic">⇪</span><span>Publish</span></button>
-              <button class="rib-btn ghost" id="btnClearWorld" title="Clear all blocks"><span class="rib-ic">🗑</span><span>Clear all</span></button>
             </div>
             <div class="ribbon-label">Game</div>
           </div>
         </div>
+        <div class="ribbon-groups" id="ribbonView" hidden>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn sd-toggle" data-panel="studioExplorerPanel"><span class="rib-ic">🗂</span><span>Explorer</span></button>
+              <button class="rib-btn sd-toggle" data-panel="studioPropertiesPanel"><span class="rib-ic">☰</span><span>Properties</span></button>
+              <button class="rib-btn sd-toggle" data-panel="studioToolboxPanel"><span class="rib-ic">🧰</span><span>Toolbox</span></button>
+              <button class="rib-btn sd-toggle" data-panel="studioOutputPanel"><span class="rib-ic">⌨</span><span>Output</span></button>
+            </div>
+            <div class="ribbon-label">Show</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn" data-sky="day"><span class="rib-ic">☀️</span><span>Day</span></button>
+              <button class="rib-btn" data-sky="sunset"><span class="rib-ic">🌇</span><span>Sunset</span></button>
+              <button class="rib-btn" data-sky="night"><span class="rib-ic">🌙</span><span>Night</span></button>
+            </div>
+            <div class="ribbon-label">Lighting</div>
+          </div>
+        </div>
       </div>
-
-      <div class="studio-dock studio-dock-left panel interactive" id="studioExplorerPanel">
-        <div class="dock-head">Explorer</div>
+      <div class="studio-dock studio-dock-left panel interactive" id="studioToolboxPanel">
+        <div class="dock-head">Toolbox <button class="dock-x" data-close="studioToolboxPanel">✕</button></div>
+        <div class="dock-body" id="studioToolboxBody"></div>
+      </div>
+      <div class="studio-dock studio-dock-right panel interactive" id="studioExplorerPanel">
+        <div class="dock-head">Explorer <button class="dock-x" data-close="studioExplorerPanel">✕</button></div>
         <div class="dock-body" id="studioExplorerBody"></div>
       </div>
-
-      <div class="studio-dock studio-dock-right panel interactive" id="studioPropertiesPanel">
-        <div class="dock-head">Properties</div>
+      <div class="studio-dock studio-dock-right2 panel interactive" id="studioPropertiesPanel">
+        <div class="dock-head">Properties <button class="dock-x" data-close="studioPropertiesPanel">✕</button></div>
         <div class="dock-body" id="studioPropertiesBody"></div>
       </div>
+      <div class="studio-output interactive" id="studioOutputPanel">
+        <div class="dock-head">Output <button class="dock-x" id="sdClearOutput" title="Clear">⌫</button><button class="dock-x" data-close="studioOutputPanel">✕</button></div>
+        <div class="dock-body" id="studioOutputBody"></div>
+      </div>
+    </div>
     </div>
 
     <!-- ===== Touch controls (phone/tablet): virtual joystick + jump, drag the scene to look ===== -->
@@ -1178,50 +1264,103 @@ const PART_SHAPES = ['block','wedge','sphere','cylinder'];
 // code on everyone who plays it — this interpreter physically cannot do anything beyond the
 // commands listed in SCRIPT_HELP, whatever text someone puts in the box.
 const SCRIPT_CODE_MAXLEN = 600;
-const SCRIPT_HELP = 'say "text"\nchangecolor <grass|stone|wood|brick|ice|neon>\nteleport x,y,z\nheal N\ngivexp N\nplaysound <place|erase|jump|land|goal|publish>\ncheckpoint\ndestroy\nwait seconds';
+const SCRIPT_HELP = 'say "text"        — show a message\nprint "text"      — write to Output (chat in play)\ncolor #ff0000     — recolor this part\nchangecolor neon  — change this part\'s material\ntransparency 0.5  — make this part see-through\ndestroy           — remove this part\ncheckpoint        — save the player\'s spot here\nteleport x,y,z    — move the player\njump 20           — launch the player up\nheal 25 · damage 25 · kill\nplaysound goal    — place, erase, jump, land, goal, publish, checkpoint, boing\nwait 1            — pause (max 5 s)\n\nYou can also write them like functions: print("hi")';
+const SCRIPT_COMMANDS = ['givexp','say','print','color','changecolor','transparency','destroy','checkpoint','teleport','jump','heal','damage','kill','playsound','wait'];
 
 function parseScriptLine(line){
-  line = line.trim();
-  if(!line || line.startsWith('//')) return null;
+  line = line.trim().replace(/;$/, '');
+  if(!line || line.startsWith('//') || line.startsWith('--')) return null;
+  const fn = line.match(/^(\w+)\s*\((.*)\)$/);   // print("hi") style
+  if(fn) return { cmd: fn[1].toLowerCase(), args: fn[2].trim() };
   const m = line.match(/^(\w+)\s*(.*)$/);
-  if(!m) return null;
+  if(!m) return { cmd:'?', args:line };
   return { cmd: m[1].toLowerCase(), args: m[2].trim() };
 }
+function scriptText(args){ const m = String(args).match(/^["'](.*)["']$/); return (m ? m[1] : args).slice(0,120); }
 
 // ctx: { player, blockPos:{x,y,z}|null } — blockPos is null for UI-button scripts (no block to
 // recolor/destroy/checkpoint from), player is whichever local avatar triggered this.
 async function runScriptCode(code, ctx){
   if(!code) return;
   const lines = String(code).split('\n').slice(0,40); // a runaway script can't loop forever below
-  for(const raw of lines){
-    const parsed = parseScriptLine(raw);
+  for(let i=0;i<lines.length;i++){
+    const parsed = parseScriptLine(lines[i]);
     if(!parsed) continue;
+    if(!SCRIPT_COMMANDS.includes(parsed.cmd)){ scriptLog('Unknown command "'+parsed.cmd+'" on line '+(i+1)+' — see the Commands list', 'err'); continue; }
     try{ await runScriptCommand(parsed, ctx); }catch(e){ /* a bad line just gets skipped */ }
   }
 }
+function scriptLog(text, kind){
+  if(window.NeoStudioUI && App.mode==='studio') NeoStudioUI.log('[Script] '+text, kind);
+}
+// Scripts change parts only for this play session — the saved world never changes.
+function scriptReplacePart(pos, type, patch){
+  if(!pos || !App.worldMeshes) return;
+  const key = blockKey(pos.x,pos.y,pos.z);
+  const m = App.worldMeshes.get(key); if(!m) return;
+  const props = cleanProps(Object.assign({}, m.userData.props||{}, patch||{})) || {};
+  const n = makeBlockMesh(type || m.userData.blockType, props);
+  n.position.copy(m.position);
+  ['gx','gy','gz','script','stage'].forEach(k=>{ n.userData[k] = m.userData[k]; });
+  App.blockGroup.remove(m); App.blockGroup.add(n);
+  App.worldMeshes.set(key, n);
+}
 async function runScriptCommand({cmd, args}, ctx){
+  const editing = App.mode==='studio' && !App.studio.testing;
+  if(editing) return; // scripts run when playing, not while you're building
   switch(cmd){
     case 'say': {
-      const m = args.match(/^["'](.*)["']$/);
-      showToast('💬 ' + (m ? m[1] : args).slice(0,120));
+      const t = scriptText(args);
+      if(window.RbxHud && RbxHud.active()) RbxHud.flash(t); else showToast('💬 ' + t);
+      scriptLog('say: '+t);
+      break;
+    }
+    case 'print': {
+      const t = scriptText(args);
+      scriptLog(t);
+      if(App.mode!=='studio' && window.RbxHud && RbxHud.active()) RbxHud.addSystemMessage(t);
       break;
     }
     case 'changecolor': {
       const type = args.trim().toLowerCase();
-      if(ctx.blockPos && BLOCK_TYPES.find(t=>t.id===type)) changeStudioBlockType(ctx.blockPos, type);
+      if(ctx.blockPos && BLOCK_TYPE_BY_ID[type]) scriptReplacePart(ctx.blockPos, type);
+      break;
+    }
+    case 'color': {
+      const c = hexToNum(scriptText(args).trim());
+      if(ctx.blockPos && c!==null) scriptReplacePart(ctx.blockPos, null, { c: numToHex(c) });
+      break;
+    }
+    case 'transparency': {
+      const t = clamp(parseFloat(args)||0, 0, 0.95);
+      if(ctx.blockPos) scriptReplacePart(ctx.blockPos, null, { t });
       break;
     }
     case 'teleport': {
-      const parts = args.split(',').map(s=>parseFloat(s.trim()));
+      const parts = args.replace(/[()]/g,'').split(',').map(s=>parseFloat(s.trim()));
       if(parts.length===3 && parts.every(Number.isFinite) && ctx.player){
         ctx.player.pos.set(parts[0]+0.5, parts[1]+0.3, parts[2]+0.5);
         ctx.player.vel.set(0,0,0);
       }
       break;
     }
+    case 'jump': {
+      if(ctx.player){ ctx.player.vel.y = clamp(parseFloat(args)||12, 0, 40); ctx.player.grounded = false; }
+      break;
+    }
     case 'heal': {
       const n = clamp(parseInt(args)||0, 0, 100);
-      if(App.battle && App.battle.alive){ App.battle.health = clamp(App.battle.health+n,0,100); updateBattleHud(); }
+      if(App.battle && App.mode==='battle' && App.battle.alive){ App.battle.health = clamp(App.battle.health+n,0,100); updateBattleHud(); }
+      else if(App.hum && !App.hum.dead){ App.hum.health = Math.min(App.hum.maxHealth, App.hum.health+n); if(window.RbxHud) RbxHud.onHealth(); }
+      break;
+    }
+    case 'damage': {
+      const n = clamp(parseInt(args)||0, 0, 100);
+      if(App.hum) humDamage(n, 'script');
+      break;
+    }
+    case 'kill': {
+      if(App.hum) humDie('kill');
       break;
     }
     case 'givexp': {
@@ -1229,20 +1368,24 @@ async function runScriptCommand({cmd, args}, ctx){
       break;
     }
     case 'playsound': {
-      const name = args.trim().toLowerCase();
+      const name = args.replace(/["'()]/g,'').trim().toLowerCase();
       if(SFX[name]) SFX[name]();
       break;
     }
     case 'checkpoint': {
-      if(ctx.blockPos){ App.studio.spawn = { x:ctx.blockPos.x, y:ctx.blockPos.y+1, z:ctx.blockPos.z }; showToast('🚩 Checkpoint!'); }
+      if(ctx.blockPos){ App.checkpoint = { x:ctx.blockPos.x, y:ctx.blockPos.y+1, z:ctx.blockPos.z }; if(window.RbxHud && RbxHud.active()) RbxHud.flash('🚩 Checkpoint saved'); else showToast('🚩 Checkpoint!'); }
       break;
     }
     case 'destroy': {
-      if(ctx.blockPos) removeStudioBlock(ctx.blockPos.x, ctx.blockPos.y, ctx.blockPos.z);
+      if(ctx.blockPos && App.worldMeshes){
+        const key = blockKey(ctx.blockPos.x, ctx.blockPos.y, ctx.blockPos.z);
+        const m = App.worldMeshes.get(key);
+        if(m){ App.blockGroup.remove(m); App.worldMeshes.delete(key); }
+      }
       break;
     }
     case 'wait': {
-      const secs = clamp(parseFloat(args)||0, 0, 5);
+      const secs = clamp(parseFloat(String(args).replace(/[()]/g,''))||0, 0, 5);
       await new Promise(res=>setTimeout(res, secs*1000));
       break;
     }
@@ -1330,8 +1473,10 @@ const App = {
   currentWorldId:null,  // world doc id when in `play` mode on a community world
   studio: {
     worldId:null, // set once you've published/loaded, for overwrite-on-republish
-    selectedBlock:'grass',
-    tool:'place', // select | place | erase | spawn | goal
+    selectedBlock:'plastic',
+    tool:'place', // select | move | rotate | place | erase | spawn | goal | prefab
+    partShape:'block', partColor:null, // what new parts look like (ribbon Part ▾ / Color ▾)
+    baseplate:true, lighting:{ sky:'day' }, prefab:null,
     blocks: new Map(), // key "x,y,z" -> {type, script:null|{event,code}}
     ui: [],       // StarterGui-style on-screen elements: {id,kind:'label'|'button',text,xPct,yPct,script}
     spawn: {x:0,y:1,z:0},
@@ -3206,7 +3351,7 @@ function buildStudioScene(){
     scene.add(ground);
     App.groundMesh = ground;
   }
-  addGroundGrid(scene, WORLD_BOUND*2, 0x8b939c, 0x5d6670);
+  if(App.studio.baseplate === false) addGroundGrid(scene, WORLD_BOUND*2, 0x8b939c, 0x5d6670);
 
   const blockGroup = new THREE.Group();
   scene.add(blockGroup);
@@ -3323,6 +3468,9 @@ function installInputOnce(){
     // In worlds and playtests the Roblox-style camera (rbx/hud.js) owns the mouse: right-drag to
     // turn, wheel to zoom, Shift for shift-lock — a plain click doesn't grab the cursor.
     if(humActive() && window.RbxCam) return;
+    // NeoStudio editing works like a desktop editor: free mouse cursor, click to use the tool,
+    // right-drag to look around (rbx/studio.js) — no pointer lock.
+    if(App.mode==='studio' && !App.studio.testing && window.NeoStudioUI) return;
     if(document.pointerLockElement !== canvas){
       canvas.requestPointerLock && canvas.requestPointerLock();
       return;
@@ -4081,17 +4229,45 @@ function setStudioTool(tool){
   document.querySelectorAll('.tool-btn[data-tool]').forEach(el=> el.classList.toggle('active', el.dataset.tool===tool));
 }
 
-function addStudioBlock(x,y,z,type){
+function addStudioBlock(x,y,z,type,props,data){
   const key = blockKey(x,y,z);
-  if(App.studio.blocks.has(key)) return;
-  App.studio.blocks.set(key, { type });
-  const m = makeBlockMesh(type);
+  if(App.studio.blocks.has(key)) return false;
+  const p = cleanProps(props);
+  App.studio.blocks.set(key, { type, props:p, script: data && data.script ? Object.assign({}, data.script) : null });
+  const m = makeBlockMesh(type, p);
   m.position.set(x+0.5,y+0.5,z+0.5);
   m.userData.gx=x; m.userData.gy=y; m.userData.gz=z;
+  m.userData.script = data && data.script ? Object.assign({}, data.script) : null;
   App.blockGroup.add(m);
   App.worldMeshes.set(key, m);
-  SFX.place();
+  if(!(data && data.quiet)){ SFX.place(); renderStudioExplorer(); }
+  return true;
+}
+// The look new parts get: the Part ▾ shape and Color ▾ picked in the ribbon.
+function studioNewPartProps(){
+  const p = {};
+  if(App.studio.partShape && App.studio.partShape!=='block') p.s = App.studio.partShape;
+  if(App.studio.partColor) p.c = App.studio.partColor;
+  return p;
+}
+// Change one property of a part (color, shape, rotation, transparency, CanCollide, stage, name).
+function setStudioBlockProp(sel, key, value){
+  const bkey = blockKey(sel.x, sel.y, sel.z);
+  const data = App.studio.blocks.get(bkey);
+  if(!data) return;
+  const props = Object.assign({}, data.props||{});
+  if(value===null || value===undefined || value==='' || value===false) delete props[key]; else props[key] = value;
+  data.props = cleanProps(props);
+  const old = App.worldMeshes.get(bkey);
+  if(old) App.blockGroup.remove(old);
+  const m = makeBlockMesh(data.type, data.props);
+  m.position.set(sel.x+0.5, sel.y+0.5, sel.z+0.5);
+  m.userData.gx=sel.x; m.userData.gy=sel.y; m.userData.gz=sel.z;
+  m.userData.script = data.script || null;
+  App.blockGroup.add(m);
+  App.worldMeshes.set(bkey, m);
   renderStudioExplorer();
+  renderStudioProperties();
 }
 function removeStudioBlock(x,y,z){
   const key = blockKey(x,y,z);
@@ -4397,9 +4573,10 @@ function renderWorldUi(){
 // ---- ribbon tabs (Home / Test) ----
 function setStudioRibbonTab(tab){
   document.querySelectorAll('.ribbon-tab[data-ribtab]').forEach(b=> b.classList.toggle('active', b.dataset.ribtab===tab));
-  const homeEl = document.getElementById('ribbonHome'), testEl = document.getElementById('ribbonTest');
-  if(homeEl) homeEl.hidden = tab!=='home';
-  if(testEl) testEl.hidden = tab!=='test';
+  ['home','model','test','view'].forEach(t=>{
+    const el = document.getElementById('ribbon' + t[0].toUpperCase() + t.slice(1));
+    if(el) el.hidden = t!==tab;
+  });
 }
 
 // ---- Test > Play: playtest your build right inside the editor, game-studio-style, without
@@ -4426,41 +4603,60 @@ function stopStudioPlaytest(){
   if(App.player && App.player.rig && App.player.rig.group.parent) App.player.rig.group.parent.remove(App.player.rig.group);
   App.player = null;
   if(window.RbxHud) RbxHud.hide();
-  App.studioPos = null;
+  // anything scripts changed while testing (destroyed/recolored parts) goes back to how you built it
+  const keepCam = App.studioPos ? App.studioPos.clone() : null, keepYaw = App.yaw, keepPitch = App.pitch;
+  buildStudioScene();
+  App.studioPos = keepCam; App.yaw = keepYaw; App.pitch = keepPitch;
   document.getElementById('btnPlayTest').hidden = false;
   document.getElementById('btnStopTest').hidden = true;
   showToast('Back to editing');
 }
 
-function performBuildAction(){
-  RAY.setFromCamera({x:0,y:0}, App.camera);
+// What's under a screen point (normalized device coords; the screen center by default):
+// { hit, gx,gy,gz (the part hit, if any), px,py,pz (the empty cell next to it, for building) }
+function studioPick(ndc){
+  RAY.setFromCamera(ndc || {x:0,y:0}, App.camera);
   const targets = App.blockGroup.children.concat(App.groundMesh ? [App.groundMesh] : []);
   const hits = RAY.intersectObjects(targets, false);
-  if(!hits.length) return;
+  if(!hits.length) return null;
   const hit = hits[0];
+  const out = { hit };
+  if(hit.object.userData.gx!==undefined){
+    out.gx = hit.object.userData.gx; out.gy = hit.object.userData.gy; out.gz = hit.object.userData.gz;
+    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+    out.px = out.gx + Math.round(n.x); out.py = out.gy + Math.round(n.y); out.pz = out.gz + Math.round(n.z);
+  } else {
+    out.px = Math.floor(hit.point.x); out.pz = Math.floor(hit.point.z); out.py = 0;
+  }
+  return out;
+}
+function performBuildAction(ndc){
+  const pick = studioPick(ndc);
+  if(!pick) return;
+  const hit = pick.hit;
   const tool = App.studio.tool;
 
   if(tool==='erase'){
-    if(hit.object.userData.gx!==undefined) removeStudioBlock(hit.object.userData.gx, hit.object.userData.gy, hit.object.userData.gz);
+    if(pick.gx!==undefined) removeStudioBlock(pick.gx, pick.gy, pick.gz);
     return;
   }
-  if(tool==='select'){
-    if(hit.object.userData.gx!==undefined) selectStudioBlock(hit.object.userData.gx, hit.object.userData.gy, hit.object.userData.gz);
+  if(tool==='select' || tool==='move'){
+    if(pick.gx!==undefined) selectStudioBlock(pick.gx, pick.gy, pick.gz);
     else selectStudioBlock(null);
     return;
   }
-  let gx,gy,gz;
-  if(hit.object.userData.gx!==undefined){
-    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-    gx = hit.object.userData.gx + Math.round(n.x);
-    gy = hit.object.userData.gy + Math.round(n.y);
-    gz = hit.object.userData.gz + Math.round(n.z);
-  } else {
-    gx = Math.floor(hit.point.x); gz = Math.floor(hit.point.z); gy = 0;
+  if(tool==='rotate'){
+    if(pick.gx!==undefined){ selectStudioBlock(pick.gx, pick.gy, pick.gz); setStudioBlockProp({ x:pick.gx, y:pick.gy, z:pick.gz }, 'r', (((App.studio.blocks.get(blockKey(pick.gx,pick.gy,pick.gz)).props||{}).r||0)+1)%4); }
+    return;
   }
+  if(tool==='prefab' && App.studio.prefab){
+    if(window.NeoStudioUI) NeoStudioUI.placePrefab(App.studio.prefab, pick.px, pick.py, pick.pz);
+    return;
+  }
+  const gx = pick.px, gy = pick.py, gz = pick.pz;
   if(Math.abs(gx)>WORLD_BOUND || Math.abs(gz)>WORLD_BOUND || gy<0 || gy>WORLD_MAXY){ showToast('Out of bounds'); return; }
 
-  if(tool==='place'){ addStudioBlock(gx,gy,gz, App.studio.selectedBlock); }
+  if(tool==='place'){ addStudioBlock(gx,gy,gz, App.studio.selectedBlock, studioNewPartProps()); }
   else if(tool==='spawn'){
     App.studio.spawn = { x:gx, y:gy+1, z:gz };
     App.markers.spawn.position.set(gx+0.5, gy+1, gz+0.5);
@@ -4481,8 +4677,8 @@ function updateStudioCamera(dt){
   if(App.input.back) App.studioPos.addScaledVector(camDir, -speed*dt);
   if(App.input.right) App.studioPos.addScaledVector(right, speed*dt);
   if(App.input.left) App.studioPos.addScaledVector(right, -speed*dt);
-  if(App.input.jump) App.studioPos.y += speed*dt;
-  if(App.input.down) App.studioPos.y -= speed*dt;
+  if(App.input.jump || App.input.up) App.studioPos.y += speed*dt;
+  if(App.input.down || App.input.sink) App.studioPos.y -= speed*dt;
   App.studioPos.y = clamp(App.studioPos.y, 0.6, WORLD_MAXY+6);
   App.camera.position.copy(App.studioPos);
   App.camera.lookAt(App.studioPos.clone().add(camDir));
@@ -4515,12 +4711,8 @@ function animate(){
     if(Net.connected) syncRemotePeers(dt);
   } else if(App.mode==='studio'){
     if(App.markers.goal && App.markers.goal.userData.trophy) App.markers.goal.userData.trophy.rotation.y += dt*1.6;
-    if(App.studioSelectOutline){
-      App.studioSelectOutline.rotation.y += dt*0.8;
-      App.studioSelectOutline.material.opacity = 0.6 + Math.sin(App.clockT*4)*0.3;
-    }
     if(App.studio.testing) updateAvatarController(dt);
-    else updateStudioCamera(dt);
+    else { updateStudioCamera(dt); if(window.NeoStudioUI) NeoStudioUI.tick(dt); }
   }
 
   if(App.sunLight){
@@ -5195,6 +5387,7 @@ function initPartyUI(){
 
 function showHudFor(mode, data){
   syncLobbyMusicToMode(mode);
+  document.body.classList.toggle('sd-on', mode==='studio');
   document.getElementById('modeTopBar').hidden = mode==='lobby';
   document.getElementById('lobbyNav').hidden = mode!=='lobby';
   document.getElementById('playerPanel').hidden = mode!=='lobby';
@@ -5563,8 +5756,12 @@ function loadWorldIntoStudio(w){
   App.studio.spawn = w.spawn || { x:0,y:1,z:0 };
   App.studio.goal = w.goal || null;
   App.studio.ui = deserializeUi(w.ui);
+  App.studio.baseplate = w.baseplate !== undefined ? !!w.baseplate : false; // older worlds were built over the void
+  App.studio.lighting = { sky: (w.lighting && w.lighting.sky) || 'day' };
+  App.studio.lastName = w.name || '';
   buildStudioScene();
   showToast('Loaded "'+w.name+'" for editing');
+  if(window.NeoStudioUI) NeoStudioUI.onLoaded(w);
 }
 
 async function publishWorld(name){
@@ -5575,6 +5772,8 @@ async function publishWorld(name){
     blocks: serializeBlocks(App.studio.blocks),
     spawn: App.studio.spawn, goal: App.studio.goal,
     ui: serializeUi(App.studio.ui),
+    baseplate: App.studio.baseplate !== false,
+    lighting: { sky: (App.studio.lighting && App.studio.lighting.sky) || 'day' },
     updatedAt: Date.now(),
   };
   try{
@@ -5589,8 +5788,9 @@ async function publishWorld(name){
     }
     SFX.publish();
     showToast('Published "'+name+'" to Neoblox!');
+    if(window.NeoStudioUI) NeoStudioUI.log('Published "'+name+'" to Neoblox — it\'s on the home page now.', 'ok');
     refreshMyWorldsForStudio();
-  }catch(e){ showToast('Publish failed — try again'); }
+  }catch(e){ showToast('Publish failed — ' + (e.message && e.message!=='update failed' ? e.message : 'try again')); if(window.NeoStudioUI) NeoStudioUI.log('Publish failed: '+(e.message||'try again'), 'err'); }
 }
 
 // ---- avatar preview (boot screen) ----
@@ -5644,7 +5844,7 @@ function buildSwatchRow(containerId, colors, key){
 
 function buildPaletteGrid(){
   const el = document.getElementById('paletteGrid');
-  el.innerHTML = BLOCK_TYPES.map(t=>`<div class="block-swatch${t.id==='grass'?' selected':''}" data-id="${t.id}" title="${t.label}" style="background:#${t.color.toString(16).padStart(6,'0')}"><span class="lbl">${t.label}</span></div>`).join('');
+  el.innerHTML = BLOCK_TYPES.map(t=>`<div class="block-swatch${t.id===App.studio.selectedBlock?' selected':''}" data-id="${t.id}" title="${t.label}" style="background:#${t.color.toString(16).padStart(6,'0')}"><span class="lbl">${t.label}</span></div>`).join('');
   el.querySelectorAll('.block-swatch').forEach(sw=>{
     sw.addEventListener('click', ()=> selectPaletteBlock(sw.dataset.id));
   });
@@ -5714,14 +5914,15 @@ function wireUI(){
   document.getElementById('toolGoal').addEventListener('click', ()=> setStudioTool('goal'));
   document.getElementById('btnInsertLabel').addEventListener('click', ()=> addStudioUi('label'));
   document.getElementById('btnInsertButton').addEventListener('click', ()=> addStudioUi('button'));
-  document.getElementById('ribTabHome').addEventListener('click', ()=> setStudioRibbonTab('home'));
-  document.getElementById('ribTabTest').addEventListener('click', ()=> setStudioRibbonTab('test'));
+  document.querySelectorAll('.ribbon-tab[data-ribtab]').forEach(b=> b.addEventListener('click', ()=> setStudioRibbonTab(b.dataset.ribtab)));
   document.getElementById('btnPlayTest').addEventListener('click', startStudioPlaytest);
   document.getElementById('btnStopTest').addEventListener('click', stopStudioPlaytest);
   document.getElementById('btnClearWorld').addEventListener('click', ()=>{
     App.studio.blocks.clear(); App.studio.goal = null; App.studio.spawn = {x:0,y:1,z:0};
     App.studio.ui = []; App.studio.worldId = null; App.studio.lastName = '';
+    App.studio.baseplate = true; App.studio.lighting = { sky:'day' };
     buildStudioScene(); showToast('Cleared — starting a fresh build');
+    if(window.NeoStudioUI) NeoStudioUI.onLoaded(null);
   });
 
   document.getElementById('btnPublish').addEventListener('click', ()=>{
@@ -6995,5 +7196,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 <script src="rbx/hud.js"></script>
 <script src="rbx/home.js"></script>
+<script src="rbx/studio.js"></script>
 </body>
 </html>

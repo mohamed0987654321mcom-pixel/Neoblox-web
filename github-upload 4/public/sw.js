@@ -17,7 +17,7 @@
 
 const CACHE_NAME = 'neoblox-v4';
 // The game's own code (the page + rbx/*) is network-first too, so updates always show up.
-const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/rbx/hud.css', '/rbx/hud.js', '/rbx/home.css', '/rbx/home.js'];
+const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/rbx/hud.css', '/rbx/hud.js', '/rbx/home.css', '/rbx/home.js', '/rbx/studio.css', '/rbx/studio.js'];
 const FULL_ASSETS = [
   '/three.min.js',
   '/icons/icon-192.png',

@@ -445,9 +445,17 @@
     if(e.code==='Slash'){ e.preventDefault(); setChatOpen(true); root.querySelector('#rbxChatInput').focus(); return; }
     if(e.code==='Tab'){ e.preventDefault(); S.playersOpen = !S.playersOpen; root.querySelector('#rbxPlayers').classList.toggle('closed', !S.playersOpen); return; }
     if(kind!=='battle'){
-      if((e.code==='ShiftLeft' || e.code==='ShiftRight') && !e.repeat && App.settings.shiftLock) C.setShiftLock(!C.shiftLock());
+      // Shift on its own toggles shift-lock (on release, so Shift+F5 and friends don't trigger it)
+      if(e.code==='ShiftLeft' || e.code==='ShiftRight'){ if(!e.repeat) S.shiftArmed = true; }
+      else S.shiftArmed = false;
       if(e.code==='KeyI') C.zoom(-1.2);
       if(e.code==='KeyO') C.zoom(1.2);
+    }
+  }, true);
+  window.addEventListener('keyup', (e)=>{
+    if((e.code==='ShiftLeft' || e.code==='ShiftRight') && S.shiftArmed){
+      S.shiftArmed = false;
+      if(kind && kind!=='battle' && !S.menuOpen && App.settings.shiftLock) C.setShiftLock(!C.shiftLock());
     }
   }, true);
 
@@ -569,6 +577,7 @@
     }, { passive:false });
     document.addEventListener('pointerlockchange', ()=>{
       const locked = document.pointerLockElement === canvas;
+      if(locked && cam.shift && !kind){ cam.shift = false; C._selfUnlock = true; document.exitPointerLock(); return; }
       if(!locked){
         const mine = C._selfUnlock; C._selfUnlock = false;
         if(cam.shift){ cam.shift = false; const x = document.getElementById('crosshair'); if(x) setTimeout(()=>{ x.hidden = true; }, 0); }
