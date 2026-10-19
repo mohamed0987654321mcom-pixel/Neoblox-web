@@ -96,6 +96,10 @@
     root.querySelector('#rbxHotbar').classList.toggle('on', k==='battle');
     root.querySelector('#rbxTimer').classList.toggle('on', k==='play' && !!(App.currentWorldData && App.currentWorldData.goal));
     root.querySelector('#rbxDeath').classList.remove('on');
+    // every game starts with a fresh chat, like joining a new server
+    chatMsgs.length = 0;
+    const log = root.querySelector('#rbxChatLog'); if(log) log.innerHTML = '';
+    S.unread = 0; updateBadge();
     const where = k==='battle' ? 'Thunder Battle' : k==='studio-test' ? 'your playtest' : ((d && d.name) || (App.currentWorldData && App.currentWorldData.name) || 'the experience');
     addMsg({ sys:true, text:'You joined '+where+'. Say hi! Type /e dance to dance.' });
     S.plHtml = ''; renderPlayers(true);
@@ -434,6 +438,7 @@
     const ae = document.activeElement;
     const typing = ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA');
     if(S.menuOpen){
+      if(['Escape','KeyR','KeyL','Enter','Space'].includes(e.code)) e.preventDefault(); // don't also "click" whatever has focus
       if(e.code==='Escape'){ e.preventDefault(); if(S.confirmLeave){ S.confirmLeave=false; renderMenu(); } else H.closeMenu(); }
       else if(e.code==='KeyR' && !S.confirmLeave){ doReset(); }
       else if(e.code==='KeyL'){ if(S.confirmLeave) doLeave(); else { S.confirmLeave = true; renderMenu(); } }

@@ -185,3 +185,4 @@ body.sd-on #tokenDock, body.sd-on #musicDock{ display:none !important; }
 body.sd-on #partyDock{ right:286px; bottom:166px; width:44px; height:44px; font-size:18px; }
 @media (max-width: 900px){ body.sd-on #partyDock{ right:236px; bottom:16px; } }
 @media (max-width: 600px){ body.sd-on #partyDock{ right:16px; } }
+body.sd-on .dock-body{ overflow-y:auto; flex:1; min-height:0; }

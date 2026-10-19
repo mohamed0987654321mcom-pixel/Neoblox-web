@@ -1,0 +1,127 @@
+/* rbx/ui.css — the leftover site-wide pieces in the new look: the party & chat window, the music
+   button, pop-up messages, banners, the install card, NeoStudio's dialogs, touch controls and
+   Thunder Battle's HUD. The lobby keeps its own (Fortnite-style) look, so everything here is
+   scoped to body:not(.in-lobby). */
+
+body:not(.in-lobby){ --ui-bg:#1f2126; --ui-bg2:#2a2d33; --ui-line:rgba(255,255,255,0.1); --ui-ink:#f2f3f5; --ui-dim:#a8abb3; --ui-green:#00b06f; --ui-blue:#3b6cff; --ui-red:#e2231a;
+  --ui-font:'Nunito Sans','Segoe UI',system-ui,-apple-system,sans-serif; }
+
+/* ---------- round floating buttons (party & chat, music) ---------- */
+body:not(.in-lobby) #partyDock, body:not(.in-lobby) #musicDock{
+  background:#232527; border:1px solid var(--ui-line); backdrop-filter:none; -webkit-backdrop-filter:none;
+  box-shadow:0 6px 20px rgba(0,0,0,0.4); color:#fff; }
+body:not(.in-lobby) #partyDock:hover, body:not(.in-lobby) #musicDock:hover{ background:#2f3236; border-color:rgba(255,255,255,0.22); }
+body:not(.in-lobby) #partyDock .dot{ border-color:#232527; }
+body:not(.in-lobby) #partyDock .dot.live{ background:var(--ui-green); }
+body:not(.in-lobby) #partyDock .cnt{ background:var(--ui-blue); color:#fff; font-family:var(--ui-font); }
+body:not(.in-lobby) #musicDock.playing{ border-color:var(--ui-green); color:#fff; }
+
+/* ---------- party & chat / music windows ---------- */
+body:not(.in-lobby) #partyPanel, body:not(.in-lobby) #musicPanel, body:not(.in-lobby) #questsPanel{
+  background:var(--ui-bg); border:1px solid var(--ui-line); border-radius:16px; clip-path:none;
+  backdrop-filter:none; -webkit-backdrop-filter:none; box-shadow:0 18px 48px rgba(0,0,0,0.55);
+  font-family:var(--ui-font); color:var(--ui-ink); }
+body:not(.in-lobby) #partyPanel .party-head, body:not(.in-lobby) #musicPanel .party-head, body:not(.in-lobby) #questsPanel .party-head{
+  border-bottom:1px solid var(--ui-line); padding:12px 14px; }
+body:not(.in-lobby) .party-head .t{ font-family:var(--ui-font); font-weight:900; font-size:16px; letter-spacing:0; }
+body:not(.in-lobby) .party-status{ font-size:12px; color:var(--ui-dim); font-weight:700; }
+body:not(.in-lobby) .party-status .dot.live{ background:var(--ui-green); }
+body:not(.in-lobby) #partyPanel .icon-btn, body:not(.in-lobby) #musicPanel .icon-btn, body:not(.in-lobby) #questsPanel .icon-btn{
+  border-radius:8px; background:transparent; border:none; color:var(--ui-dim); clip-path:none; }
+body:not(.in-lobby) #partyPanel .icon-btn:hover, body:not(.in-lobby) #musicPanel .icon-btn:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+body:not(.in-lobby) #partyPanel .btn, body:not(.in-lobby) #musicPanel .btn, body:not(.in-lobby) #questsPanel .btn{
+  clip-path:none; border-radius:10px; text-transform:none; letter-spacing:0; font-family:var(--ui-font); font-weight:800; font-size:13px;
+  background:var(--ui-bg2); border:1px solid var(--ui-line); color:var(--ui-ink); padding:9px 12px; }
+body:not(.in-lobby) #partyPanel .btn:hover, body:not(.in-lobby) #musicPanel .btn:hover{ background:#33363d; }
+body:not(.in-lobby) #partyPanel .btn.primary, body:not(.in-lobby) #musicPanel .btn.primary, body:not(.in-lobby) #questsPanel .btn.primary{ background:var(--ui-green); border-color:var(--ui-green); color:#fff; }
+body:not(.in-lobby) #partyPanel .btn.studio{ background:var(--ui-blue); border-color:var(--ui-blue); color:#fff; }
+body:not(.in-lobby) #partyPanel .btn.danger{ background:rgba(226,35,26,0.16); border-color:var(--ui-red); color:#ffb4b0; }
+body:not(.in-lobby) #partyPanel .btn.ghost{ background:transparent; }
+body:not(.in-lobby) #partyPanel input[type=text]{
+  clip-path:none; border-radius:10px; background:#15161a; border:1px solid var(--ui-line); font-family:var(--ui-font); font-weight:700; font-size:14px; color:#fff; }
+body:not(.in-lobby) #partyPanel input[type=text]:focus{ border-color:#5b6170; }
+body:not(.in-lobby) .party-member{ border-radius:10px; background:var(--ui-bg2); font-size:13px; font-weight:700; padding:7px 9px; }
+body:not(.in-lobby) .party-member .swatch-mini{ border-radius:50%; }
+body:not(.in-lobby) .party-member .mic.on{ color:var(--ui-green); }
+body:not(.in-lobby) .chat-tabs{ background:#15161a; border-radius:10px; padding:3px; gap:3px; }
+body:not(.in-lobby) .chat-tab{ border:none; border-radius:8px; background:transparent; color:var(--ui-dim); font-size:12px; font-weight:900; letter-spacing:0.02em; padding:7px; }
+body:not(.in-lobby) .chat-tab.active{ background:var(--ui-bg2); color:#fff; }
+body:not(.in-lobby) .chat-log{ background:#15161a; border-radius:10px; padding:8px; gap:6px; }
+body:not(.in-lobby) .chat-msg{ font-size:13.5px; font-weight:600; }
+body:not(.in-lobby) .chat-msg .who{ color:#7fb2ff; font-weight:900; }
+body:not(.in-lobby) .chat-msg.me .who{ color:#4fd39a; }
+body:not(.in-lobby) .chat-empty{ color:var(--ui-dim); font-weight:700; font-size:12.5px; }
+body:not(.in-lobby) .net-note{ color:var(--ui-dim); font-size:12px; font-weight:600; }
+body:not(.in-lobby) .global-voice-row{ border-top-color:var(--ui-line) !important; }
+body:not(.in-lobby) #gvoiceCount, body:not(.in-lobby) #partyCodeLabel{ color:#7fb2ff !important; }
+body:not(.in-lobby) #musicPanel input[type=range]{ accent-color:var(--ui-green); }
+
+/* ---------- pop-up messages + big banners ---------- */
+body:not(.in-lobby) .toast{
+  clip-path:none; border-radius:12px; background:#232527; border:1px solid var(--ui-line); color:#fff;
+  font-family:var(--ui-font); font-weight:800; font-size:14px; padding:10px 16px; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  backdrop-filter:none; -webkit-backdrop-filter:none; }
+body.rbx-exp .toast-stack{ top:calc(70px + env(safe-area-inset-top,0px)); }
+body:not(.in-lobby) .center-banner .title{
+  font-family:var(--ui-font); font-weight:900; background:none; -webkit-text-fill-color:#fff; color:#fff;
+  text-shadow:0 3px 0 rgba(0,0,0,0.35), 0 8px 30px rgba(0,0,0,0.45); font-size:clamp(30px,5vw,54px); }
+body:not(.in-lobby) .center-banner .sub{
+  font-family:var(--ui-font); font-weight:800; color:#fff; letter-spacing:0; font-size:15px;
+  display:inline-block; margin-top:10px; background:rgba(25,27,29,0.6); padding:6px 14px; border-radius:10px; }
+
+/* ---------- "Install Neoblox" card (iPhone / iPad) ---------- */
+#iosInstallOverlay{ background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); }
+.ios-install-card{ clip-path:none !important; border-radius:18px; background:#1f2126 !important; border:1px solid rgba(255,255,255,0.1) !important;
+  font-family:'Nunito Sans','Segoe UI',system-ui,sans-serif; color:#f2f3f5; }
+.ios-install-card .head .icon{ border-radius:12px !important; background:url('/icons/icon-192.png') center/cover, #2a2d33 !important; }
+.ios-install-card .head .t{ font-family:inherit !important; font-weight:900 !important; font-size:20px !important; letter-spacing:0 !important; }
+.ios-install-card .sub{ color:#a8abb3 !important; font-weight:700; font-size:13.5px !important; }
+.ios-install-step{ font-weight:700; font-size:13.5px !important; }
+.ios-install-step .num{ background:#00b06f !important; color:#fff !important; }
+.ios-install-step .glyph{ background:#2a2d33 !important; border-radius:7px !important; }
+.ios-install-actions .btn{ clip-path:none; border-radius:10px; background:#fff; color:#111216; border:none; text-transform:none; letter-spacing:0;
+  font-family:inherit; font-weight:900; font-size:15px; padding:11px; }
+
+/* ---------- NeoStudio dialogs (Publish / Leave) ---------- */
+body.sd-on .modal-back{ background:rgba(0,0,0,0.55); z-index:70; }
+body.sd-on .modal.panel{ clip-path:none; border-radius:8px; background:#2b2b2b; border:1px solid #474747; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  backdrop-filter:none; font-family:'Segoe UI','Nunito Sans',system-ui,sans-serif; color:#e8e8e8; padding:20px; }
+body.sd-on .modal h3{ font-family:inherit; font-size:18px !important; font-weight:700; letter-spacing:0; }
+body.sd-on .modal p{ color:#a8a8a8 !important; font-size:13px !important; }
+body.sd-on .modal .field label{ font-size:12px; letter-spacing:0; text-transform:none; color:#a8a8a8; font-weight:600; }
+body.sd-on .modal .field input[type=text]{ clip-path:none; border-radius:4px; background:#1e1e1e; border:1px solid #3c3c3c; font-family:inherit; font-size:14px; font-weight:500; letter-spacing:0; padding:8px 10px; }
+body.sd-on .modal .field input[type=text]:focus{ border-color:#0f84ff; }
+body.sd-on .modal .btn{ clip-path:none; border-radius:4px; text-transform:none; letter-spacing:0; font-family:inherit; font-weight:600; font-size:13px; padding:8px 16px;
+  background:#3a3a3a; border:1px solid #4a4a4a; color:#e8e8e8; }
+body.sd-on .modal .btn:hover{ background:#474747; }
+body.sd-on .modal .btn.primary{ background:#1f6fd1; border-color:#1f6fd1; color:#fff; }
+body.sd-on .modal .btn.danger{ background:#c42b1c; border-color:#c42b1c; color:#fff; }
+
+/* ---------- touch controls in games and NeoStudio ---------- */
+body:not(.in-lobby) .touch-joystick{ background:rgba(0,0,0,0.28); border:2px solid rgba(255,255,255,0.35); backdrop-filter:none; -webkit-backdrop-filter:none; }
+body:not(.in-lobby) .touch-joystick .tj-knob{ background:rgba(255,255,255,0.75); border:none; box-shadow:0 2px 8px rgba(0,0,0,0.35); }
+body:not(.in-lobby) .touch-jump-btn{ background:rgba(0,0,0,0.28); border:2px solid rgba(255,255,255,0.45); color:#fff; font-size:26px; width:76px; height:76px; }
+body:not(.in-lobby) .touch-jump-btn:active{ background:rgba(255,255,255,0.85); color:#111216; }
+
+/* ---------- Thunder Battle HUD ---------- */
+body.rbx-battle #battleHud{ font-family:'Nunito Sans','Segoe UI',system-ui,sans-serif !important; }
+body.rbx-battle #bhWeapon{ display:none !important; }                      /* the backpack shows your weapon */
+body.rbx-battle #bhStatsWrap > div:first-child{ display:none !important; } /* KOs/Wipeouts are on the player list */
+body.rbx-battle #bhShieldBar{ background:#3b9cff !important; }
+body.rbx-battle #bhBuild{ font-weight:700; background:rgba(25,27,29,0.6); padding:5px 10px; border-radius:8px; display:inline-block; text-shadow:none !important; }
+body.rbx-battle .bhMatChip{ border-radius:10px !important; background:rgba(25,27,29,0.6) !important; width:44px !important; height:40px !important; }
+body.rbx-battle .bhMatChip.sel{ border-color:#fff !important; background:rgba(60,62,66,0.85) !important; }
+body.rbx-battle #bhStorm, body.rbx-battle #bhRound, body.rbx-battle #bhPhase{
+  background:rgba(25,27,29,0.62) !important; color:#fff !important; border-radius:10px !important; padding:6px 14px !important;
+  font-weight:800 !important; font-size:14px !important; text-shadow:none !important; font-family:'Nunito Sans','Segoe UI',system-ui,sans-serif !important; }
+body.rbx-battle #bhRound{ color:#ffd76a !important; }
+body.rbx-battle #bhRoundBoard{ background:#1f2126 !important; border:1px solid rgba(255,255,255,0.12) !important; border-radius:16px !important; box-shadow:0 18px 50px rgba(0,0,0,0.6); padding:18px 20px !important; }
+body.rbx-battle .rbTitle{ color:#fff !important; font-weight:900 !important; font-size:19px !important; }
+body.rbx-battle .rbRow{ border-radius:8px !important; font-weight:700; }
+body.rbx-battle .rbRow.me{ background:rgba(0,176,111,0.2) !important; color:#7ff0c0 !important; }
+body.rbx-battle .rbNote{ color:#a8abb3 !important; font-weight:700; }
+body.rbx-battle .rbNext{ color:#ffd76a !important; font-weight:800; }
+body.rbx-battle .bhKillLine{ background:rgba(25,27,29,0.62) !important; border-radius:8px !important; font-weight:800 !important; text-shadow:none !important; padding:4px 10px !important; }
+body.rbx-battle #bhMinimap{ border:3px solid rgba(255,255,255,0.75) !important; box-shadow:0 4px 16px rgba(0,0,0,0.45) !important; }
+body.rbx-battle #bhStatsWrap{ text-shadow:none !important; }
+body.rbx-battle #bhStatsWrap > div:nth-child(2){ background:rgba(25,27,29,0.6); padding:5px 10px; border-radius:8px; font-weight:800; }
