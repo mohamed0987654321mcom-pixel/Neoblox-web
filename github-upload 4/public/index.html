@@ -394,7 +394,7 @@
   .worlds-modal .world-row .wtext{ min-width:0; overflow:hidden; }
   .worlds-modal .world-row .btn{ flex:none; }
 
-  /* ---------- Locker catalog (Roblox-style item grid) ---------- */
+  /* ---------- Locker catalog (item grid) ---------- */
   .locker-layout{ display:flex; gap:18px; flex:1; min-height:0; overflow:hidden; }
   .locker-preview-col{ width:230px; flex:none; display:flex; flex-direction:column; gap:12px; }
   .locker-preview-big{ height:280px; background: radial-gradient(circle at 50% 15%, rgba(216,178,58,0.14), transparent 60%), #241a12; }
@@ -509,28 +509,6 @@
   .chat-msg .who{ font-weight:700; color:var(--accent3); }
   .chat-msg.me .who{ color:var(--accent); }
   .chat-empty{ font-size:11.5px; color:var(--ink-faint); padding:8px 2px; }
-  .sq-launch{ background:rgba(255,210,63,0.16); border:1px solid #ffd23f; color:#ffe58a; font-weight:700; text-align:center; padding:8px; border-radius:8px; margin-top:8px; font-size:13px; }
-  .sq-member{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid var(--panel-border-soft); }
-  .sq-member .sq-badge{ font-size:18px; flex:none; width:24px; text-align:center; }
-  .sq-member .sq-info{ flex:1; min-width:0; }
-  .sq-member .sq-nm{ font-weight:700; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .sq-member .sq-st{ font-size:11px; color:var(--ink-dim,#9fb0e0); }
-  .sq-member .sq-ready{ font-size:10px; font-weight:700; color:#0b2b12; background:#49d17a; padding:2px 6px; border-radius:6px; flex:none; }
-  .sq-result{ font-size:12px; background:rgba(255,255,255,0.04); border-radius:7px; padding:5px 9px; margin-top:4px; }
-  .sq-err{ color:#ff6b6b; font-size:11px; min-height:14px; margin-top:4px; }
-  .cup-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:4px 2px; }
-  .cup-head b{ font-size:16px; color:#ffd23f; }
-  .cup-head span{ font-size:12px; color:var(--ink-dim,#9fb0e0); white-space:nowrap; }
-  .cup-others{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0; }
-  .cup-scoring{ font-size:11px; color:var(--ink-dim,#9fb0e0); line-height:1.4; margin:4px 2px 8px; }
-  .cup-you{ font-size:13px; background:rgba(255,210,63,0.12); border:1px solid rgba(255,210,63,0.4); border-radius:8px; padding:7px 10px; margin-bottom:8px; }
-  .cup-you.dim{ background:rgba(255,255,255,0.04); border-color:var(--panel-border-soft); color:var(--ink-dim,#9fb0e0); font-size:12px; }
-  .cup-row{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.03); margin-top:4px; font-size:12.5px; }
-  .cup-row.me{ background:rgba(255,210,63,0.16); }
-  .cup-row .r{ width:30px; font-weight:800; color:#ffd23f; flex:none; }
-  .cup-row .n{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
-  .cup-row .p{ flex:none; font-weight:800; }
-  .cup-row .m{ flex:none; font-size:11px; color:var(--ink-dim,#9fb0e0); width:60px; text-align:right; }
   .chat-input-row{ display:flex; gap:6px; }
   .chat-input-row input{ flex:1; min-width:0; }
   .voice-row{ display:flex; align-items:center; gap:8px; }
@@ -726,24 +704,7 @@
           </div>
           <div class="acc-signed-in" id="accSignedInView" hidden>
             <div><div class="who" id="accWhoLabel">—</div><div class="tok">🪙 <span id="accTokenLabel">0</span> tokens</div></div>
-            <button class="btn small studio" id="btnOpenSquad" style="width:100%;margin-top:6px;">🌩️ Cross-play squad</button>
             <button class="btn small ghost" id="accLogoutBtn">Log out</button>
-          </div>
-          <div class="acc-mparadise" id="mpLinkBox" hidden style="margin-top:8px;">
-            <div id="mpUnlinkedView">
-              <button class="btn small ghost" id="mpStartLinkBtn" style="width:100%;">🌪️ Link Storm Royale account</button>
-              <div id="mpCodeView" hidden style="font-size:12px; margin-top:6px; color:var(--text-dim,#9fb0e0);">
-                Enter this code on the Storm Royale website (Profile → Link Neoblox): <b id="mpCodeText" style="letter-spacing:1px;"></b>
-                <br><button class="btn small ghost" id="mpRefreshLinkBtn" style="width:100%; margin-top:4px;">I entered it — refresh</button>
-              </div>
-            </div>
-            <div id="mpLinkedView" hidden style="font-size:12px; color:var(--text-dim,#9fb0e0);">
-              🌪️ Linked to <b id="mpStormName">—</b> · shared total 🪙 <b id="mpSharedTotal">0</b>
-              <button class="btn small primary" id="mpPlayRobloxBtn" style="width:100%; margin-top:6px;">🎮 Play Storm Royale on Roblox</button>
-              <label style="display:flex; align-items:center; gap:6px; margin-top:4px; cursor:pointer;"><input type="checkbox" id="mpWearLook" checked> Wear my Neoblox look there</label>
-              <div id="mpPlayMsg" style="margin-top:4px; color:#ffb3b3;"></div>
-              <button class="btn small ghost" id="mpUnlinkBtn" style="width:100%; margin-top:4px;">Unlink</button>
-            </div>
           </div>
         </div>
       </div>
@@ -773,7 +734,6 @@
         <button class="btn primary" id="btnPlay">Enter Lobby</button>
         <button class="btn studio" id="btnStudio">NeoStudio</button>
         <button class="btn" id="btnBattle" style="background:#3a2f08; border-color:#ffd23f; color:#ffe58a;">⚡ Thunder Battle</button>
-        <button class="btn" id="btnCup" style="background:#2a1f45; border-color:#b88cff; color:#e2d2ff;">🏆 Tournament</button>
       </div>
     </div>
     <div class="boot-foot">
@@ -852,7 +812,7 @@
       <div class="body" id="worldList"></div>
     </div>
 
-    <!-- NeoStudio's editor chrome: a Roblox-Studio-style ribbon (tabs + tool groups) with
+    <!-- NeoStudio's editor chrome: a game-studio-style ribbon (tabs + tool groups) with
          docked Explorer/Properties panels either side of the 3D viewport. Generic IDE-panel
          look (own colors/branding), not a copy of Studio's actual artwork. -->
     <div class="studio-ide" id="studioIde" hidden>
@@ -1015,56 +975,6 @@
   <button id="partyDock" title="Party & chat">
     💬<span class="dot" id="partyDot"></span><span class="cnt" id="partyCnt" hidden>0</span>
   </button>
-  <!-- ============ TOURNAMENT (Roblox + Neoblox results on one leaderboard) ============ -->
-  <div class="modal-back" id="cupOverlay" hidden>
-    <div class="modal panel accent" style="width:min(460px,94vw);max-height:min(700px,90vh);overflow-y:auto;">
-      <div class="party-head">
-        <span class="t">🏆 Tournament</span>
-        <button class="icon-btn interactive" id="btnCloseCup" style="width:26px;height:26px;">✕</button>
-      </div>
-      <div id="cupBody"><div class="chat-empty">Loading…</div></div>
-    </div>
-  </div>
-
-  <!-- ============ CROSS-PLAY SQUAD (team up with Storm Royale) ============ -->
-  <div class="modal-back" id="squadOverlay" hidden>
-    <div class="modal panel accent" style="width:min(440px,94vw);max-height:min(680px,88vh);overflow-y:auto;">
-      <div class="party-head">
-        <span class="t">🌩️ Cross-play squad</span>
-        <button class="icon-btn interactive" id="btnCloseSquad" style="width:26px;height:26px;">✕</button>
-      </div>
-      <div style="font-size:12px;color:var(--ink-dim,#9fb0e0);padding:4px 2px;">Team up with friends playing Storm Royale — the Roblox game or its website. Chat, ready up and launch together. You each play the match on your own platform, then compare results.</div>
-      <div id="sqOut">
-        <div class="party-row"><button class="btn small primary" id="btnSqCreate" style="flex:1;">➕ Create a squad</button></div>
-        <div class="party-row" style="margin-top:8px;"><input type="text" id="sqJoinCode" placeholder="Squad code" maxlength="8" style="text-transform:uppercase;"><button class="btn small ghost" id="btnSqJoin">Join</button></div>
-        <div class="sq-err" id="sqOutErr"></div>
-      </div>
-      <div id="sqIn" hidden>
-        <div class="party-row" style="align-items:center;margin-top:4px;">
-          <div style="flex:1;font-size:12px;color:var(--ink-dim);">Code: <b id="sqCodeLabel" style="color:var(--accent3);letter-spacing:0.08em;">—</b></div>
-          <button class="btn small ghost" id="btnSqCopy">Copy</button>
-          <button class="btn small danger" id="btnSqLeave">Leave</button>
-        </div>
-        <div class="sq-launch" id="sqLaunch" hidden>🚀 LAUNCH! Jump into a match now.</div>
-        <div class="party-members" id="sqMembers" style="margin-top:8px;"></div>
-        <div class="party-row" style="margin-top:8px;">
-          <button class="btn small studio" id="btnSqReady" style="flex:1;">Ready up</button>
-          <button class="btn small primary" id="btnSqLaunch" hidden>🚀 Launch</button>
-        </div>
-        <div id="sqResults" hidden style="margin-top:8px;"></div>
-        <div class="chat-log" id="sqChatLog" style="margin-top:10px;"><div class="chat-empty">No messages yet — say hi!</div></div>
-        <div class="chat-input-row" style="margin-top:6px;">
-          <input type="text" id="sqChatInput" placeholder="Message…" maxlength="200">
-          <button class="btn small primary" id="btnSqSend">Send</button>
-        </div>
-        <div class="sq-err" id="sqChatErr"></div>
-        <button class="btn small primary" id="sqRobloxBtn" hidden style="width:100%;margin-top:8px;">▶ Play with them on Roblox</button>
-        <div id="sqRobloxHint" hidden style="font-size:11px;color:var(--ink-dim);margin-top:4px;">Your squad has Roblox players. This opens Storm Royale on Roblox in your squad and takes you to their server, so you're in the same match. You'll need the Roblox app.</div>
-      </div>
-      <div style="font-size:11px;color:var(--ink-dim);padding-top:4px;">🛡️ Squad chat is checked by the same AI moderator Storm Royale uses. Kid-linked accounts can't use cross-play squads.</div>
-    </div>
-  </div>
-
   <button id="musicDock" title="Lobby music">🎵</button>
   <button id="tokenDock" title="Quests &amp; tokens" hidden>🪙 <span id="tokenDockCount">0</span></button>
   <div class="panel accent" id="questsPanel" hidden>
@@ -3319,7 +3229,7 @@ function updateAvatarController(dt){
 
 // "Touched"-style trigger: fires a block's script once the moment a player's feet land on a new
 // block, never again while they stay put (edge-triggered on the grid cell changing, not a
-// cooldown timer) — same one-shot-per-contact feel as Roblox's Touched event.
+// cooldown timer) — one-shot-per-contact, like a classic "touched" event.
 function checkBlockScripts(p){
   const gx = Math.floor(p.pos.x), gy = Math.round(p.pos.y-1), gz = Math.floor(p.pos.z);
   const key = blockKey(gx,gy,gz);
@@ -3432,7 +3342,7 @@ function refreshStudioSelectionOutline(){
   App.studioSelectOutline = wire;
 }
 
-// Roblox-Studio-style Explorer: a tree of what's actually in the world (grouped by block
+// Studio-style Explorer: a tree of what's actually in the world (grouped by block
 // type, since that's the meaningful hierarchy here) plus a StarterGui section for on-screen
 // UI, plus the spawn/goal markers. Clicking a group expands it; clicking an instance selects
 // it the same way clicking it in the 3D view would with the Select tool. A small 📜 marks any
@@ -3488,7 +3398,7 @@ function renderStudioExplorer(){
   });
 }
 
-// Roblox-Studio-style Properties panel for whatever's selected. A block shows editable
+// Studio-style Properties panel for whatever's selected. A block shows editable
 // Position fields, a Material swatch picker, and a Script box (fires once when a player walks
 // onto that block); a UI element shows its Text, Position%, and — for a button — a Script box
 // that fires on click. See SECTION:SCRIPTING up top for exactly what a script can do and why.
@@ -3680,7 +3590,7 @@ function renderWorldUi(){
     if(u.kind==='button'){
       el.addEventListener('click', ()=>{
         // While editing (not testing), clicking your own button in the viewport selects it —
-        // matching how you'd click a GUI element in Roblox Studio's viewport to edit it.
+        // matching how you'd click a GUI element in a game studio's viewport to edit it.
         if(App.mode==='studio' && !App.studio.testing){ selectStudioUi(u.id); return; }
         if(u.script && u.script.code) runScriptCode(u.script.code, { player: App.player, blockPos: null });
       });
@@ -3697,7 +3607,7 @@ function setStudioRibbonTab(tab){
   if(testEl) testEl.hidden = tab!=='test';
 }
 
-// ---- Test > Play: playtest your build right inside the editor, Roblox-Studio-style, without
+// ---- Test > Play: playtest your build right inside the editor, game-studio-style, without
 // leaving NeoStudio or losing your edit session. Walking/gravity reuses the exact same
 // controller as the lobby/Sky Rush (against the same blocks you just placed); Stop just drops
 // you back into the free-fly build camera where you left off. ----
@@ -4036,213 +3946,6 @@ function initAccountUI(){
     showToast('Logged out.');
   });
 
-  // ---- MPARADISE link: one shared identity + token balance with Storm Royale ----
-  document.getElementById('mpStartLinkBtn').addEventListener('click', async ()=>{
-    try{
-      const data = await apiFetch('/api/mparadise/link-code', { method:'POST' });
-      document.getElementById('mpCodeText').textContent = data.code;
-      document.getElementById('mpCodeView').hidden = false;
-    }catch(e){ showToast(e.message || 'Could not start linking.'); }
-  });
-  document.getElementById('mpRefreshLinkBtn').addEventListener('click', async ()=>{
-    await refreshSessionUser();
-    refreshAccountUI();
-    if(Session.user && Session.user.mparadise && Session.user.mparadise.linked) showToast('🌪️ Linked to Storm Royale!');
-    else showToast("Not linked yet — enter the code on Storm Royale's website first.");
-  });
-  document.getElementById('mpUnlinkBtn').addEventListener('click', async ()=>{
-    try{
-      const data = await apiFetch('/api/mparadise/unlink', { method:'POST' });
-      Session.user = data.user;
-      refreshAccountUI();
-      showToast('Unlinked from Storm Royale.');
-    }catch(e){ showToast(e.message || 'Could not unlink.'); }
-  });
-
-  // ---- play Storm Royale on Roblox, as yourself: Storm Royale's server checks the links (Neoblox →
-  // Storm Royale → Roblox), dresses your Storm Royale character in your Neoblox colors, and gives back
-  // the Roblox launch link (straight into your squad, if you're in one). `fallbackUrl`: if the links
-  // aren't set up yet, still open the game straight into the squad, just without the Neoblox look.
-  async function playOnRoblox(fallbackUrl){
-    const wearBox = document.getElementById('mpWearLook');
-    const wear = wearBox ? wearBox.checked : true;
-    const win = window.open('about:blank', '_blank'); // opened right away so the browser doesn't block it
-    const go = (url)=>{ if(win && !win.closed) win.location.href = url; else location.href = url; };
-    try{
-      const data = await apiFetch('/api/play-roblox', { method:'POST', body: JSON.stringify({ look: wear ? { skin:Profile.skin, shirt:Profile.shirt, pants:Profile.pants } : null }) });
-      go(data.url);
-      showToast(data.wearingLook ? '🎮 Opening Storm Royale on Roblox — in your Neoblox look!' : '🎮 Opening Storm Royale on Roblox…');
-      return { ok:true };
-    }catch(e){
-      if(fallbackUrl){
-        go(fallbackUrl);
-        showToast('🎮 Opening Storm Royale on Roblox. Link your accounts to wear your Neoblox look there.');
-        return { ok:true, fallback:true, error:e.message };
-      }
-      if(win && !win.closed) win.close();
-      return { error: e.message || 'Couldn\u2019t open Storm Royale right now.' };
-    }
-  }
-  const mpPlayBtn = document.getElementById('mpPlayRobloxBtn');
-  if(mpPlayBtn) mpPlayBtn.addEventListener('click', async ()=>{
-    const msg = document.getElementById('mpPlayMsg');
-    if(msg) msg.textContent = '';
-    const r = await playOnRoblox(null);
-    if(r.error && msg) msg.textContent = r.error;
-  });
-  const wearBox = document.getElementById('mpWearLook');
-  if(wearBox){
-    wearBox.checked = loadLocal('nb_wear_look', true) !== false;
-    wearBox.addEventListener('change', ()=> saveLocal('nb_wear_look', wearBox.checked));
-  }
-
-  // ---- cross-play squad: team up with friends playing Storm Royale (the Roblox game or its
-  // website). The browser only talks to this Neoblox server (/api/crossparty/*); the server
-  // relays to Storm Royale's squad hub over the MPARADISE link. Polling keeps it live while open.
-  (function(){
-    const overlay = document.getElementById('squadOverlay');
-    if(!overlay) return;
-    const SURFACE = { storm:{emoji:'🌩️',label:'Storm Royale'}, roblox:{emoji:'🧱',label:'Roblox'}, neoblox:{emoji:'🟦',label:'Neoblox'} };
-    const $ = (id)=>document.getElementById(id);
-    let timer = null, lastLaunch = 0, robloxFallback = null;
-    function open(){
-      if(!Session.token){ showToast('Log in first to squad up.'); return; }
-      overlay.hidden = false;
-      poll();
-      timer = setInterval(poll, 3000);
-    }
-    function close(){ overlay.hidden = true; clearInterval(timer); timer = null; }
-    const call = (path, body)=> apiFetch(path, { method:'POST', body: JSON.stringify(body||{}) });
-    async function poll(){
-      try{
-        const r = await fetch('/api/crossparty/state', { headers: Session.token ? { 'Authorization':'Bearer '+Session.token } : {} });
-        if(r.ok) render(await r.json());
-      }catch(e){}
-    }
-    function render(d){
-      const inSquad = !!(d && d.inSquad);
-      $('sqOut').hidden = inSquad;
-      $('sqIn').hidden = !inSquad;
-      if(!inSquad) return;
-      $('sqCodeLabel').textContent = d.code;
-      // Roblox players in the squad: hop into Roblox to be in the same match as them
-      const placeId = d.roblox && d.roblox.placeId;
-      $('sqRobloxBtn').hidden = !placeId;
-      $('sqRobloxHint').hidden = !placeId;
-      robloxFallback = placeId ? ('https://www.roblox.com/games/start?placeId='+encodeURIComponent(placeId)+'&launchData='+encodeURIComponent('sq:'+d.code)) : null;
-      const launchOn = !!d.launch;
-      $('sqLaunch').hidden = !launchOn;
-      if(launchOn && d.launch.at > lastLaunch){ lastLaunch = d.launch.at; showToast('🚀 Squad launched — jump into a match!'); }
-      const mem = $('sqMembers'); mem.innerHTML = '';
-      (d.members||[]).forEach(m=>{
-        const s = SURFACE[m.surface] || { emoji:'🎮', label:m.surface };
-        const row = document.createElement('div'); row.className = 'sq-member';
-        row.innerHTML = '<span class="sq-badge"></span><div class="sq-info"><div class="sq-nm"></div><div class="sq-st"></div></div>';
-        const badge = row.querySelector('.sq-badge'); badge.textContent = s.emoji; badge.title = s.label;
-        row.querySelector('.sq-nm').textContent = m.name + (m.leader?' 👑':'') + (m.isYou?' (you)':'');
-        row.querySelector('.sq-st').textContent = m.status || 'In lobby';
-        if(m.ready){ const r=document.createElement('span'); r.className='sq-ready'; r.textContent='READY'; row.appendChild(r); }
-        mem.appendChild(row);
-      });
-      const me = (d.members||[]).find(m=>m.isYou);
-      $('btnSqReady').textContent = me && me.ready ? 'Not ready' : 'Ready up';
-      $('btnSqReady').dataset.ready = me && me.ready ? '1':'0';
-      $('btnSqLaunch').hidden = !d.isLeader;
-      const resWrap = $('sqResults');
-      if(d.results && d.results.length){
-        resWrap.hidden = false;
-        resWrap.innerHTML = '<div style="font-size:11px;color:var(--ink-dim);font-weight:700;">LAST MATCH</div>';
-        d.results.forEach(r=>{ const el=document.createElement('div'); el.className='sq-result'; el.textContent=(r.won?'🏆 ':'#'+r.placement+' ')+r.name+' — '+r.kills+' elim'+(r.kills===1?'':'s'); resWrap.appendChild(el); });
-      } else resWrap.hidden = true;
-      const log = $('sqChatLog');
-      if(!d.chat || !d.chat.length){ log.innerHTML = '<div class="chat-empty">No messages yet — say hi!</div>'; }
-      else {
-        log.innerHTML = '';
-        d.chat.forEach(c=>{
-          const el = document.createElement('div'); el.className = 'chat-msg';
-          if(c.system){ el.style.color = 'var(--ink-dim)'; el.textContent = c.text; }
-          else { const who=document.createElement('span'); who.className='who'; who.textContent=(SURFACE[c.surface]?SURFACE[c.surface].emoji:'')+' '+c.name+': '; el.appendChild(who); el.appendChild(document.createTextNode(c.text)); }
-          log.appendChild(el);
-        });
-        log.scrollTop = log.scrollHeight;
-      }
-    }
-    const openBtn = $('btnOpenSquad');
-    if(openBtn) openBtn.addEventListener('click', open);
-    $('btnCloseSquad').addEventListener('click', close);
-    $('btnSqCreate').addEventListener('click', async ()=>{ $('sqOutErr').textContent=''; try{ render((await call('/api/crossparty/create')).squad); }catch(e){ $('sqOutErr').textContent = e.message; } });
-    $('btnSqJoin').addEventListener('click', async ()=>{ $('sqOutErr').textContent=''; try{ render((await call('/api/crossparty/join',{ code: $('sqJoinCode').value.trim() })).squad); $('sqJoinCode').value=''; }catch(e){ $('sqOutErr').textContent = e.message; } });
-    $('btnSqLeave').addEventListener('click', async ()=>{ try{ await call('/api/crossparty/leave'); render({ inSquad:false }); }catch(e){} });
-    $('btnSqCopy').addEventListener('click', ()=>{ if(navigator.clipboard) navigator.clipboard.writeText($('sqCodeLabel').textContent).then(()=>showToast('Code copied')); });
-    $('btnSqReady').addEventListener('click', async ()=>{ const ready = $('btnSqReady').dataset.ready!=='1'; try{ render((await call('/api/crossparty/ready',{ ready })).squad); }catch(e){ showToast(e.message); } });
-    $('btnSqLaunch').addEventListener('click', async ()=>{ try{ render((await call('/api/crossparty/launch')).squad); }catch(e){ showToast(e.message); } });
-    function send(){ const t=$('sqChatInput').value.trim(); if(!t) return; $('sqChatErr').textContent=''; call('/api/crossparty/chat',{ text:t }).then(r=>{ $('sqChatInput').value=''; render(r.squad); }).catch(e=>{ $('sqChatErr').textContent = e.message; }); }
-    $('btnSqSend').addEventListener('click', send);
-    $('sqChatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
-    $('sqRobloxBtn').addEventListener('click', async ()=>{
-      const r = await playOnRoblox(robloxFallback);
-      if(r.error && !r.ok) $('sqChatErr').textContent = r.error;
-    });
-  })();
-
-  // ---- tournament leaderboard: Storm Royale's cross-platform cup (Roblox matches + Thunder Battle
-  // rounds on one board). Guests can look; logged-in players also see their own rank. ----
-  (function(){
-    const overlay = document.getElementById('cupOverlay');
-    const openBtn = document.getElementById('btnCup');
-    if(!overlay || !openBtn) return;
-    const body = document.getElementById('cupBody');
-    let tab = 'players', data = null, shownId = null, timer = null;
-    const BADGE = { roblox:'🧱', neoblox:'🟦' };
-    function timeLeft(ms){
-      const m = Math.max(0, Math.floor(ms/60000)), d = Math.floor(m/1440), h = Math.floor((m%1440)/60);
-      return d ? (d+'d '+h+'h') : h ? (h+'h '+(m%60)+'m') : ((m%60)+'m');
-    }
-    async function load(id){
-      try{
-        const r = await fetch('/api/tournament'+(id ? ('?id='+encodeURIComponent(id)) : ''), { headers: Session.token ? { 'Authorization':'Bearer '+Session.token } : {} });
-        const d = await r.json().catch(()=>null);
-        if(!r.ok || !d) throw new Error((d && d.error) || 'The tournament is unavailable right now.');
-        data = d; shownId = d.board ? d.board.tournament.id : null;
-        render();
-      }catch(e){ body.innerHTML = '<div class="chat-empty">'+nbEsc(e.message)+'</div>'; }
-    }
-    function render(){
-      const b = data && data.board;
-      if(!b){ body.innerHTML = '<div class="chat-empty">No tournament right now — check back soon!</div>'; return; }
-      const t = b.tournament;
-      const when = t.active ? ('⏳ '+timeLeft(t.endsInMs)+' left') : t.upcoming ? ('starts in '+timeLeft(t.startsInMs)) : 'finished';
-      let h = '<div class="cup-head"><b>'+nbEsc(t.name)+'</b><span>'+when+'</span></div>';
-      const others = (data.tournaments||[]).filter(x => x.id !== t.id).slice(0, 4);
-      if(others.length) h += '<div class="cup-others">'+others.map(o => '<button class="btn small ghost" data-cup="'+o.id+'">'+nbEsc(o.name)+(o.active ? '' : o.upcoming ? ' (soon)' : ' (ended)')+'</button>').join('')+'</div>';
-      h += '<div class="cup-scoring">'+nbEsc(b.scoring.text)+'. Roblox matches and Thunder Battle rounds both count.</div>';
-      if(b.you) h += '<div class="cup-you">You: <b>#'+b.you.rank+'</b> · '+b.you.score+' pts · '+b.you.matches+' match'+(b.you.matches===1?'':'es')+'</div>';
-      else if(!Session.user) h += '<div class="cup-you dim">Log in and play Thunder Battle rounds (2+ players) to get on the board.</div>';
-      else if(b.canCompete) h += '<div class="cup-you dim">Play Thunder Battle rounds with 2+ players to get on the board.</div>';
-      else h += '<div class="cup-you dim">This account can\u2019t be on public leaderboards.</div>';
-      if(Session.user && b.canCompete && !(Session.user.mparadise && Session.user.mparadise.linked)) h += '<div class="cup-scoring">Tip: link your Storm Royale account so your Roblox matches add to the same score.</div>';
-      h += '<div class="chat-tabs"><div class="chat-tab'+(tab==='players'?' active':'')+'" data-tab="players">PLAYERS ('+b.totalPlayers+')</div><div class="chat-tab'+(tab==='teams'?' active':'')+'" data-tab="teams">SQUADS ('+b.totalTeams+')</div></div>';
-      if(tab === 'players'){
-        h += b.players.length ? b.players.map(p => '<div class="cup-row'+(p.you?' me':'')+'"><span class="r">#'+p.rank+'</span><span class="n">'+(p.surfaces||[]).map(x=>BADGE[x]||'').join('')+' '+nbEsc(p.name)+'</span><span class="m">'+p.matches+' played</span><span class="p">'+p.score+'</span></div>').join('')
-          : '<div class="chat-empty">Nobody has scored yet — be the first!</div>';
-      } else {
-        h += b.teams.length ? b.teams.map(x => '<div class="cup-row'+(x.you?' me':'')+'"><span class="r">#'+x.rank+'</span><span class="n">'+(x.crossPlatform?'🌐 ':'')+nbEsc(x.members.join(' + '))+'</span><span class="m">'+x.matches+' played</span><span class="p">'+x.score+'</span></div>').join('')
-          : '<div class="chat-empty">No squad has scored yet. Results earned in a cross-play squad of 2+ count for the squad.</div>';
-      }
-      body.innerHTML = h;
-      body.querySelectorAll('[data-tab]').forEach(el => el.addEventListener('click', ()=>{ tab = el.dataset.tab; render(); }));
-      body.querySelectorAll('[data-cup]').forEach(el => el.addEventListener('click', ()=> load(el.dataset.cup)));
-    }
-    openBtn.addEventListener('click', ()=>{
-      overlay.hidden = false;
-      body.innerHTML = '<div class="chat-empty">Loading…</div>';
-      load(shownId);
-      clearInterval(timer);
-      timer = setInterval(()=> load(shownId), 15000);
-    });
-    document.getElementById('btnCloseCup').addEventListener('click', ()=>{ overlay.hidden = true; clearInterval(timer); timer = null; });
-  })();
-
   // ---- persistent token dock + quests panel ----
   const tokenDock = document.getElementById('tokenDock');
   const questsPanel = document.getElementById('questsPanel');
@@ -4295,23 +3998,11 @@ function refreshAccountUI(){
     document.getElementById('accTokenLabel').textContent = Session.user.tokens;
     tokenDock.hidden = false;
     tokenDockCount.textContent = Session.user.tokens;
-    const mp = Session.user.mparadise;
-    const mpBox = document.getElementById('mpLinkBox');
-    mpBox.hidden = false;
-    const linked = !!(mp && mp.linked);
-    document.getElementById('mpUnlinkedView').hidden = linked;
-    document.getElementById('mpLinkedView').hidden = !linked;
-    if(!linked) document.getElementById('mpCodeView').hidden = true; // reset until a new code is requested
-    if(linked){
-      document.getElementById('mpStormName').textContent = mp.stormUsername || 'a Storm Royale account';
-      document.getElementById('mpSharedTotal').textContent = mp.sharedTotal;
-    }
   } else {
     guestView.hidden = false;
     signedInView.hidden = true;
     tokenDock.hidden = true;
     document.getElementById('questsPanel').hidden = true;
-    document.getElementById('mpLinkBox').hidden = true;
   }
   renderQuests();
 }
@@ -4879,7 +4570,7 @@ function syncAllSwatchSelections(){
   syncLockerTileSelections();
 }
 
-// ---- Locker catalog: Roblox-style item grid (skin tone / outfit / trim / skins) ----
+// ---- Locker catalog: item grid (skin tone / outfit / trim / skins) ----
 function lockerTileHtml({ category, value, fill, thumb, label, locked }){
   const inner = fill ? `<span class="tile-fill" style="background:${fill}"></span>`
     : (thumb ? `<span class="tile-thumb" style="background-image:url('${thumb}')"></span>` : '');
@@ -6265,8 +5956,7 @@ function battleHandleEvent(evt){
 }
 
 // ---- server-run rounds (see server.js): one clock for everybody in the arena, the server's own
-// count of eliminations, and placements at the end. Logged-in players' rounds count for the
-// cross-platform tournament on Storm Royale. ----
+// count of eliminations, and placements at the end. ----
 let pendingBattleRound = null;
 function nbEsc(t){ return String(t==null?'':t).replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
 function battleOnRound(msg){
@@ -6307,10 +5997,7 @@ function battleOnRoundEnd(msg){
   b.nextRoundAt = App.clockT + (msg.nextInMs||0)/1000;
   const results = msg.results || [];
   const me = results.find(r => r.id === Net.id);
-  let note;
-  if((msg.size||0) < 2) note = 'Solo round — rounds need 2+ players to count.';
-  else if(Session.user) note = '🏆 Counts for the tournament' + (msg.size < 4 ? ' (bonuses need 4+ players)' : '');
-  else note = 'Log in to put your rounds on the tournament leaderboard.';
+  const note = (msg.size||0) < 2 ? 'Solo round — invite friends for a real match!' : 'GG! A fresh round starts soon.';
   const el = document.getElementById('bhRoundBoard');
   if(el){
     el.innerHTML = '<div class="rbTitle">ROUND OVER'+(me ? ' — you placed #'+me.placement : '')+'</div>' +

@@ -113,88 +113,6 @@ app.post('/api/quests/:id/claim', requireAuth, (req, res) => {
   res.json({ user: accounts.publicUser(req.authedUser), reward: result.reward });
 });
 
-// ---- MPARADISE link: one shared identity + token balance with Storm Royale. ----
-
-// Browser-facing: the signed-in Neoblox player asks for a code to type into the Storm Royale website.
-app.post('/api/mparadise/link-code', requireAuth, (req, res) => {
-  if(req.authedUser.stormUserId) return res.status(400).json({ error:'Already linked to a Storm Royale account.' });
-  res.json({ code: accounts.createLinkCode(req.authedUser.id) });
-});
-
-app.post('/api/mparadise/unlink', requireAuth, (req, res) => {
-  accounts.unlinkStorm(req.authedUser);
-  res.json({ user: accounts.publicUser(req.authedUser) });
-});
-
-// Server-to-server only (never the browser): Storm Royale's server calls these, authenticated
-// with the shared MPARADISE_LINK_KEY (same convention as Storm Royale's own GAME_API_KEY).
-function requireMparadiseKey(req, res, next){
-  const key = req.headers['x-mparadise-key'];
-  if(!accounts.MPARADISE_LINK_KEY || !key || key !== accounts.MPARADISE_LINK_KEY) return res.status(401).json({ error:'bad key' });
-  next();
-}
-
-// Called once, when a Storm Royale player redeems the code shown on Neoblox.
-app.post('/api/mparadise/redeem', requireMparadiseKey, (req, res) => {
-  const { code, stormUserId, stormUsername, ageGroup, kidSettings, coinsSeed } = req.body || {};
-  if(!code || !stormUserId) return res.status(400).json({ error:'missing code/stormUserId' });
-  const result = accounts.redeemLinkCode(code, { stormUserId, stormUsername, ageGroup, kidSettings, coinsSeed });
-  if(result.error) return res.status(400).json({ error: result.error });
-  res.json(result);
-});
-
-// Called roughly every ~10s while a linked player is online in Storm Royale: mirrors their
-// current Roblox coin total (and refreshes the kid-safety flags) — never an award trigger here.
-app.post('/api/mparadise/push', requireMparadiseKey, (req, res) => {
-  const { stormUserId, stormCoinsMirror, ageGroup, kidSettings } = req.body || {};
-  if(!stormUserId) return res.status(400).json({ error:'missing stormUserId' });
-  const result = accounts.applyStormPush(stormUserId, { stormCoinsMirror, ageGroup, kidSettings });
-  if(result.error) return res.status(404).json(result);
-  res.json(result);
-});
-
-// ---- cross-play squads: team up with friends playing Storm Royale (the Roblox game or its
-// website). Storm Royale's server is the squad hub; these routes relay the signed-in Neoblox
-// player's squad actions to it over the MPARADISE link (the player's browser never talks to
-// Storm Royale directly). A Neoblox player is keyed `neoblox:<id>` on the hub; their restriction
-// flags (from an MPARADISE-linked kid account, if any) ride along so the hub can keep kids out.
-function crossIdentity(u, extra){
-  return Object.assign({ neobloxId: u.id, name: u.username, restricted: u.restricted || null }, extra || {});
-}
-async function relayCross(res, path, body){
-  try{
-    res.json(await accounts.callStorm(path, body));
-  }catch(err){
-    res.status(err.status || 502).json({ error: err.message || 'Couldn’t reach Storm Royale — try again.' });
-  }
-}
-
-app.post('/api/crossparty/create', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/create', crossIdentity(req.authedUser)));
-app.post('/api/crossparty/join', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/join', crossIdentity(req.authedUser, { code: req.body?.code })));
-app.post('/api/crossparty/leave', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/leave', { neobloxId: req.authedUser.id }));
-app.post('/api/crossparty/ready', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/ready', { neobloxId: req.authedUser.id, ready: req.body?.ready === true }));
-app.post('/api/crossparty/launch', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/launch', { neobloxId: req.authedUser.id }));
-app.post('/api/crossparty/chat', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/chat', crossIdentity(req.authedUser, { text: req.body?.text })));
-app.post('/api/crossparty/result', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/result', { neobloxId: req.authedUser.id, kills: req.body?.kills, placement: req.body?.placement, won: req.body?.won }));
-// ---- play Storm Royale on Roblox: Storm Royale's server checks the links (Neoblox → Storm Royale →
-// Roblox), puts this player's Neoblox look on their Storm Royale character, and returns the Roblox
-// launch link (with their squad's code, if they're in one).
-app.post('/api/play-roblox', requireAuth, (req, res) => {
-  const look = req.body && req.body.look && typeof req.body.look === 'object' ? req.body.look : null;
-  relayCross(res, '/api/mparadise/play', { neobloxId: req.authedUser.id, look: look ? { skin: look.skin, shirt: look.shirt, pants: look.pants } : null });
-});
-
-// ---- tournaments: the leaderboard lives on Storm Royale (Roblox + Neoblox results together).
-// Anyone can look; logged-in players also get their own rank.
-app.get('/api/tournament', (req, res) => {
-  const h = req.headers.authorization || '';
-  const u = h.startsWith('Bearer ') ? accounts.userForToken(h.slice(7)) : null;
-  const body = u ? { neobloxId: u.id, restricted: u.restricted || null } : {};
-  if(req.query.id) body.id = String(req.query.id).slice(0, 12);
-  relayCross(res, '/api/mparadise/tournament', body);
-});
-app.get('/api/crossparty/state', requireAuth, (req, res) => relayCross(res, '/api/mparadise/party/state', crossIdentity(req.authedUser, { status: 'On Neoblox' })));
-
 const avatarUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, accounts.AVATARS_DIR),
@@ -208,12 +126,6 @@ const avatarUpload = multer({
 }).single('model');
 
 app.post('/api/avatar', requireAuth, (req, res) => {
-  // A Storm Royale-linked kid account carries over the same no-custom-content restriction
-  // Storm Royale itself enforces (owned Roblox items only, no arbitrary uploads) — linking
-  // doesn't give a parent-approved, locked-down kid account a free pass into this instead.
-  if(req.authedUser.restricted && req.authedUser.restricted.isKid){
-    return res.status(403).json({ error:'Avatar uploads are off for linked kid accounts.' });
-  }
   avatarUpload(req, res, (err) => {
     if(err) return res.status(400).json({ error: err.message || 'Upload failed.' });
     if(!req.file) return res.status(400).json({ error: 'No file received.' });
@@ -346,12 +258,11 @@ setInterval(() => {
 
 // ---- Thunder Battle rounds -------------------------------------------------------------------
 // Thunder Battle's combat runs in the players' browsers (each client applies hits and storm damage
-// to itself and announces its own eliminations), so on its own there was no match end, no
-// placement, and nothing a leaderboard could trust. The server now runs ROUNDS for everyone in the
-// battle world: one shared clock (so the storm closes at the same time for everybody), its own
-// count of eliminations from the relayed 'ko' events — with limits that make farming with a second
-// account pointless — and placements at the end. Logged-in players' results then go to Storm
-// Royale's cross-platform tournament (and to their squad, if they're in one).
+// to itself and announces its own eliminations), so on its own there was no match end and no
+// placement. The server runs ROUNDS for everyone in the battle world: one shared clock (so the
+// storm closes at the same time for everybody), its own count of eliminations from the relayed
+// 'ko' events — with limits that make farming with a second account pointless — and placements
+// at the end.
 const GAME_EVT_PREFIX = 'NBGAME';
 const BATTLE_WORLD = 'battle';
 const ROUND_MS = Number(process.env.BATTLE_ROUND_MS) || 180000;
@@ -401,15 +312,6 @@ function endBattleRound(){
   const msg = { t:'battle_round_end', roundId: battle.roundId, size: rows.length, nextInMs: BREAK_MS,
     results: rows.map(r => ({ id:r.id, name:r.name, kills:r.kills, deaths:r.deaths, placement:r.placement, won:r.won })) };
   battlePlayers().forEach(p => send(p.ws, msg));
-  if(rows.length >= 2) rows.forEach(r => reportBattleResult(r, rows.length)); // a solo round isn't a match
-}
-function reportBattleResult(r, size){
-  if(!r.userId) return; // guests can play, but only accounts go on the leaderboard
-  const u = accounts.getUser(r.userId);
-  if(!u) return;
-  accounts.callStorm('/api/mparadise/tournament/result', { neobloxId:u.id, name:u.username, restricted:u.restricted || null, kills:r.kills, placement:r.placement, size, won:r.won }).catch(() => {});
-  // shows in their cross-play squad's "last match" too (the hub ignores it if they aren't in one)
-  accounts.callStorm('/api/mparadise/party/result', { neobloxId:u.id, kills:r.kills, placement:r.placement, won:r.won }).catch(() => {});
 }
 setInterval(() => {
   if(!battlePlayers().length){ battle.state = 'idle'; battle.stats = new Map(); return; }
@@ -573,7 +475,6 @@ wss.on('connection', (ws) => {
         if(!text.trim()) break;
         if(player.userId){
           const u = accounts.getUser(player.userId);
-          if(u && u.restricted && !u.restricted.allowChat){ send(ws, { t:'chat_blocked', reason:'Chat is off for this linked kid account.' }); break; }
           if(u) accounts.noteChat(u);
         }
         const scope = msg.scope === 'party' ? 'party' : msg.scope === 'game' ? 'game' : 'global';
@@ -627,10 +528,6 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'gvoice_join': {
-        if(player.userId){
-          const u0 = accounts.getUser(player.userId);
-          if(u0 && u0.restricted && !u0.restricted.allowVoice){ send(ws, { t:'voice_blocked', reason:'Voice is off for this linked kid account.' }); break; }
-        }
         if(!globalVoice.has(id) && globalVoice.size >= MAX_GLOBAL_VOICE){ send(ws, { t:'gvoice_full' }); break; }
         if(player.userId){ const u = accounts.getUser(player.userId); if(u) accounts.noteGVoiceJoin(u); }
         globalVoice.add(id);
@@ -648,10 +545,6 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'voice_join': {
-        if(player.userId){
-          const u0 = accounts.getUser(player.userId);
-          if(u0 && u0.restricted && !u0.restricted.allowVoice){ send(ws, { t:'voice_blocked', reason:'Voice is off for this linked kid account.' }); break; }
-        }
         const party = partyOf(id);
         if(!party) break;
         party.voice.add(id);

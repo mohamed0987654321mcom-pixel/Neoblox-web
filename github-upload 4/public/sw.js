@@ -15,7 +15,7 @@
 // Bump CACHE_NAME whenever this file changes so the activate handler below clears out any
 // previous cache instead of leaving it (and whatever it served) around forever.
 
-const CACHE_NAME = 'neoblox-v2';
+const CACHE_NAME = 'neoblox-v3';
 const SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
 const FULL_ASSETS = [
   '/three.min.js',
