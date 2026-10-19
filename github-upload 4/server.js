@@ -432,7 +432,11 @@ wss.on('connection', (ws) => {
             if(u) accounts.noteWorldVisit(u, player.world);
           }
           broadcastWorld(prevWorld, { t:'player_leave_world', id, world: prevWorld }, id);
-          broadcastWorld(player.world, { t:'player_join_world', id, name:player.name, avatar:player.avatar, world:player.world, isAdmin:player.isAdmin }, id);
+          broadcastWorld(player.world, { t:'player_join_world', id, name:player.name, avatar:player.avatar, world:player.world, isAdmin:player.isAdmin, pstate:player.pstate || null }, id);
+          // and the newcomer gets everyone-already-here's leaderboard stats / knocked-out state
+          for(const other of players.values()){
+            if(other.id !== id && other.world === player.world && other.pstate) send(ws, { t:'pstate', id:other.id, dead:other.pstate.dead, stats:other.pstate.stats });
+          }
           if(player.world === BATTLE_WORLD) battleEnter(player);
         }
         broadcastWorld(player.world, { t:'presence', id, x:player.x,y:player.y,z:player.z, ry:player.ry, anim:player.anim, world:player.world }, id);
@@ -460,6 +464,26 @@ wss.on('connection', (ws) => {
           send(target.ws, { t:'kicked', by: player.name });
           setTimeout(() => { try{ target.ws.close(); }catch(e){} }, 150);
         }
+        break;
+      }
+      case 'pstate': {
+        // In-experience state others need to see: knocked out (your character fell apart) and
+        // your leaderboard stats (e.g. Stage in an obby, KOs in Thunder Battle). Cosmetic and
+        // self-reported, like presence — sanitized to a few short numbers/strings.
+        const st = player.pstate || (player.pstate = { dead:false, stats:{} });
+        if(typeof msg.dead === 'boolean') st.dead = msg.dead;
+        if(msg.stats && typeof msg.stats === 'object' && !Array.isArray(msg.stats)){
+          const out = {};
+          Object.keys(msg.stats).slice(0, 4).forEach(k => {
+            const key = String(k).replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 16);
+            const v = msg.stats[k];
+            if(!key) return;
+            if(typeof v === 'number' && Number.isFinite(v)) out[key] = Math.max(-1e9, Math.min(1e9, Math.round(v)));
+            else if(typeof v === 'string') out[key] = v.slice(0, 16);
+          });
+          st.stats = out;
+        }
+        broadcastWorld(player.world, { t:'pstate', id, dead: st.dead, stats: st.stats }, id);
         break;
       }
       case 'emote': {

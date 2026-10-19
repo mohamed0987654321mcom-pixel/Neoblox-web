@@ -15,8 +15,9 @@
 // Bump CACHE_NAME whenever this file changes so the activate handler below clears out any
 // previous cache instead of leaving it (and whatever it served) around forever.
 
-const CACHE_NAME = 'neoblox-v3';
-const SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE_NAME = 'neoblox-v4';
+// The game's own code (the page + rbx/*) is network-first too, so updates always show up.
+const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/rbx/hud.css', '/rbx/hud.js'];
 const FULL_ASSETS = [
   '/three.min.js',
   '/icons/icon-192.png',
@@ -61,7 +62,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/ws') || url.pathname.startsWith('/api/')) return;
   if (url.origin !== location.origin) return;
 
-  const isShell = event.request.mode === 'navigate' || NETWORK_FIRST_PATHS.has(url.pathname);
+  const isShell = event.request.mode === 'navigate' || NETWORK_FIRST_PATHS.has(url.pathname) || url.pathname.startsWith('/rbx/');
 
   if (isShell) {
     // Network-first: always prefer whatever's actually live, so a new deploy is visible

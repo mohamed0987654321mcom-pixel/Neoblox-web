@@ -13,8 +13,9 @@
   "url": "https://neoblox.mparadiseplatrforms.com/"
 }
 </script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800;900&display=swap">
 <link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="rbx/hud.css">
 <meta name="theme-color" content="#0a0d18">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1075,15 +1076,26 @@ const SKIN_TONES   = ['#ffd9b3','#f0b98d','#c68642','#8d5524','#6b3f22','#3a2417
 const OUTFIT_COLORS= ['#4de3ff','#c8ff4d','#ff5c72','#b06bff','#ffb84d','#ffffff','#2a3350','#ff4de3'];
 const TRIM_COLORS  = ['#0a0d18','#ffffff','#c8ff4d','#4de3ff','#ff5c72','#b06bff'];
 
+// Part materials, Roblox-style: each has a default color and a surface look (studded plastic,
+// wood planks, bricks, diamond-plate metal…). A part's color can be overridden per part in
+// NeoStudio. `behavior` makes it special in play: kill bricks, checkpoints, jump pads.
 const BLOCK_TYPES = [
-  { id:'grass', label:'Grass', color:0x6bd66b, emissive:0x000000 },
-  { id:'stone', label:'Stone', color:0x8993a8, emissive:0x000000 },
-  { id:'wood',  label:'Wood',  color:0xb9793f, emissive:0x000000 },
-  { id:'brick', label:'Brick', color:0xc45a4a, emissive:0x000000 },
-  { id:'ice',   label:'Ice',   color:0xbdeaff, emissive:0x1a3a44 },
-  { id:'neon',  label:'Neon',  color:0xc8ff4d, emissive:0x4d6b18 },
-  { id:'metal', label:'Metal', color:0x9aa5b0, emissive:0x000000 },
+  { id:'plastic',    label:'Plastic',    color:0xa3a2a5, mat:'plastic' },
+  { id:'grass',      label:'Grass',      color:0x4fa34c, mat:'grass' },
+  { id:'stone',      label:'Slate',      color:0x8c8c8c, mat:'stone' },
+  { id:'wood',       label:'Wood',       color:0xa86c3c, mat:'wood' },
+  { id:'brick',      label:'Brick',      color:0xb5523b, mat:'brick' },
+  { id:'metal',      label:'Metal',      color:0x9aa5b0, mat:'metal' },
+  { id:'sand',       label:'Sand',       color:0xdcc58e, mat:'sand' },
+  { id:'ice',        label:'Ice',        color:0xa9d8f5, mat:'ice' },
+  { id:'glass',      label:'Glass',      color:0xc8e6ff, mat:'glass' },
+  { id:'neon',       label:'Neon',       color:0xc8ff4d, mat:'neon' },
+  { id:'kill',       label:'Kill Brick', color:0xff2b2b, mat:'neon',    behavior:'kill' },
+  { id:'checkpoint', label:'Checkpoint', color:0x2fbf5b, mat:'plastic', behavior:'checkpoint' },
+  { id:'bounce',     label:'Jump Pad',   color:0xffc93c, mat:'plastic', behavior:'bounce' },
 ];
+const BLOCK_TYPE_BY_ID = {}; BLOCK_TYPES.forEach(t=>{ BLOCK_TYPE_BY_ID[t.id] = t; });
+const PART_SHAPES = ['block','wedge','sphere','cylinder'];
 
 // === SECTION:SCRIPTING ===
 // NeoStudio "scripts" are a small fixed vocabulary of safe commands, interpreted line-by-line
@@ -1510,6 +1522,13 @@ function netHandleMessage(msg){
     case 'player_join_world': {
       const p = Net.peers[msg.id] || (Net.peers[msg.id] = { x:0,y:1,z:0, ry:0, anim:'idle' });
       p.id = msg.id; p.name = msg.name; p.avatar = msg.avatar; p.world = msg.world; p.isAdmin = !!msg.isAdmin;
+      if(msg.pstate) p.pstate = msg.pstate;
+      break;
+    }
+    case 'pstate': {
+      const p = Net.peers[msg.id];
+      if(p) p.pstate = { dead: !!msg.dead, stats: msg.stats || {} };
+      netEmit('pstate', msg.id, !!msg.dead, msg.stats || {});
       break;
     }
     case 'gvoice_update':
@@ -1654,6 +1673,9 @@ function makeNetWorldsCol(){
 
 // === SECTION:AUDIO ===
 
+// Player settings (Esc menu → Settings): camera sensitivity, sound volume, shadows.
+App.settings = Object.assign({ sens:1, volume:1, shadows:true, shiftLock:true }, loadLocal('nb_settings', {}) || {});
+function saveSettings(){ saveLocal('nb_settings', App.settings); }
 let Actx = null;
 function actx(){ if(!Actx){ try{ Actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return Actx; }
 function beep(freq, dur, type, gainMax){
@@ -1666,7 +1688,7 @@ function beep(freq, dur, type, gainMax){
   const t0 = ctx.currentTime;
   gain.gain.linearRampToValue ? null : null;
   gain.gain.setValueAtTime(0, t0);
-  gain.gain.linearRampToValueAtTime(gainMax||0.06, t0+0.01);
+  gain.gain.linearRampToValueAtTime((gainMax||0.06) * (App.settings ? App.settings.volume : 1) + 0.00001, t0+0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0+(dur||0.15));
   osc.start(t0); osc.stop(t0+(dur||0.15)+0.02);
 }
@@ -1678,24 +1700,78 @@ const SFX = {
   portal: ()=>{ beep(300,0.2,'sine',0.05); setTimeout(()=>beep(600,0.25,'sine',0.05),90); },
   publish:()=>{ beep(500,0.1,'square',0.05); setTimeout(()=>beep(750,0.1,'square',0.05),100); setTimeout(()=>beep(1000,0.18,'square',0.05),200); },
   goal:   ()=>{ beep(660,0.12,'square',0.06); setTimeout(()=>beep(880,0.12,'square',0.06),110); setTimeout(()=>beep(1180,0.22,'square',0.06),220); },
+  // a short, low "bwomp" when your character falls apart (our own synth sound)
+  oof:    ()=>{ slide(330, 140, 0.22, 'triangle', 0.09); setTimeout(()=>slide(180, 90, 0.18, 'sine', 0.06), 70); },
+  checkpoint: ()=>{ beep(740,0.09,'sine',0.06); setTimeout(()=>beep(988,0.09,'sine',0.06),80); setTimeout(()=>beep(1318,0.16,'sine',0.06),160); },
+  boing:  ()=>slide(220, 720, 0.25, 'sine', 0.07),
+  click:  ()=>beep(880,0.03,'square',0.025),
 };
+// a pitch slide (used for the boing/bwomp sounds)
+function slide(f0, f1, dur, type, gainMax){
+  const ctx = actx(); if(!ctx) return;
+  if(ctx.state === 'suspended') ctx.resume();
+  const osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.type = type || 'sine';
+  const t0 = ctx.currentTime;
+  osc.frequency.setValueAtTime(f0, t0);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(20,f1), t0+dur);
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime((gainMax||0.06) * (App.settings ? App.settings.volume : 1) + 0.00001, t0+0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0+dur+0.02);
+}
 
 // === SECTION:AVATAR ===
 
-const RIG = { legH:0.8, torsoH:0.7, torsoW:0.62, torsoD:0.36, headS:0.52, limbW:0.24 };
+// R6-style blocky character (Roblox-like proportions): 1-wide limbs, a 2-wide torso, and a
+// rounded "cylinder" head with a painted smiley face. Total height ≈ 2.06 units (≈ 5 studs).
+const RIG = { legH:0.8, torsoH:0.8, torsoW:0.72, torsoD:0.36, headS:0.46, limbW:0.36 };
+
+// Rounded-cylinder head (a lathe of a rounded rectangle) — shared by every rig.
+const HEAD_R = 0.25;
+const HEAD_GEO = (function(){
+  const h = RIG.headS, r = HEAD_R, c = 0.085, pts = [];
+  pts.push(new THREE.Vector2(0, -h/2));
+  for(let i=0;i<=6;i++){ const a = -Math.PI/2 + (i/6)*(Math.PI/2); pts.push(new THREE.Vector2(r-c + Math.cos(a)*c, -h/2+c + Math.sin(a)*c)); }
+  for(let i=0;i<=6;i++){ const a = (i/6)*(Math.PI/2); pts.push(new THREE.Vector2(r-c + Math.cos(a)*c, h/2-c + Math.sin(a)*c)); }
+  pts.push(new THREE.Vector2(0, h/2));
+  const geo = new THREE.LatheGeometry(pts, 28); geo.userData.keep = true; return geo;
+})();
+// The face is a thin curved decal wrapped around the front of the head (+Z is forward).
+const FACE_GEO = new THREE.CylinderGeometry(HEAD_R+0.004, HEAD_R+0.004, RIG.headS*0.78, 20, 1, true, -1.05, 2.1);
+FACE_GEO.userData.keep = true;
+let _faceMat = null;
+function faceMaterial(){
+  if(_faceMat) return _faceMat;
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#141414';
+  // two tall oval eyes
+  [[100,48],[156,48]].forEach(([ex,ey])=>{ x.beginPath(); x.ellipse(ex, ey, 9, 15, 0, 0, Math.PI*2); x.fill(); });
+  // a wide, simple smile
+  x.strokeStyle = '#141414'; x.lineWidth = 8; x.lineCap = 'round';
+  x.beginPath(); x.arc(128, 62, 40, 0.18*Math.PI, 0.82*Math.PI); x.stroke();
+  const tex = new THREE.CanvasTexture(c);
+  _faceMat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false });
+  _faceMat.userData.keep = true;
+  return _faceMat;
+}
+function plasticMat(color){
+  return new THREE.MeshPhongMaterial({ color, shininess:28, specular:0x1e1e1e });
+}
 
 function buildAvatar(profile){
   const g = new THREE.Group();
-  const skinMat  = new THREE.MeshLambertMaterial({ color: profile.skin || SKIN_TONES[1] });
-  const shirtMat = new THREE.MeshLambertMaterial({ color: profile.shirt || OUTFIT_COLORS[0] });
-  const pantsMat = new THREE.MeshLambertMaterial({ color: profile.pants || TRIM_COLORS[0] });
-  const eyeMat   = new THREE.MeshLambertMaterial({ color: 0x0a0d18 });
+  const skinMat  = plasticMat(profile.skin || SKIN_TONES[1]);
+  const shirtMat = plasticMat(profile.shirt || OUTFIT_COLORS[0]);
+  const pantsMat = plasticMat(profile.pants || TRIM_COLORS[0]);
 
-  // legs (pivot at hip)
+  // legs (pivot at hip) — the two legs together are exactly as wide as the torso
   function makeLeg(sign){
     const pivot = new THREE.Object3D();
-    pivot.position.set(sign*0.16, RIG.legH, 0);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(RIG.limbW, RIG.legH, RIG.limbW), pantsMat);
+    pivot.position.set(sign*RIG.limbW/2, RIG.legH, 0);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(RIG.limbW*0.98, RIG.legH, RIG.torsoD), pantsMat);
     mesh.position.set(0, -RIG.legH/2, 0);
     mesh.castShadow = true;
     pivot.add(mesh);
@@ -1713,9 +1789,9 @@ function buildAvatar(profile){
   // arms (pivot at shoulder)
   function makeArm(sign){
     const pivot = new THREE.Object3D();
-    pivot.position.set(sign*(RIG.torsoW/2 + RIG.limbW/2), RIG.legH + RIG.torsoH, 0);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(RIG.limbW, RIG.torsoH, RIG.limbW), skinMat);
-    mesh.position.set(0, -RIG.torsoH/2, 0);
+    pivot.position.set(sign*(RIG.torsoW/2 + RIG.limbW/2 + 0.005), RIG.legH + RIG.torsoH - 0.12, 0);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(RIG.limbW*0.98, RIG.torsoH, RIG.torsoD*0.98), skinMat);
+    mesh.position.set(0, -RIG.torsoH/2 + 0.12, 0);
     mesh.castShadow = true;
     pivot.add(mesh);
     g.add(pivot);
@@ -1723,25 +1799,20 @@ function buildAvatar(profile){
   }
   const leftArm = makeArm(-1), rightArm = makeArm(1);
 
-  // head
+  // head + face
   const headPivot = new THREE.Object3D();
-  headPivot.position.set(0, RIG.legH + RIG.torsoH + RIG.headS/2, 0);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(RIG.headS, RIG.headS, RIG.headS), skinMat);
+  headPivot.position.set(0, RIG.legH + RIG.torsoH + RIG.headS/2 + 0.01, 0);
+  const head = new THREE.Mesh(HEAD_GEO, skinMat);
   head.castShadow = true;
   headPivot.add(head);
-  const visor = new THREE.Mesh(new THREE.BoxGeometry(RIG.headS*0.7, RIG.headS*0.16, 0.03), eyeMat);
-  visor.position.set(0, RIG.headS*0.06, RIG.headS/2+0.01);
-  headPivot.add(visor);
+  const face = new THREE.Mesh(FACE_GEO, faceMaterial());
+  face.position.y = -0.01;
+  headPivot.add(face);
   g.add(headPivot);
-
-  // cape / backpack accent using trim color for silhouette variety
-  const cape = new THREE.Mesh(new THREE.BoxGeometry(RIG.torsoW*0.85, RIG.torsoH*0.9, 0.06), pantsMat);
-  cape.position.set(0, RIG.legH + RIG.torsoH/2, -RIG.torsoD/2 - 0.05);
-  g.add(cape);
 
   g.traverse(o=>{ if(o.isMesh) o.receiveShadow = false; });
 
-  return { group:g, leftLeg, rightLeg, leftArm, rightArm, headPivot, torso, cape };
+  return { group:g, leftLeg, rightLeg, leftArm, rightArm, headPivot, torso, cape:null, face };
 }
 
 // ---- custom glTF skins — cosmetic replacements for the box-avatar rig ----
@@ -2079,9 +2150,12 @@ function animateAvatar(rig, t, opts){
   }
 
   rig.headPivot.rotation.x = 0;
+  rig.leftArm.rotation.z = 0; rig.rightArm.rotation.z = 0;
   if(jumping){
-    rig.leftArm.rotation.x = -0.6; rig.rightArm.rotation.x = -0.6;
-    rig.leftLeg.rotation.x = 0.35; rig.rightLeg.rotation.x = -0.25;
+    // classic blocky jump/fall pose: both arms straight up, legs together
+    rig.leftArm.rotation.x = -2.95; rig.rightArm.rotation.x = -2.95;
+    rig.leftArm.rotation.z = 0; rig.rightArm.rotation.z = 0;
+    rig.leftLeg.rotation.x = 0; rig.rightLeg.rotation.x = 0;
     rig.torso.position.y = RIG.legH + RIG.torsoH/2;
     syncSkinPose(rig, t, opts);
     return;
@@ -2105,26 +2179,178 @@ function animateAvatar(rig, t, opts){
 // === SECTION:WORLDGEO ===
 
 const BOX_GEO = new THREE.BoxGeometry(1,1,1);
-const BLOCK_MATS = {};
-BLOCK_TYPES.forEach(t=>{
-  BLOCK_MATS[t.id] = new THREE.MeshLambertMaterial({ color:t.color, emissive:t.emissive||0x000000 });
-});
+BOX_GEO.userData.keep = true;
+const BLOCK_MATS = {}; // legacy name: type id -> its default single material (kept for disposeObj)
+
+// ---- procedural surface textures (no image files needed) ----
+const SurfaceTexCache = {};
+function surfaceTexture(kind){
+  if(SurfaceTexCache[kind]) return SurfaceTexCache[kind];
+  const N = 128, c = document.createElement('canvas'); c.width = c.height = N;
+  const x = c.getContext('2d');
+  const noise = (base, spread, count, size)=>{
+    x.fillStyle = base; x.fillRect(0,0,N,N);
+    for(let i=0;i<count;i++){
+      const v = Math.floor(255 - Math.random()*spread);
+      x.fillStyle = `rgba(${v},${v},${v},0.35)`;
+      x.fillRect(Math.random()*N, Math.random()*N, size, size);
+    }
+  };
+  if(kind==='studs' || kind==='inlets'){
+    x.fillStyle = '#ececec'; x.fillRect(0,0,N,N);
+    for(let i=0;i<2;i++) for(let j=0;j<2;j++){
+      const cx = N/4 + i*N/2, cy = N/4 + j*N/2, r = N*0.12;
+      if(kind==='studs'){
+        x.fillStyle = 'rgba(0,0,0,0.09)'; x.beginPath(); x.arc(cx+2, cy+3, r+1, 0, Math.PI*2); x.fill();
+        x.fillStyle = '#f7f7f7'; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI*2); x.fill();
+        x.strokeStyle = 'rgba(0,0,0,0.06)'; x.lineWidth = 2; x.stroke();
+      } else {
+        x.fillStyle = 'rgba(0,0,0,0.12)'; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI*2); x.fill();
+      }
+    }
+    x.strokeStyle = 'rgba(0,0,0,0.07)'; x.lineWidth = 3; x.strokeRect(1,1,N-2,N-2);
+  } else if(kind==='smooth'){
+    x.fillStyle = '#f4f4f4'; x.fillRect(0,0,N,N);
+    x.strokeStyle = 'rgba(0,0,0,0.07)'; x.lineWidth = 3; x.strokeRect(1,1,N-2,N-2);
+  } else if(kind==='grass'){
+    noise('#e9e9e9', 120, 900, 3);
+    x.strokeStyle = 'rgba(0,0,0,0.06)'; x.lineWidth = 2; x.strokeRect(1,1,N-2,N-2);
+  } else if(kind==='stone'){
+    noise('#e6e6e6', 90, 500, 4);
+    x.strokeStyle = 'rgba(0,0,0,0.18)'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(10,40); x.lineTo(50,52); x.lineTo(70,90); x.moveTo(90,10); x.lineTo(100,60); x.stroke();
+  } else if(kind==='sand'){
+    noise('#f0f0f0', 70, 1400, 2);
+  } else if(kind==='wood'){
+    x.fillStyle = '#ececec'; x.fillRect(0,0,N,N);
+    for(let r=0;r<4;r++){
+      x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0, r*32+31, N, 2);
+      for(let k=0;k<6;k++){ x.strokeStyle = 'rgba(0,0,0,0.07)'; x.lineWidth = 1; x.beginPath(); const yy = r*32 + 4 + k*5; x.moveTo(0,yy); x.bezierCurveTo(40,yy+3,80,yy-3,N,yy+1); x.stroke(); }
+    }
+  } else if(kind==='brick'){
+    x.fillStyle = '#d9d9d9'; x.fillRect(0,0,N,N);
+    for(let r=0;r<4;r++) for(let k=-1;k<3;k++){
+      const off = (r%2)*32, bx = k*64+off, by = r*32;
+      x.fillStyle = `rgb(${235+Math.random()*20|0},${235+Math.random()*20|0},${235+Math.random()*20|0})`;
+      x.fillRect(bx+3, by+3, 58, 26);
+    }
+  } else if(kind==='metal'){
+    x.fillStyle = '#e8e8e8'; x.fillRect(0,0,N,N);
+    for(let i=0;i<8;i++) for(let j=0;j<8;j++){
+      x.save(); x.translate(i*16+8, j*16+8); x.rotate((i+j)%2 ? 0.8 : -0.8);
+      x.fillStyle = 'rgba(255,255,255,0.9)'; x.fillRect(-5,-1.5,10,3);
+      x.fillStyle = 'rgba(0,0,0,0.18)'; x.fillRect(-5,1.5,10,1.5);
+      x.restore();
+    }
+  } else if(kind==='ice'){
+    x.fillStyle = '#f7fbff'; x.fillRect(0,0,N,N);
+    x.strokeStyle = 'rgba(255,255,255,0.9)'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(20,10); x.lineTo(60,70); x.moveTo(80,20); x.lineTo(110,100); x.stroke();
+  } else {
+    x.fillStyle = '#ffffff'; x.fillRect(0,0,N,N);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  SurfaceTexCache[kind] = tex;
+  return tex;
+}
+
+function hexToNum(c){ if(typeof c==='number') return c; const m = /^#?([0-9a-f]{6})$/i.exec(String(c||'')); return m ? parseInt(m[1],16) : null; }
+function numToHex(n){ return '#'+(n>>>0).toString(16).padStart(6,'0').slice(-6); }
+
+// One cached material set per (type, color, transparency). Boxes get 6 materials (studded top,
+// inlets underneath for plastic); other shapes use the side material only.
+const PartMatCache = {};
+function partMaterials(typeId, colorOverride, transparency){
+  const t = BLOCK_TYPE_BY_ID[typeId] || BLOCK_TYPE_BY_ID.stone;
+  const color = hexToNum(colorOverride) ?? t.color;
+  const alpha = clamp(+transparency||0, 0, 0.95);
+  const key = t.id+'|'+color+'|'+alpha.toFixed(2);
+  if(PartMatCache[key]) return PartMatCache[key];
+  const base = { color, transparent: alpha>0 || t.mat==='glass' || t.mat==='ice' };
+  const opacity = t.mat==='glass' ? Math.min(1-alpha, 0.45) : t.mat==='ice' ? Math.min(1-alpha, 0.82) : 1-alpha;
+  const mk = (texKind, extra)=>{
+    const m = new THREE.MeshStandardMaterial(Object.assign({}, base, { opacity, roughness:0.62, metalness:0, map: texKind ? surfaceTexture(texKind) : null }, extra||{}));
+    m.userData.keep = true;
+    return m;
+  };
+  let side, top, bottom;
+  switch(t.mat){
+    case 'plastic': side = mk('smooth'); top = mk('studs'); bottom = mk('inlets'); break;
+    case 'neon':    side = top = bottom = mk(null, { emissive:color, emissiveIntensity:0.95, roughness:1 }); break;
+    case 'metal':   side = top = bottom = mk('metal', { metalness:0.55, roughness:0.38 }); break;
+    case 'glass':   side = top = bottom = mk(null, { roughness:0.08, metalness:0.1, depthWrite:false }); break;
+    case 'ice':     side = top = bottom = mk('ice', { roughness:0.15 }); break;
+    default:        side = top = bottom = mk(t.mat);
+  }
+  const box = [side, side, top, bottom, side, side]; // +x -x +y -y +z -z
+  const res = { box, single: side };
+  PartMatCache[key] = res;
+  if(!BLOCK_MATS[t.id] && colorOverride==null && !alpha) BLOCK_MATS[t.id] = side;
+  return res;
+}
+
+const ShapeGeoCache = {};
+function partGeometry(shape){
+  if(shape==='block' || !shape) return BOX_GEO;
+  if(ShapeGeoCache[shape]) return ShapeGeoCache[shape];
+  let g;
+  if(shape==='sphere') g = new THREE.SphereGeometry(0.5, 20, 14);
+  else if(shape==='cylinder') g = new THREE.CylinderGeometry(0.5, 0.5, 1, 22);
+  else if(shape==='wedge'){
+    // a ramp: full square footprint, rising toward -Z (the top-front edge is pulled down)
+    g = new THREE.BoxGeometry(1,1,1);
+    const pos = g.attributes.position;
+    for(let i=0;i<pos.count;i++){ if(pos.getY(i) > 0 && pos.getZ(i) > 0) pos.setY(i, -0.5); }
+    pos.needsUpdate = true;
+    g.computeVertexNormals();
+  } else g = BOX_GEO;
+  g.userData.keep = true;
+  ShapeGeoCache[shape] = g;
+  return g;
+}
+
 function blockKey(x,y,z){ return x+','+y+','+z; }
 
-function makeBlockMesh(typeId){
-  const mat = BLOCK_MATS[typeId] || BLOCK_MATS.stone;
-  const m = new THREE.Mesh(BOX_GEO, mat);
+// props (all optional): c color '#rrggbb', s shape, r yaw quarter-turns 0-3, t transparency 0-0.95,
+// nc no-collide (CanCollide off), n checkpoint stage number, nm part name
+function makeBlockMesh(typeId, props){
+  props = props || {};
+  const shape = PART_SHAPES.includes(props.s) ? props.s : 'block';
+  const mats = partMaterials(typeId, props.c, props.t);
+  const m = new THREE.Mesh(partGeometry(shape), shape==='block' || shape==='wedge' ? mats.box : mats.single);
+  if(props.r) m.rotation.y = (props.r % 4) * Math.PI/2;
+  m.castShadow = true; m.receiveShadow = true;
   m.userData.blockType = typeId;
+  m.userData.props = props;
   return m;
+}
+function blockBehavior(typeId){ const t = BLOCK_TYPE_BY_ID[typeId]; return t && t.behavior || null; }
+
+function cleanProps(p){
+  if(!p || typeof p!=='object') return null;
+  const o = {};
+  const c = hexToNum(p.c); if(c!==null) o.c = numToHex(c);
+  if(PART_SHAPES.includes(p.s) && p.s!=='block') o.s = p.s;
+  const r = Math.floor(+p.r||0) % 4; if(r>0) o.r = r;
+  const t = clamp(+p.t||0, 0, 0.95); if(t>0) o.t = Math.round(t*100)/100;
+  if(p.nc === true) o.nc = true;
+  const n = Math.floor(+p.n||0); if(n>0 && n<1000) o.n = n;
+  if(p.nm) o.nm = String(p.nm).replace(/[<>]/g,'').slice(0,24);
+  return Object.keys(o).length ? o : null;
 }
 
 function serializeBlocks(blocksMap){
   const arr = [];
   blocksMap.forEach((v,k)=>{
     const [x,y,z] = k.split(',').map(Number);
-    // Trailing [event, code] only appended when a script is actually attached, so plain
-    // worlds serialize exactly as before (older clients loading them see nothing new).
-    if(v.script && v.script.code) arr.push([x,y,z,v.type,v.script.event||'touched',v.script.code]);
+    // Trailing [event, code] only when a script is attached and [props] only when the part has
+    // any, so plain worlds serialize exactly as before (older clients just see the type).
+    const props = cleanProps(v.props);
+    const hasScript = !!(v.script && v.script.code);
+    if(props) arr.push([x,y,z,v.type, hasScript ? (v.script.event||'touched') : null, hasScript ? v.script.code : null, props]);
+    else if(hasScript) arr.push([x,y,z,v.type,v.script.event||'touched',v.script.code]);
     else arr.push([x,y,z,v.type]);
   });
   return arr;
@@ -2132,8 +2358,10 @@ function serializeBlocks(blocksMap){
 function deserializeBlocks(arr){
   const m = new Map();
   (arr||[]).forEach(b=>{
+    if(!Array.isArray(b)) return;
     const script = b[5] ? { event:b[4]||'touched', code:String(b[5]).slice(0,SCRIPT_CODE_MAXLEN) } : null;
-    m.set(blockKey(b[0],b[1],b[2]), { type:b[3], script });
+    const type = BLOCK_TYPE_BY_ID[b[3]] ? b[3] : 'stone';
+    m.set(blockKey(b[0],b[1],b[2]), { type, script, props: cleanProps(b[6]) });
   });
   return m;
 }
@@ -2172,8 +2400,10 @@ function makeSkyTexture(topHex, botHex){
 function disposeObj(obj){
   obj.traverse(o=>{
     if(o.isMesh){
-      if(o.geometry && o.geometry !== BOX_GEO) o.geometry.dispose();
-      if(o.material && !Object.values(BLOCK_MATS).includes(o.material) && o.material.dispose) o.material.dispose();
+      // shared, cached resources (block materials/geometries, the head/face) are marked keep
+      if(o.geometry && o.geometry !== BOX_GEO && !o.geometry.userData.keep) o.geometry.dispose();
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach(m=>{ if(m && !m.userData.keep && !Object.values(BLOCK_MATS).includes(m) && m.dispose) m.dispose(); });
     }
   });
 }
@@ -2190,6 +2420,8 @@ function teardownScene(){
   App.portals = [];
   App.studio.testing = false; // whatever mode we're leaving, never leave a stale playtest flag behind
   App.worldUi = [];
+  App.debris = []; App.hum = null; App.checkpoint = null; App.leaderstats = null;
+  App.sunLight = null; App.skyDome = null;
   renderWorldUi(); // clear any on-screen labels/buttons from whatever scene we just left
 }
 
@@ -2224,6 +2456,116 @@ function newBaseScene(skyTop, skyBot, fogColor, fogFar, lightOpts){
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth/window.innerHeight, 0.1, 300);
   App.scene = scene; App.camera = camera;
   return { scene, camera };
+}
+
+// ---- Roblox-style environment for experiences (worlds, NeoStudio, Thunder Battle) ----
+// A bright blue sky dome with soft clouds and a sun, warm sunlight with real shadows, light haze.
+// The lobby keeps its own look (it builds its scene with newBaseScene above).
+let _skyTexCache = {};
+function makeSkyDomeTexture(preset){
+  const P = SKY_PRESETS[preset] || SKY_PRESETS.day;
+  if(_skyTexCache[preset]) return _skyTexCache[preset];
+  const W = 1024, H = 512, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, P.top); g.addColorStop(0.47, P.horizon); g.addColorStop(0.5, P.horizon); g.addColorStop(1, P.below);
+  x.fillStyle = g; x.fillRect(0,0,W,H);
+  if(P.stars){
+    x.fillStyle = 'rgba(255,255,255,0.85)';
+    for(let i=0;i<500;i++){ const sy = Math.random()*H*0.45; x.fillRect(Math.random()*W, sy, 1.2, 1.2); }
+  }
+  // soft cumulus clouds in a band above the horizon (drawn twice so they wrap around the seam)
+  const rand = (()=>{ let t = 7; return ()=>{ t = (t*16807)%2147483647; return t/2147483647; }; })();
+  for(let i=0;i<22;i++){
+    const cx = rand()*W, cy = H*(0.33 + rand()*0.13), w = 50 + rand()*100;
+    for(const ox of [0, -W, W]){
+      for(let k=0;k<7;k++){
+        const bx = cx+ox + (rand()-0.5)*w, by = cy + (rand()-0.5)*w*0.18, r = w*(0.18+rand()*0.22);
+        const rg = x.createRadialGradient(bx,by,0,bx,by,r);
+        rg.addColorStop(0, P.cloud); rg.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = rg; x.beginPath(); x.ellipse(bx, by, r, r*0.55, 0, 0, Math.PI*2); x.fill();
+      }
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  _skyTexCache[preset] = tex;
+  return tex;
+}
+const SKY_PRESETS = {
+  day:    { top:'#2f80dc', horizon:'#bcdcf7', below:'#d7e9f8', cloud:'rgba(255,255,255,0.32)', fog:0xbcdcf7, sun:0xfff1dc, sunI:0.72, hemiSky:0xe4efff, hemiGround:0xa39780, hemiI:0.64 },
+  sunset: { top:'#40407a', horizon:'#ffb27a', below:'#ffd2b0', cloud:'rgba(255,214,190,0.35)', fog:0xf2b98f, sun:0xffb070, sunI:0.7, hemiSky:0xffd7b8, hemiGround:0x6a4a52, hemiI:0.42 },
+  night:  { top:'#050a1c', horizon:'#1f2d55', below:'#141c33', cloud:'rgba(120,140,190,0.14)', fog:0x1a2648, sun:0x9fb4ff, sunI:0.3, hemiSky:0x5a6fae, hemiGround:0x101420, hemiI:0.4, stars:true },
+};
+function rbxBaseScene(opts){
+  const o = opts || {};
+  const P = SKY_PRESETS[o.sky] || SKY_PRESETS.day;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(P.fog);
+  scene.fog = new THREE.Fog(P.fog, 70, o.fogFar || 320);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(380, 32, 16), new THREE.MeshBasicMaterial({ map: makeSkyDomeTexture(o.sky||'day'), side: THREE.BackSide, fog:false, depthWrite:false }));
+  dome.userData.isSky = true;
+  dome.renderOrder = -10;
+  scene.add(dome);
+  App.skyDome = dome;
+  const hemi = new THREE.HemisphereLight(P.hemiSky, P.hemiGround, P.hemiI);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(P.sun, P.sunI);
+  const half = o.shadowHalf || 26;
+  sun.position.set(half*0.55, half*1.4, half*0.8);
+  sun.castShadow = App.settings.shadows !== false;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -half; sun.shadow.camera.right = half;
+  sun.shadow.camera.top = half; sun.shadow.camera.bottom = -half;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = half*5;
+  sun.shadow.bias = -0.0008;
+  scene.add(sun); scene.add(sun.target);
+  App.sunLight = sun;
+  // a visible sun disc in the sky, in the same direction the light comes from
+  const sunDisc = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunDiscTexture(), color: P.sun, fog:false, depthWrite:false, transparent:true }));
+  sunDisc.position.copy(sun.position.clone().normalize().multiplyScalar(340));
+  sunDisc.scale.set(46,46,1);
+  if(o.sky!=='night') scene.add(sunDisc);
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 900);
+  App.scene = scene; App.camera = camera;
+  if(App.renderer && !App.renderer.shadowMap.enabled){
+    App.renderer.shadowMap.enabled = true;
+    App.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  }
+  return { scene, camera };
+}
+let _sunDiscTex = null;
+function sunDiscTexture(){
+  if(_sunDiscTex) return _sunDiscTex;
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(64,64,0,64,64,64);
+  g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(0.25,'rgba(255,255,240,1)'); g.addColorStop(0.32,'rgba(255,250,220,0.6)'); g.addColorStop(1,'rgba(255,240,200,0)');
+  x.fillStyle = g; x.fillRect(0,0,128,128);
+  _sunDiscTex = new THREE.CanvasTexture(c);
+  return _sunDiscTex;
+}
+// The sun's shadow box follows the player so shadows stay crisp near them on big maps.
+function updateSunFollow(target){
+  const sun = App.sunLight; if(!sun || !target) return;
+  const off = sun.userData.offset || (sun.userData.offset = sun.position.clone());
+  sun.position.set(target.x + off.x, off.y, target.z + off.z);
+  sun.target.position.set(target.x, 0, target.z);
+}
+
+// A big grey studded Baseplate (like a fresh place in a game studio): top surface at y=0.
+function makeBaseplate(half){
+  const size = half*2;
+  const tex = surfaceTexture('studs').clone();
+  tex.needsUpdate = true;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(size, size);
+  const mat = new THREE.MeshStandardMaterial({ color:0x6b6e72, map:tex, roughness:0.75 });
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(size, 1, size), [mat, mat, mat, mat, mat, mat]);
+  // only the top face gets the stud pattern repeated across the whole plate; sides stay plain
+  plate.position.y = -0.5;
+  plate.receiveShadow = true;
+  plate.userData.isBaseplate = true;
+  return plate;
 }
 
 function addGroundGrid(scene, size, colorMinor, colorMajor){
@@ -2572,12 +2914,21 @@ function refreshCommunityPortals(worldsArr){
 // ---- shared "play world" (voxel) scene, used by SkyRush + community worlds ----
 function buildPlayScene(worldData){
   teardownScene();
-  const { scene } = newBaseScene('#274a63','#0a0d18', 0x0a0d18, 55);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_BOUND*2+4, WORLD_BOUND*2+4), new THREE.MeshLambertMaterial({ color:0x141a30 }));
-  ground.rotation.x = -Math.PI/2;
-  ground.position.y = -9;  // void backstop — real footing comes only from placed blocks
-  scene.add(ground);
-  App.groundMesh = ground;
+  const lighting = worldData.lighting || {};
+  const { scene } = rbxBaseScene({ sky: lighting.sky || 'day' });
+  if(worldData.baseplate){
+    const plate = makeBaseplate(WORLD_BOUND+2);
+    scene.add(plate);
+    App.groundMesh = plate;
+  } else {
+    // open void (you can fall off) — an invisible backstop plane is kept only for raycasts
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_BOUND*2+4, WORLD_BOUND*2+4), new THREE.MeshBasicMaterial({ color:0x000000 }));
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = -9;
+    ground.visible = false;
+    scene.add(ground);
+    App.groundMesh = ground;
+  }
 
   const blockGroup = new THREE.Group();
   scene.add(blockGroup);
@@ -2587,7 +2938,7 @@ function buildPlayScene(worldData){
   const blocks = deserializeBlocks(worldData.blocks);
   blocks.forEach((v,k)=>{
     const [x,y,z] = k.split(',').map(Number);
-    const m = makeBlockMesh(v.type);
+    const m = makeBlockMesh(v.type, v.props);
     m.position.set(x+0.5, y+0.5, z+0.5);
     m.userData.gx=x; m.userData.gy=y; m.userData.gz=z;
     m.userData.script = v.script || null;
@@ -2596,8 +2947,15 @@ function buildPlayScene(worldData){
   });
 
   App.markers = {};
+  const sp = worldData.spawn || { x:0, y:1, z:0 };
+  if(!worldData.noSpawnPad){
+    const pad = makeSpawnPad();
+    pad.position.set(sp.x+0.5, sp.y, sp.z+0.5);
+    scene.add(pad);
+    App.markers.spawn = pad;
+  }
   if(worldData.goal){
-    const flag = makeFlagMarker(0xff5c72);
+    const flag = makeGoalMarker();
     flag.position.set(worldData.goal.x+0.5, worldData.goal.y, worldData.goal.z+0.5);
     scene.add(flag);
     App.markers.goal = flag;
@@ -2608,6 +2966,50 @@ function buildPlayScene(worldData){
   return scene;
 }
 
+// SpawnLocation: a flat grey pad with a round spawn emblem (sits on top of the block below it).
+let _spawnDecalTex = null;
+function makeSpawnPad(){
+  if(!_spawnDecalTex){
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d');
+    x.fillStyle = '#8a8d91'; x.fillRect(0,0,128,128);
+    x.strokeStyle = '#e9ecef'; x.lineWidth = 9;
+    x.beginPath(); x.arc(64,64,40,0,Math.PI*2); x.stroke();
+    x.fillStyle = '#e9ecef';
+    x.beginPath(); for(let i=0;i<10;i++){ const a = -Math.PI/2 + i*Math.PI/5, r = i%2 ? 11 : 26; x.lineTo(64+Math.cos(a)*r, 64+Math.sin(a)*r); } x.closePath(); x.fill();
+    _spawnDecalTex = new THREE.CanvasTexture(c);
+  }
+  const g = new THREE.Group();
+  const side = new THREE.MeshStandardMaterial({ color:0x8a8d91, roughness:0.7 });
+  const top = new THREE.MeshStandardMaterial({ map:_spawnDecalTex, roughness:0.7 });
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 1.6), [side, side, top, side, side, side]);
+  pad.position.y = 0.04;
+  pad.receiveShadow = true;
+  g.add(pad);
+  g.userData.noSpin = true;
+  return g;
+}
+// The finish: a gold, checkered "WIN" pad with a little trophy floating above it.
+function makeGoalMarker(){
+  const g = new THREE.Group();
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  for(let i=0;i<8;i++) for(let j=0;j<8;j++){ x.fillStyle = (i+j)%2 ? '#1b1b1b' : '#f7f7f7'; x.fillRect(i*16,j*16,16,16); }
+  const top = new THREE.MeshStandardMaterial({ map:new THREE.CanvasTexture(c), roughness:0.6 });
+  const side = new THREE.MeshStandardMaterial({ color:0xffc93c, roughness:0.5 });
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 1.6), [side, side, top, side, side, side]);
+  pad.position.y = 0.05; pad.receiveShadow = true; g.add(pad);
+  const trophy = new THREE.Group();
+  const gold = new THREE.MeshStandardMaterial({ color:0xffcf3a, metalness:0.7, roughness:0.28, emissive:0x5a3c00, emissiveIntensity:0.4 });
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.1, 0.32, 18), gold); cup.position.y = 0.32; trophy.add(cup);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.16, 8), gold); stem.position.y = 0.1; trophy.add(stem);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.24), gold); base.position.y = 0.0; trophy.add(base);
+  trophy.position.y = 1.0;
+  trophy.userData.spin = true;
+  g.add(trophy);
+  g.userData.trophy = trophy;
+  return g;
+}
 function makeFlagMarker(color){
   const g = new THREE.Group();
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.6,6), new THREE.MeshLambertMaterial({ color:0xffffff }));
@@ -2622,12 +3024,20 @@ function buildStudioScene(){
   teardownScene();
   App.studio.selected = null;
   App.studioSelectOutline = null; // the old one was disposed along with the old scene above
-  const { scene } = newBaseScene('#33224e','#0a0d18', 0x0a0d18, 55);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_BOUND*2+4, WORLD_BOUND*2+4), new THREE.MeshLambertMaterial({ color:0x1a1530 }));
-  ground.rotation.x = -Math.PI/2;
-  scene.add(ground);
-  App.groundMesh = ground;
-  addGroundGrid(scene, WORLD_BOUND*2, 0x3a2a5c, 0x53398a);
+  const lighting = App.studio.lighting || {};
+  const { scene } = rbxBaseScene({ sky: lighting.sky || 'day' });
+  if(App.studio.baseplate !== false){
+    const plate = makeBaseplate(WORLD_BOUND+2);
+    scene.add(plate);
+    App.groundMesh = plate;
+  } else {
+    // no baseplate: a faint build grid marks the buildable area over the void
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_BOUND*2+4, WORLD_BOUND*2+4), new THREE.MeshBasicMaterial({ color:0x9fb3c8, transparent:true, opacity:0.12, depthWrite:false }));
+    ground.rotation.x = -Math.PI/2;
+    scene.add(ground);
+    App.groundMesh = ground;
+  }
+  addGroundGrid(scene, WORLD_BOUND*2, 0x8b939c, 0x5d6670);
 
   const blockGroup = new THREE.Group();
   scene.add(blockGroup);
@@ -2637,7 +3047,7 @@ function buildStudioScene(){
   // rebuild from App.studio.blocks (persists while switching in/out during a session)
   App.studio.blocks.forEach((v,k)=>{
     const [x,y,z] = k.split(',').map(Number);
-    const m = makeBlockMesh(v.type);
+    const m = makeBlockMesh(v.type, v.props);
     m.position.set(x+0.5, y+0.5, z+0.5);
     m.userData.gx=x; m.userData.gy=y; m.userData.gz=z;
     m.userData.script = v.script || null;
@@ -2646,12 +3056,12 @@ function buildStudioScene(){
   });
 
   App.markers = {};
-  const spawnFlag = makeFlagMarker(0xc8ff4d);
+  const spawnFlag = makeSpawnPad();
   spawnFlag.position.set(App.studio.spawn.x+0.5, App.studio.spawn.y, App.studio.spawn.z+0.5);
   scene.add(spawnFlag);
   App.markers.spawn = spawnFlag;
   if(App.studio.goal){
-    const goalFlag = makeFlagMarker(0xff5c72);
+    const goalFlag = makeGoalMarker();
     goalFlag.position.set(App.studio.goal.x+0.5, App.studio.goal.y, App.studio.goal.z+0.5);
     scene.add(goalFlag);
     App.markers.goal = goalFlag;
@@ -2663,30 +3073,44 @@ function buildStudioScene(){
   return scene;
 }
 
+// Sky Rush — a classic obby: stepping stones, a kill-brick lava run, a jump pad up a tower,
+// a narrow beam, a glass bridge, and a winner's pad. Checkpoints save your stage as you go.
 const SKYRUSH_WORLD = (function(){
   const blocks = [];
-  // starting platform
-  for(let x=-2;x<=2;x++) for(let z=-2;z<=2;z++) blocks.push([x,0,z,'grass']);
-  // winding ascending path
-  const path = [
-    [0,-4,'stone'],[0,-6,'stone'],[1,-8,'stone'],[2,-10,'wood'],[2,-12,'wood'],
-    [1,-14,'ice'],[0,-16,'ice'],[-1,-18,'stone'],[-2,-20,'stone'],[-2,-22,'brick']
-  ];
-  let y = 0;
-  path.forEach((p,i)=>{
-    y = 1 + i; // steadily rising
-    blocks.push([p[0], y, p[1], p[2]]);
-    blocks.push([p[0], y-1, p[1], p[2]]);
-  });
-  // floating stepping stones widen near the end
-  for(let i=0;i<4;i++){ blocks.push([-2+ (i%2===0?0:1), y+1, -22-i, 'neon']); }
-  // final platform + goal
-  for(let x=-3;x<=-1;x++) for(let z=-27;z<=-25;z++) blocks.push([x,y+1,z,'brick']);
+  const add = (x,y,z,type,props)=> blocks.push(props ? [x,y,z,type,null,null,props] : [x,y,z,type]);
+  const pad = (x0,x1,z0,z1,y,type,props)=>{ for(let x=x0;x<=x1;x++) for(let z=z0;z<=z1;z++) add(x,y,z,type,props); };
+  // Stage 1 — start
+  pad(-2,2,-2,2,0,'plastic',{ c:'#a3a2a5' });
+  // stepping stones
+  add(0,0,-4,'plastic',{ c:'#ff5c5c' }); add(1,0,-6,'plastic',{ c:'#ffb347' }); add(0,0,-8,'plastic',{ c:'#ffe066' });
+  // Stage 2
+  pad(-1,1,-12,-10,0,'checkpoint',{ n:2 });
+  // lava run: kill bricks below, hop the stones
+  pad(-1,1,-19,-13,0,'kill');
+  add(0,1,-14,'plastic',{ c:'#4dabf7' }); add(1,1,-16,'plastic',{ c:'#4dabf7' }); add(-1,1,-18,'plastic',{ c:'#4dabf7' });
+  // Stage 3
+  pad(-1,1,-23,-21,1,'checkpoint',{ n:3 });
+  // stairs up
+  add(0,2,-25,'plastic',{ c:'#b197fc' }); add(0,3,-27,'plastic',{ c:'#9775fa' });
+  // jump pad launches you up to the tower top
+  add(0,3,-29,'bounce');
+  pad(-1,1,-33,-31,7,'wood');
+  // Stage 4 — tower top
+  add(0,7,-32,'checkpoint',{ n:4 });
+  // narrow beam to the east, with a kill brick in it to hop over
+  for(let x=2;x<=8;x++){ if(x===5) add(x,7,-32,'kill'); else add(x,7,-32,'plastic',{ c:'#ffffff' }); }
+  // glass bridge to the south (careful, it's see-through)
+  for(let z=-34;z>=-40;z--) add(8,7,z,'glass');
+  add(8,7,-37,'ice');
+  // winner's platform
+  pad(7,9,-44,-42,7,'plastic',{ c:'#ffd43b' });
   return {
     name:'Sky Rush', builtin:true,
     blocks,
     spawn:{x:0,y:1,z:0},
-    goal:{x:-2,y:y+2,z:-26},
+    goal:{x:8,y:8,z:-43},
+    spawnYaw: Math.PI, // face down the course
+    lighting:{ sky:'day' },
   };
 })();
 
@@ -2727,6 +3151,9 @@ function installInputOnce(){
   canvas.addEventListener('mousedown', (e)=>{
     if(App.mode==='boot') return;
     if(isTouchDevice()) return; // touch uses drag-to-look + the on-screen joystick instead — see installTouchControlsOnce()
+    // In worlds and playtests the Roblox-style camera (rbx/hud.js) owns the mouse: right-drag to
+    // turn, wheel to zoom, Shift for shift-lock — a plain click doesn't grab the cursor.
+    if(humActive() && window.RbxCam) return;
     if(document.pointerLockElement !== canvas){
       canvas.requestPointerLock && canvas.requestPointerLock();
       return;
@@ -2739,8 +3166,9 @@ function installInputOnce(){
 
   document.addEventListener('mousemove', (e)=>{
     if(document.pointerLockElement !== canvas) return;
-    App.yaw   -= e.movementX * 0.0024;
-    App.pitch -= e.movementY * 0.0022;
+    const sens = App.settings ? App.settings.sens : 1;
+    App.yaw   -= e.movementX * 0.0024 * sens;
+    App.pitch -= e.movementY * 0.0022 * sens;
     App.pitch = clamp(App.pitch, -0.85, 1.1);
   });
 
@@ -2975,7 +3403,7 @@ function makeMicSprite(){
   return sprite;
 }
 
-function makeNameSprite(text){
+function makeNameSprite(text, style){
   const c = document.createElement('canvas'); c.width=256; c.height=64;
   const ctx = c.getContext('2d');
   const tex = new THREE.CanvasTexture(c);
@@ -2986,12 +3414,25 @@ function makeNameSprite(text){
   // Keep the canvas/ctx/tex around on the sprite so a later "now playing" badge can redraw the
   // same texture in place (updateNameSpriteText) instead of allocating a whole new one per update.
   sprite.userData.nameCanvas = c; sprite.userData.nameCtx = ctx; sprite.userData.nameTex = tex;
+  // 'rbx' = the in-experience look: plain white name with a dark outline, no box behind it.
+  sprite.userData.nameStyle = style || (App.mode && App.mode!=='lobby' ? 'rbx' : 'lobby');
   updateNameSpriteText(sprite, text);
   return sprite;
 }
 function updateNameSpriteText(sprite, text, accentColor){
   const c = sprite.userData.nameCanvas, ctx = sprite.userData.nameCtx;
   ctx.clearRect(0,0,c.width,c.height);
+  if(sprite.userData.nameStyle === 'rbx'){
+    ctx.font = '800 28px "Nunito Sans", "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.strokeText(text, 128, 40);
+    ctx.fillStyle = accentColor || '#ffffff';
+    ctx.fillText(text, 128, 40);
+    sprite.userData.nameTex.needsUpdate = true;
+    return;
+  }
   ctx.font='700 30px Rajdhani, sans-serif';
   ctx.textAlign='center';
   ctx.fillStyle='rgba(10,13,24,0.55)';
@@ -3103,7 +3544,7 @@ function sendPresence(){
   App.lastPresenceSend = now;
   if(Net.connected){
     netSend({
-      t:'presence', x:App.player.pos.x, y:App.player.pos.y, z:App.player.pos.z, ry:App.yaw,
+      t:'presence', x:App.player.pos.x, y:App.player.pos.y, z:App.player.pos.z, ry:(App.player.rig ? App.player.rig.group.rotation.y : App.yaw),
       anim: (App.emote&&App.emote.type) || 'idle', world: netWorldLabel(),
     });
   } else if(App.caps.room){
@@ -3115,6 +3556,164 @@ function sendPresence(){
   }
 }
 
+// === SECTION:HUMANOID (health, dying, respawning, checkpoints — worlds & studio playtest) ===
+// Every experience gives your character 100 health. Kill bricks and falling into the void knock
+// you out: your character falls apart into its pieces, then you respawn at your last checkpoint.
+const RESPAWN_SECONDS = 3;
+App.hum = null;
+App.debris = [];
+function humActive(){ return App.mode==='play' || (App.mode==='studio' && App.studio.testing); }
+function humReset(){
+  App.hum = { health:100, maxHealth:100, dead:false, diedAt:0 };
+  if(window.RbxHud) RbxHud.onHealth();
+}
+function humSpawnPoint(){
+  if(App.checkpoint) return App.checkpoint;
+  if(App.mode==='studio') return App.studio.spawn || { x:0, y:1, z:0 };
+  return (App.currentWorldData && App.currentWorldData.spawn) || { x:0, y:1, z:0 };
+}
+function humDamage(amount, cause){
+  const h = App.hum; if(!h || h.dead) return;
+  h.health = Math.max(0, h.health - amount);
+  if(window.RbxHud) RbxHud.onHealth();
+  if(h.health <= 0) humDie(cause);
+}
+function humDie(cause){
+  const h = App.hum; const p = App.player;
+  if(!h || h.dead || !p) return;
+  h.health = 0; h.dead = true; h.diedAt = App.clockT;
+  SFX.oof();
+  breakApartRig(p.rig, p.vel);
+  if(window.RbxHud){ RbxHud.onHealth(); RbxHud.onDeath(cause); }
+  if(Net.connected) netSend({ t:'pstate', dead:true });
+}
+// Pull every body part off the rig into the world as loose debris, each with its own little push.
+function breakApartRig(rig, vel, owner){
+  if(!rig || !App.scene) return;
+  const parts = [];
+  const pv = rig.customSkinPivots;
+  if(rig.usingUploadedAvatar && rig.uploadedAvatarMesh) parts.push(rig.uploadedAvatarMesh);
+  else if(pv && rig.customSkinMesh){
+    ['head','leftArm','rightArm','leftLeg','rightLeg'].forEach(k=>{ if(pv[k]) parts.push(pv[k]); });
+    parts.push(rig.customSkinMesh);
+  } else {
+    parts.push(rig.headPivot, rig.torso, rig.leftArm, rig.rightArm, rig.leftLeg, rig.rightLeg);
+  }
+  rig.group.updateMatrixWorld(true);
+  const base = vel ? vel.clone() : new THREE.Vector3();
+  parts.forEach(obj=>{
+    if(!obj) return;
+    App.scene.attach(obj); // keeps its current world position/rotation
+    const v = new THREE.Vector3((Math.random()-0.5)*4, 2.5+Math.random()*3, (Math.random()-0.5)*4).add(base.clone().multiplyScalar(0.4));
+    const spin = new THREE.Vector3((Math.random()-0.5)*8, (Math.random()-0.5)*8, (Math.random()-0.5)*8);
+    App.debris.push({ obj, v, spin, owner: owner || 'me' });
+  });
+  rig.group.visible = false;
+}
+function updateDebris(dt){
+  if(!App.debris.length) return;
+  App.debris.forEach(d=>{
+    d.v.y -= GRAVITY*dt;
+    d.obj.position.addScaledVector(d.v, dt);
+    d.obj.rotation.x += d.spin.x*dt; d.obj.rotation.y += d.spin.y*dt; d.obj.rotation.z += d.spin.z*dt;
+    // land on whatever is underneath (blocks or the baseplate) and slide to a stop
+    const top = columnTopAt(d.obj.position.x, d.obj.position.z);
+    const floor = top !== null ? top : (worldHasBaseplate() && insideBuildArea(d.obj.position) ? 0 : -999);
+    if(d.obj.position.y < floor + 0.15 && d.obj.position.y > floor - 0.6){
+      d.obj.position.y = floor + 0.15;
+      if(d.v.y < 0) d.v.y = -d.v.y*0.25;
+      d.v.x *= 0.82; d.v.z *= 0.82; d.spin.multiplyScalar(0.8);
+    }
+  });
+}
+function clearDebris(owner){
+  const keep = [];
+  App.debris.forEach(d=>{
+    if(owner && d.owner !== owner){ keep.push(d); return; }
+    if(d.obj.parent) d.obj.parent.remove(d.obj);
+    disposeObj(d.obj);
+  });
+  App.debris = keep;
+}
+function humRespawn(){
+  clearDebris('me');
+  const old = App.player;
+  if(old && old.rig && old.rig.group.parent) old.rig.group.parent.remove(old.rig.group);
+  const sp = humSpawnPoint();
+  const yaw = App.yaw;
+  spawnLocalAvatar(App.scene, { x:sp.x+0.5, y:sp.y+0.05, z:sp.z+0.5 });
+  App.yaw = yaw;
+  App.player.rig.group.rotation.y = yaw;
+  humReset();
+  if(Net.connected) netSend({ t:'pstate', dead:false });
+  if(window.RbxHud) RbxHud.onRespawn();
+}
+function worldHasBaseplate(){
+  if(App.mode==='studio') return App.studio.baseplate !== false;
+  return !!(App.currentWorldData && App.currentWorldData.baseplate);
+}
+function insideBuildArea(pos){ return Math.abs(pos.x) <= WORLD_BOUND+2 && Math.abs(pos.z) <= WORLD_BOUND+2; }
+
+// Checkpoint stage numbers: a part's own Stage (NeoStudio property) wins; otherwise they're
+// numbered in climbing order (lowest first, then nearest to spawn). Spawn itself is Stage 1.
+function computeCheckpointStages(){
+  const list = [];
+  (App.worldMeshes||new Map()).forEach(m=>{ if(m.userData.blockType==='checkpoint') list.push(m); });
+  const sp = humSpawnPoint();
+  list.sort((a,b)=> (a.userData.gy - b.userData.gy) || (Math.hypot(a.userData.gx-sp.x, a.userData.gz-sp.z) - Math.hypot(b.userData.gx-sp.x, b.userData.gz-sp.z)));
+  let auto = 2;
+  list.forEach(m=>{ const n = m.userData.props && m.userData.props.n; m.userData.stage = n || auto; auto = Math.max(auto, (n||auto)) + 1; });
+}
+App.leaderstats = null;
+function setLeaderstat(name, value){
+  if(!App.leaderstats) App.leaderstats = {};
+  App.leaderstats[name] = value;
+  if(window.RbxHud) RbxHud.onLeaderstats();
+  if(Net.connected) netSend({ t:'pstate', stats: App.leaderstats });
+}
+// What the player is touching right now: the part under their feet and any part their body is
+// pressed against. Drives kill bricks, checkpoints and jump pads.
+function touchedPartsAt(pos){
+  const found = [];
+  if(!App.worldMeshes) return found;
+  const seen = new Set();
+  const feetY = pos.y;
+  const levels = [Math.round(feetY-1), Math.floor(feetY+0.1), Math.floor(feetY+1.1)];
+  const offs = [[0,0],[0.32,0],[-0.32,0],[0,0.32],[0,-0.32]];
+  levels.forEach((gy, li)=>{
+    // under the feet: only the cell straight below, and only when actually standing on it
+    if(li===0 && Math.abs(feetY - (gy+1)) > 0.2) return;
+    offs.forEach(([ox,oz], oi)=>{
+      if(li===0 && oi>0) return;
+      const key = blockKey(Math.floor(pos.x+ox), gy, Math.floor(pos.z+oz));
+      if(seen.has(key)) return; seen.add(key);
+      const m = App.worldMeshes.get(key);
+      if(m) found.push({ mesh:m, below: li===0 });
+    });
+  });
+  return found;
+}
+function humCheckTouches(p){
+  const h = App.hum; if(!h || h.dead) return;
+  const touched = touchedPartsAt(p.pos);
+  for(const t of touched){
+    const beh = blockBehavior(t.mesh.userData.blockType);
+    if(beh==='kill'){ humDie('kill'); return; }
+    if(beh==='bounce' && t.below && p.grounded){ p.vel.y = 16; p.grounded = false; SFX.boing(); }
+    if(beh==='checkpoint' && t.below){
+      const m = t.mesh;
+      const stage = m.userData.stage || 2;
+      const cur = (App.leaderstats && App.leaderstats.Stage) || 1;
+      const here = { x:m.userData.gx, y:m.userData.gy+1, z:m.userData.gz };
+      const same = App.checkpoint && App.checkpoint.x===here.x && App.checkpoint.y===here.y && App.checkpoint.z===here.z;
+      if(stage >= cur && !same){
+        App.checkpoint = here;
+        if(stage > cur){ setLeaderstat('Stage', stage); SFX.checkpoint(); if(window.RbxHud) RbxHud.flash('✅ Checkpoint — Stage '+stage); }
+      }
+    }
+  }
+}
+
 // ---- physics: shared avatar controller for lobby + play ----
 function columnTopAt(x,z){
   if(!App.worldMeshes) return null;
@@ -3122,6 +3721,7 @@ function columnTopAt(x,z){
   let top = null;
   App.worldMeshes.forEach(m=>{
     if(m.userData.gx===bx && m.userData.gz===bz){
+      if(m.userData.props && m.userData.props.nc) return; // CanCollide off: walk right through it
       const t = m.userData.gy+1;
       if(top===null || t>top) top = t;
     }
@@ -3141,13 +3741,23 @@ function canEnterColumn(x,z,feetY){
 }
 
 function updateAvatarController(dt){
-  const p = App.player; if(!p || uiBlocking()) return;
+  const p = App.player; if(!p) return;
+  if(humActive()){
+    updateDebris(dt);
+    if(App.hum && App.hum.dead){
+      // knocked out: the camera keeps watching the pieces until the respawn timer runs out
+      if(App.clockT - App.hum.diedAt >= RESPAWN_SECONDS) humRespawn();
+      else if(window.RbxCam) RbxCam.update(dt, p, true);
+      return;
+    }
+  }
+  if(uiBlocking()){ if(humActive() && window.RbxCam) RbxCam.update(dt, p, false); return; }
   if(App.mode==='battle' && App.battle && App.battle.phase && App.battle.phase!=='landed'){
     updateBattleIntroPhase(dt);
     return;
   }
   const forward = new THREE.Vector3(Math.sin(App.yaw),0,Math.cos(App.yaw));
-  const right = new THREE.Vector3(Math.sin(App.yaw+Math.PI/2),0,Math.cos(App.yaw+Math.PI/2));
+  const right = new THREE.Vector3(Math.sin(App.yaw-Math.PI/2),0,Math.cos(App.yaw-Math.PI/2)); // screen-right (A/D used to be swapped)
   const mv = new THREE.Vector3();
   if(App.input.forward) mv.add(forward);
   if(App.input.back) mv.sub(forward);
@@ -3167,7 +3777,8 @@ function updateAvatarController(dt){
   // y:1 (the same standing height a real gy:0 ground block would give) anywhere within the
   // island's ground extent; a real block (POI structure or a player build) still wins when present.
   const battleFallback = Math.hypot(p.pos.x,p.pos.z) <= BATTLE_GROUND_R ? 1 : -999;
-  const groundY = App.mode==='lobby' ? 0 : (columnTopAt(p.pos.x,p.pos.z) ?? (App.mode==='battle' ? battleFallback : -999));
+  const plateFallback = (humActive() && worldHasBaseplate() && insideBuildArea(p.pos)) ? 0 : -999;
+  const groundY = App.mode==='lobby' ? 0 : (columnTopAt(p.pos.x,p.pos.z) ?? (App.mode==='battle' ? battleFallback : plateFallback));
   const wasAirborne = !p.grounded;
   if(p.pos.y <= groundY){
     p.pos.y = groundY; p.vel.y = 0;
@@ -3178,13 +3789,25 @@ function updateAvatarController(dt){
   }
   if(App.input.jump && p.grounded){ p.vel.y = JUMP_SPEED; p.grounded = false; SFX.jump(); }
 
-  if((App.mode==='play' || App.mode==='battle' || (App.mode==='studio' && App.studio.testing)) && p.pos.y < -8){
-    const sp = App.mode==='battle' ? battlePickSpawn() : (App.mode==='studio' ? App.studio.spawn : App.currentWorldData.spawn);
+  if(App.mode==='battle' && p.pos.y < -8){
+    const sp = battlePickSpawn();
     p.pos.set(sp.x+0.5, sp.y, sp.z+0.5); p.vel.set(0,0,0);
     showToast('Back to spawn!');
   }
+  if(humActive() && p.pos.y < -20){ humDie('void'); return; }
 
   p.rig.group.position.copy(p.pos);
+  if(humActive() && window.RbxCam){
+    // Roblox-style: the character turns to face where it's walking (unless shift-lock is on)
+    RbxCam.faceCharacter(dt, p, mv, moving);
+    animateAvatar(p.rig, App.clockT, { speedFactor: moving?1:0, jumping: !p.grounded, emote: App.emote });
+    RbxCam.update(dt, p, false);
+    sendPresence();
+    humCheckTouches(p);
+    if(App.mode==='play'){ checkGoal(p.pos); checkBlockScripts(p); }
+    else checkBlockScripts(p);
+    return;
+  }
   p.rig.group.rotation.y = App.yaw;
   animateAvatar(p.rig, App.clockT, { speedFactor: moving?1:0, jumping: !p.grounded, emote: App.emote });
 
@@ -3273,7 +3896,9 @@ function checkGoal(pos){
     SFX.goal();
     const elapsed = (App.clockT - App.playStart).toFixed(1);
     if(!Profile.bestTime || parseFloat(elapsed) < Profile.bestTime){ Profile.bestTime = parseFloat(elapsed); saveLocal('nb_profile', Profile); }
-    showBanner('Goal reached! 🎉', elapsed+'s · best '+ (Profile.bestTime||elapsed) +'s — press Menu to return');
+    const wname = (App.currentWorldData && App.currentWorldData.name) || 'the obby';
+    showBanner('🏆 You beat '+wname+'!', elapsed+'s · best '+ (Profile.bestTime||elapsed) +'s');
+    if(window.RbxHud) RbxHud.onWin(elapsed);
   }
 }
 
@@ -3508,10 +4133,11 @@ function changeStudioBlockType(sel, newType){
   const old = App.studio.blocks.get(key);
   if(!old || !BLOCK_TYPES.find(t=>t.id===newType)) return;
   const script = old.script || null; // swapping material shouldn't wipe out a script you wrote
-  App.studio.blocks.set(key, { type:newType, script });
+  const props = old.props || null;
+  App.studio.blocks.set(key, { type:newType, script, props });
   const oldMesh = App.worldMeshes.get(key);
   if(oldMesh) App.blockGroup.remove(oldMesh);
-  const m = makeBlockMesh(newType);
+  const m = makeBlockMesh(newType, props);
   m.position.set(sel.x+0.5, sel.y+0.5, sel.z+0.5);
   m.userData.gx=sel.x; m.userData.gy=sel.y; m.userData.gz=sel.z;
   m.userData.script = script;
@@ -3617,7 +4243,9 @@ function startStudioPlaytest(){
   selectStudioBlock(null);
   const sp = App.studio.spawn || { x:0, y:1, z:0 };
   spawnLocalAvatar(App.scene, { x:sp.x+0.5, y:sp.y+0.5, z:sp.z+0.5 });
-  App.yaw = 0; App.pitch = 0;
+  App.yaw = 0; App.pitch = -0.25;
+  startExperienceState();
+  if(window.RbxHud) RbxHud.show('studio-test');
   document.getElementById('btnPlayTest').hidden = true;
   document.getElementById('btnStopTest').hidden = false;
   showToast('▶ Testing your build — WASD to move, Space to jump. Hit Stop when you\'re done.');
@@ -3625,8 +4253,10 @@ function startStudioPlaytest(){
 function stopStudioPlaytest(){
   if(!App.studio.testing) return;
   App.studio.testing = false;
+  clearDebris(); App.hum = null; App.checkpoint = null; App.leaderstats = null;
   if(App.player && App.player.rig && App.player.rig.group.parent) App.player.rig.group.parent.remove(App.player.rig.group);
   App.player = null;
+  if(window.RbxHud) RbxHud.hide();
   App.studioPos = null;
   document.getElementById('btnPlayTest').hidden = false;
   document.getElementById('btnStopTest').hidden = true;
@@ -3667,7 +4297,7 @@ function performBuildAction(){
     App.markers.spawn.position.set(gx+0.5, gy+1, gz+0.5);
   } else if(tool==='goal'){
     App.studio.goal = { x:gx, y:gy+1, z:gz };
-    if(!App.markers.goal){ App.markers.goal = makeFlagMarker(0xff5c72); App.scene.add(App.markers.goal); }
+    if(!App.markers.goal){ App.markers.goal = makeGoalMarker(); App.scene.add(App.markers.goal); }
     App.markers.goal.position.set(gx+0.5, gy+1, gz+0.5);
   }
 }
@@ -3676,7 +4306,7 @@ function updateStudioCamera(dt){
   if(uiBlocking()) return;
   if(!App.studioPos) App.studioPos = new THREE.Vector3(0, 9, 13);
   const camDir = camDirFromYawPitch(App.yaw, App.pitch);
-  const right = new THREE.Vector3(Math.sin(App.yaw+Math.PI/2),0,Math.cos(App.yaw+Math.PI/2));
+  const right = new THREE.Vector3(Math.sin(App.yaw-Math.PI/2),0,Math.cos(App.yaw-Math.PI/2)); // screen-right (A/D used to be swapped)
   const speed = 9;
   if(App.input.forward) App.studioPos.addScaledVector(camDir, speed*dt);
   if(App.input.back) App.studioPos.addScaledVector(camDir, -speed*dt);
@@ -3706,7 +4336,7 @@ function animate(){
     updateBots(dt);
     syncRemotePeers(dt);
   } else if(App.mode==='play'){
-    if(App.markers.goal) App.markers.goal.rotation.y += dt*1.2;
+    if(App.markers.goal && App.markers.goal.userData.trophy){ const tr = App.markers.goal.userData.trophy; tr.rotation.y += dt*1.6; tr.position.y = 1.0 + Math.sin(App.clockT*2)*0.08; }
     updateAvatarController(dt);
     if(Net.connected) syncRemotePeers(dt);
     const chip = document.getElementById('timerChip');
@@ -3715,8 +4345,7 @@ function animate(){
     updateAvatarController(dt);
     if(Net.connected) syncRemotePeers(dt);
   } else if(App.mode==='studio'){
-    if(App.markers.spawn) App.markers.spawn.rotation.y += dt*1.2;
-    if(App.markers.goal) App.markers.goal.rotation.y += dt*1.2;
+    if(App.markers.goal && App.markers.goal.userData.trophy) App.markers.goal.userData.trophy.rotation.y += dt*1.6;
     if(App.studioSelectOutline){
       App.studioSelectOutline.rotation.y += dt*0.8;
       App.studioSelectOutline.material.opacity = 0.6 + Math.sin(App.clockT*4)*0.3;
@@ -3725,6 +4354,11 @@ function animate(){
     else updateStudioCamera(dt);
   }
 
+  if(App.sunLight){
+    const focus = App.player ? App.player.pos : (App.studioPos || null);
+    if(focus) updateSunFollow(focus);
+  }
+  if(window.RbxHud && App.mode!=='boot') RbxHud.tick(dt);
   if(App.renderer && App.scene && App.camera){
     App.renderer.render(App.scene, App.camera);
   }
@@ -3747,12 +4381,28 @@ function goToPlay(worldData, worldId){
   App.mode = 'play';
   App.currentWorldId = worldId;
   goalReached = false;
-  App.yaw = 0.3; App.pitch = -0.18;
+  App.yaw = typeof worldData.spawnYaw === 'number' ? worldData.spawnYaw : Math.PI; App.pitch = -0.3;
   buildPlayScene(worldData);
   const sp = worldData.spawn || {x:0,y:1,z:0};
   spawnLocalAvatar(App.scene, { x:sp.x+0.5, y:sp.y+0.05, z:sp.z+0.5 });
   App.playStart = App.clockT;
+  startExperienceState();
   showHudFor('play', worldData);
+}
+
+// Fresh per-visit state for an experience: full health, no checkpoint yet, and leaderstats
+// (a Stage counter whenever the world has checkpoints, like an obby).
+function startExperienceState(){
+  App.checkpoint = null;
+  App.leaderstats = null;
+  clearDebris();
+  computeCheckpointStages();
+  let hasCheckpoints = false;
+  (App.worldMeshes||new Map()).forEach(m=>{ if(m.userData.blockType==='checkpoint') hasCheckpoints = true; });
+  if(hasCheckpoints) App.leaderstats = { Stage: 1 };
+  humReset();
+  if(App.player && App.player.rig) App.player.rig.group.rotation.y = App.yaw; // start facing the way the camera looks
+  if(Net.connected) netSend({ t:'pstate', dead:false, stats: App.leaderstats || {} });
 }
 
 function goToStudio(){
@@ -3773,6 +4423,7 @@ function backToMenu(){
   App.mode = 'boot';
   teardownScene();
   hideBattleHud();
+  if(window.RbxHud) RbxHud.hide();
   if(document.pointerLockElement) document.exitPointerLock();
   showScreen('boot');
 }
@@ -4395,6 +5046,8 @@ function showHudFor(mode, data){
 
   const hint = document.getElementById('hintBar');
   hint.textContent = isTouchDevice() ? 'Drag to look · joystick to move · ▲ to jump' : 'Click the scene to look around';
+
+  if(window.RbxHud){ if(mode==='play' || mode==='battle') RbxHud.show(mode, data); else RbxHud.hide(); }
 
   if(mode==='lobby'){
     setActiveTab('play');
@@ -5125,7 +5778,7 @@ const THUNDER_ARENA = (function(){
 })();
 
 const BATTLE_GROUND_COLORS = {
-  grass:'#6bd66b', stone:'#8993a8', wood:'#b9793f', brick:'#c45a4a', ice:'#bdeaff', neon:'#c8ff4d', metal:'#9aa5b0',
+  grass:'#4fa34c', stone:'#8c8c8c', wood:'#a0703f', brick:'#9e5a48', ice:'#cfe9f7', neon:'#5c5f64', metal:'#7d858d',
 };
 // Stands in for the ~2800 individual ground-tile meshes the open field would otherwise need —
 // one painted texture instead, same per-POI coloring + light path-grid pattern as before, at the
@@ -5159,10 +5812,11 @@ function spawnBattleGround(){
   const size = BATTLE_GROUND_R*2;
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(size, size),
-    new THREE.MeshLambertMaterial({ map: makeBattleGroundTexture() })
+    new THREE.MeshStandardMaterial({ map: makeBattleGroundTexture(), roughness:0.9 })
   );
   mesh.rotation.x = -Math.PI/2;
   mesh.position.y = 0;
+  mesh.receiveShadow = true;
   App.scene.add(mesh);
   App.groundMesh = mesh;
 }
@@ -5409,7 +6063,7 @@ function updateBattleIntroPhase(dt){
     }
   } else if(b.phase==='falling' || b.phase==='gliding'){
     const forward = new THREE.Vector3(Math.sin(App.yaw),0,Math.cos(App.yaw));
-    const right = new THREE.Vector3(Math.sin(App.yaw+Math.PI/2),0,Math.cos(App.yaw+Math.PI/2));
+    const right = new THREE.Vector3(Math.sin(App.yaw-Math.PI/2),0,Math.cos(App.yaw-Math.PI/2)); // screen-right (A/D used to be swapped)
     const mv = new THREE.Vector3();
     if(App.input.forward) mv.add(forward);
     if(App.input.back) mv.sub(forward);
@@ -5466,7 +6120,7 @@ function ensureBattlePhaseHud(){
   if(battlePhaseHudInstalled) return; battlePhaseHudInstalled = true;
   const el = document.createElement('div');
   el.id = 'bhPhase';
-  el.style.cssText = 'position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:41; color:#fff; font-weight:700; font-size:15px; text-shadow:0 1px 3px rgba(0,0,0,.8); pointer-events:none; display:none; text-align:center;';
+  el.style.cssText = 'position:fixed; top:134px; left:50%; transform:translateX(-50%); z-index:41; color:#fff; font-weight:700; font-size:15px; text-shadow:0 1px 3px rgba(0,0,0,.8); pointer-events:none; display:none; text-align:center;';
   document.body.appendChild(el);
 }
 function updateBattlePhaseHud(){
@@ -6169,5 +6823,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // ensureRenderer() starts the real render loop itself the moment a renderer actually exists.
 });
 </script>
+<script src="rbx/hud.js"></script>
 </body>
 </html>
