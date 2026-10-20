@@ -15,9 +15,9 @@
 // Bump CACHE_NAME whenever this file changes so the activate handler below clears out any
 // previous cache instead of leaving it (and whatever it served) around forever.
 
-const CACHE_NAME = 'neoblox-v6';
+const CACHE_NAME = 'neoblox-v7';
 // The game's own code (the page + rbx/*) is network-first too, so updates always show up.
-const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/rbx/hud.css', '/rbx/hud.js', '/rbx/home.css', '/rbx/home.js', '/rbx/studio.css', '/rbx/studio.js', '/rbx/ui.css', '/rbx/codeeditor.css', '/rbx/codeeditor.js', '/rbx/neoscript.js', '/rbx/neoscript-runtime.js'];
+const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/rbx/hud.css', '/rbx/hud.js', '/rbx/home.css', '/rbx/home.js', '/rbx/studio.css', '/rbx/studio.js', '/rbx/ui.css', '/rbx/codeeditor.css', '/rbx/codeeditor.js', '/rbx/neoscript.js', '/rbx/neoscript-runtime.js', '/rbx/pictures.css', '/rbx/pictures.js'];
 const FULL_ASSETS = [
   '/three.min.js',
   '/vendor/quickjs/quickjs.js',
@@ -62,6 +62,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   // Never touch the live WebSocket/API traffic — only static game assets.
   if (url.pathname.startsWith('/ws') || url.pathname.startsWith('/api/')) return;
+  // uploaded pictures: left to the browser's normal cache (they can be deleted, and there can be many)
+  if (url.pathname.startsWith('/img/')) return;
   if (url.origin !== location.origin) return;
 
   const isShell = event.request.mode === 'navigate' || NETWORK_FIRST_PATHS.has(url.pathname) || url.pathname.startsWith('/rbx/');

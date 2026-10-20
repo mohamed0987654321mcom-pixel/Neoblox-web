@@ -365,7 +365,15 @@
     PlaybackState: makeEnum('PlaybackState', ['Begin','Delayed','Playing','Paused','Completed','Cancelled']),
     HumanoidStateType: makeEnum('HumanoidStateType', ['Running','Jumping','Freefall','Dead','Landed','None']),
     SortOrder: makeEnum('SortOrder', ['LayoutOrder','Name']),
+    NormalId: makeEnum('NormalId', ['Front','Back','Left','Right','Top','Bottom']),
   });
+  // Pictures are Neoblox uploads, referenced by id. "rbxassetid://…"-style prefixes are accepted
+  // so Roblox-looking code works; anything else is kept as text but shows nothing.
+  function imageIdOf(v){
+    if(v === null || v === undefined) return '';
+    const s = String(v).trim().replace(/^(rbxassetid|rbxasset|neoblox|nbimg):\/\//i, '').replace(/^.*\/img\//, '');
+    return s.slice(0, 200);
+  }
   function enumName(v, type, prop){
     if(v instanceof EnumItem){ if(v.EnumType !== type) throw new TypeError(prop + ' expects an Enum.' + type + ', got ' + v); return v.Name; }
     const s = String(v);
@@ -836,7 +844,7 @@
     constructor(){ super('PointLight'); this._l = { Brightness: 1, Range: 8, Color: new Color3(1,1,1), Enabled: true }; }
     _wantLive(){ const p = this._parent; return !!(p && p._t instanceof BasePart && p._t._live && p._t._rid); }
     _sync(){ if(this._live) host('light', { id: this._host, on: this._l.Enabled, color: CHEX(this._l.Color), b: this._l.Brightness, r: this._l.Range }); }
-    _enter(){ this._host = this._parent._t._rid; this._sync(); }
+    _enter(){ this._host = this._parent._t._rid; this._live = true; this._sync(); }
     _leave(){ if(this._host){ host('light', { id: this._host, on: false }); this._host = 0; } }
     _copyTo(o){ o._l = Object.assign({}, this._l); }
   }
@@ -845,6 +853,30 @@
     Object.defineProperty(PointLight.prototype, k, { get(){ return this._t._l[k]; }, set(v){ this._t._l[k] = check(v); this._t._sync(); this._t._changed(k); }, configurable:true });
   });
   defClass('Light', 'Instance'); defClass('PointLight', 'Light');
+
+  // A picture on one face of a part (Roblox's Decal). Texture is a picture id from My Pictures.
+  let decalSeq = 1;
+  class Decal extends Instance {
+    constructor(init){
+      super('Decal');
+      init = init || {};
+      this._tex = init.image || ''; this._face = init.face || 'Front'; this._key = init.key || ('d' + (decalSeq++)); this._tr = 0; this._color = new Color3(1,1,1);
+    }
+    get Texture(){ return this._t._tex; }
+    set Texture(v){ this._t._tex = imageIdOf(v); this._t._sync(); this._t._changed('Texture'); }
+    get Face(){ return Enum.NormalId[this._t._face] || Enum.NormalId.Front; }
+    set Face(v){ this._t._face = enumName(v, 'NormalId', 'Face'); this._t._sync(); this._t._changed('Face'); }
+    get Transparency(){ return this._t._tr; }
+    set Transparency(v){ this._t._tr = Math.min(1, Math.max(0, num(v, 'Transparency'))); this._t._sync(); this._t._changed('Transparency'); }
+    get Color3(){ return this._t._color; }
+    set Color3(v){ if(!(v instanceof Color3)) throw new TypeError('Color3 must be a Color3'); this._t._color = v; }
+    _wantLive(){ const p = this._parent; return !!(p && p._t instanceof BasePart && p._t._live && p._t._rid); }
+    _sync(){ if(this._live && this._host) host('decal', { id: this._host, key: this._key, image: this._tex, face: this._face.toLowerCase(), t: this._tr }); }
+    _enter(){ this._host = this._parent._t._rid; this._live = true; this._sync(); }
+    _leave(){ if(this._host){ host('decal', { id: this._host, key: this._key, clear:true }); this._host = 0; } }
+    _copyTo(o){ o._tex = this._tex; o._face = this._face; o._tr = this._tr; }
+  }
+  defClass('FaceInstance', 'Instance'); defClass('Decal', 'FaceInstance'); defClass('Texture', 'Decal');
 
   class Sound extends Instance {
     constructor(){ super('Sound'); this._id = ''; this._vol = 0.5; this.Ended = new RBXScriptSignal('Ended'); this.Played = new RBXScriptSignal('Played'); }
@@ -906,7 +938,9 @@
       init = init || {};
       this._gid = init.id || '';
       this._g = { Text: init.text !== undefined ? String(init.text) : cls, Visible: init.visible !== false, Position: UDim2.fromScale((init.x !== undefined ? init.x : 50)/100, (init.y !== undefined ? init.y : 50)/100),
-        TextColor3: init.tc ? C(init.tc) : null, BackgroundColor3: init.bg ? C(init.bg) : null, TextSize: init.ts || 0, Size: UDim2.fromOffset(200, 50), BackgroundTransparency: 0, ZIndex: 1, LayoutOrder: 0, TextScaled:false, Font:'SourceSans' };
+        TextColor3: init.tc ? C(init.tc) : null, BackgroundColor3: init.bg ? C(init.bg) : null, TextSize: init.ts || 0, Size: UDim2.fromOffset(200, 50), BackgroundTransparency: 0, ZIndex: 1, LayoutOrder: 0, TextScaled:false, Font:'SourceSans',
+        Image: init.img || '' };
+      if(cls === 'ImageLabel'){ const w = init.w || 160; this._g.Size = UDim2.fromOffset(w, w); this._g.Text = ''; }
       if(cls === 'TextButton'){
         this.MouseButton1Click = new RBXScriptSignal('MouseButton1Click');
         this.Activated = new RBXScriptSignal('Activated');
@@ -918,7 +952,12 @@
     }
     _wantLive(){ return under(this._self, STARTERGUI) && !this._hiddenByParent(); }
     _hiddenByParent(){ let p = this._parent; while(p && p !== STARTERGUI){ if(p._t._class === 'ScreenGui' && p._t._enabled === false) return true; p = p._t._parent; } return false; }
-    _hostProps(){ const g = this._g; return { kind: this._class === 'TextButton' ? 'button' : 'label', text: g.Text.slice(0, 200), visible: g.Visible, x: g.Position.X.Scale*100, y: g.Position.Y.Scale*100, tc: g.TextColor3 ? CHEX(g.TextColor3) : null, bg: g.BackgroundColor3 ? CHEX(g.BackgroundColor3) : null, ts: g.TextSize || 0 }; }
+    _hostProps(){
+      const g = this._g;
+      const kind = this._class === 'TextButton' ? 'button' : this._class === 'ImageLabel' ? 'image' : 'label';
+      return { kind, text: g.Text.slice(0, 200), visible: g.Visible, x: g.Position.X.Scale*100, y: g.Position.Y.Scale*100, tc: g.TextColor3 ? CHEX(g.TextColor3) : null, bg: g.BackgroundColor3 ? CHEX(g.BackgroundColor3) : null, ts: g.TextSize || 0,
+        img: g.Image, w: g.Size.X.Offset || 160 };
+    }
     _enter(){ const r = host('gui.new', { id: this._gid, props: this._hostProps() }); if(r && r.id){ this._gid = r.id; GUIS.set(r.id, this._self); } }
     _leave(){ if(this._gid) host('gui.remove', { id: this._gid }); }
     _copyTo(o){ o._g = Object.assign({}, this._g); o._gid = ''; }
@@ -933,6 +972,7 @@
     TextSize: (v) => Math.max(6, Math.min(72, num(v, 'TextSize'))),
     BackgroundTransparency: (v) => Math.max(0, Math.min(1, num(v, 'BackgroundTransparency'))),
     ZIndex: (v) => num(v, 'ZIndex'), LayoutOrder: (v) => num(v, 'LayoutOrder'), TextScaled: (v) => !!v, Font: (v) => String(v),
+    Image: (v) => imageIdOf(v),
   };
   Object.keys(GUI_PROPS).forEach(k => {
     Object.defineProperty(GuiObject.prototype, k, {
@@ -941,7 +981,7 @@
         const t = this._t; v = GUI_PROPS[k](v);
         if(t._g[k] === v || (v && v.equals && v.equals(t._g[k]))) return;
         t._g[k] = v;
-        if(t._live && t._gid && ['Text','Visible','Position','TextColor3','BackgroundColor3','TextSize'].includes(k)) host('gui.set', { id: t._gid, props: t._hostProps() });
+        if(t._live && t._gid && ['Text','Visible','Position','TextColor3','BackgroundColor3','TextSize','Image','Size'].includes(k)) host('gui.set', { id: t._gid, props: t._hostProps() });
         t._changed(k);
       },
       configurable: true,
@@ -955,7 +995,7 @@
     get IgnoreGuiInset(){ return false; } set IgnoreGuiInset(v){ }
     _copyTo(o){ o._enabled = this._enabled; }
   }
-  defClass('GuiBase', 'Instance'); defClass('GuiObject', 'GuiBase'); defClass('TextLabel', 'GuiObject'); defClass('TextButton', 'GuiObject'); defClass('Frame', 'GuiObject');
+  defClass('GuiBase', 'Instance'); defClass('GuiObject', 'GuiBase'); defClass('TextLabel', 'GuiObject'); defClass('TextButton', 'GuiObject'); defClass('ImageLabel', 'GuiObject'); defClass('Frame', 'GuiObject');
   defClass('LayerCollector', 'GuiBase'); defClass('ScreenGui', 'LayerCollector');
 
   // ---------------- tweens
@@ -1137,6 +1177,8 @@
     RemoteFunction: () => wrap(new RemoteFunction()),
     TextLabel: () => wrap(new GuiObject('TextLabel')),
     TextButton: () => wrap(new GuiObject('TextButton')),
+    ImageLabel: () => wrap(new GuiObject('ImageLabel')),
+    Decal: () => wrap(new Decal()),
     ScreenGui: () => wrap(new ScreenGui()),
     Script: () => wrap(new BaseScript('Script')),
     LocalScript: () => wrap(new BaseScript('LocalScript')),
@@ -1219,10 +1261,16 @@
         part._t._parent = WORKSPACE; WORKSPACE._t._children.push(part);
         part._t._live = true;
         PARTS.set(p.id, part);
+        if(p.decal){
+          const d = wrap(new Decal({ image: p.decal.image, face: p.decal.face, key: 'w' }));
+          d._t._parent = part; part._t._children.push(d);
+          d._t._live = true; d._t._host = p.id;
+        }
       });
       (w.ui || []).forEach(u => {
-        const g = wrap(new GuiObject(u.kind === 'button' ? 'TextButton' : 'TextLabel', u));
-        g._t._name = u.kind === 'button' ? 'TextButton' : 'TextLabel';
+        const cls = u.kind === 'button' ? 'TextButton' : u.kind === 'image' ? 'ImageLabel' : 'TextLabel';
+        const g = wrap(new GuiObject(cls, u));
+        g._t._name = cls;
         g._t._parent = STARTERGUI; STARTERGUI._t._children.push(g);
         g._t._live = true;
         GUIS.set(u.id, g);

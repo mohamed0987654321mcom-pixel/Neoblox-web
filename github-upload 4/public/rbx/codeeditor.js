@@ -161,6 +161,20 @@ light.Brightness = 2;
 light.Color = part.Color;
 light.Parent = part;
 ` },
+    { name:'Flip through pictures', where:'part', code:
+`// Swaps this part's decal between two pictures every second.
+// Give the part a Decal first (🖼 Decal), then paste a second picture's id below.
+const part = script.Parent;
+const decal = part.FindFirstChildOfClass("Decal");
+const pictures = [decal ? decal.Texture : "", "PASTE-ANOTHER-PICTURE-ID"];
+let i = 0;
+
+while (decal) {
+  await wait(1);
+  i = (i + 1) % pictures.length;
+  decal.Texture = pictures[i];
+}
+` },
     { name:'Leaderboard (Points)', where:'world', code:
 `// Gives every player a "Points" stat on the leaderboard, +1 every second
 const Players = game.GetService("Players");
@@ -274,7 +288,8 @@ button.MouseButton1Click.Connect(async () => {
 <li><code>game.Players</code> — <code>LocalPlayer</code>, <code>PlayerAdded</code>, <code>GetPlayerFromCharacter(model)</code></li>
 <li><code>player.Character</code> — <code>Humanoid</code> (Health, WalkSpeed, JumpPower, TakeDamage), <code>HumanoidRootPart</code>, <code>MoveTo(v)</code></li>
 <li>Parts — <code>Position Size Orientation Color Material Transparency CanCollide Anchored Shape</code>, <code>Touched</code>, <code>Destroy() Clone()</code></li>
-<li><code>Instance.new("Part" | "Folder" | "IntValue" | "ClickDetector" | "PointLight" | "Sound" | "TextLabel" …)</code></li>
+<li><code>Instance.new("Part" | "Folder" | "IntValue" | "ClickDetector" | "PointLight" | "Sound" | "TextLabel" | "Decal" | "ImageLabel" …)</code></li>
+<li>Pictures — <code>decal.Texture = "pictureId"</code> (copy the id from 🖼 Decal ▸ your picture), <code>decal.Face = Enum.NormalId.Front</code>, <code>imageLabel.Image = "pictureId"</code></li>
 <li><code>game.GetService("TweenService" | "RunService" | "Debris" | "Lighting" | "UserInputService" | "SoundService")</code></li>
 <li><code>wait(s)</code>, <code>task.wait / task.spawn / task.delay</code>, <code>print / warn</code>, <code>math.random(1, 10)</code></li>
 <li><code>Vector3 Color3 CFrame UDim2 TweenInfo BrickColor Enum</code></li>
@@ -293,7 +308,8 @@ button.MouseButton1Click.Connect(async () => {
     'Activated Text Visible TextColor3 BackgroundColor3 TextSize MouseClick MaxActivationDistance Brightness Range Enabled Raycast Gravity AssemblyLinearVelocity Chatted ' +
     'fromRGB fromHex fromHSV fromScale fromOffset Angles lookAt Magnitude Unit Lerp Dot Cross EasingStyle EasingDirection Linear Sine Quad Cubic Bounce Elastic Back InOut ' +
     'PartType Ball Block Cylinder Wedge Plastic Neon Wood Slate Brick Metal Grass Sand Ice Glass SmoothPlastic ClickDetector PointLight IntValue NumberValue StringValue BoolValue ' +
-    'Folder Model Part TextLabel TextButton ScreenGui Sound SoundId Volume BindableEvent RemoteEvent FireServer OnServerEvent Fire Event ReplicatedStorage ServerScriptService').split(' ');
+    'Folder Model Part TextLabel TextButton ScreenGui Sound SoundId Volume BindableEvent RemoteEvent FireServer OnServerEvent Fire Event ReplicatedStorage ServerScriptService ' +
+    'Decal Texture Face NormalId Front Back Left Right Top Bottom ImageLabel Image').split(' ');
   const GLOBAL_WORDS = 'game workspace script Instance Vector3 Vector2 Color3 BrickColor CFrame UDim2 TweenInfo Enum RaycastParams wait task print warn math tick time spawn delay console const let function async await return if else for while true false null new break continue typeof'.split(' ');
 
   // ------------------------------------------------------------------ syntax highlighting

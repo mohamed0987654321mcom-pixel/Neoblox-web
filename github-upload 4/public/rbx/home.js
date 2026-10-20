@@ -100,6 +100,17 @@
     { skin:'#8d5524', shirt:'#4dabf7', pants:'#0a0d18', accessories:['headphones'] },
     { skin:'#ffd9b3', shirt:'#69db7c', pants:'#5c3d99', accessories:['party_hat'], face:'face_grin' },
   ];
+  // Put a game's picture in an <img>: the cover picture its creator uploaded, or (with no cover,
+  // or if the cover was deleted) a 3D picture of the world.
+  function setThumb(img, g, w, h){
+    if(!img || !g) return;
+    if(g.world && typeof isImageId==='function' && isImageId(g.world.cover)){
+      img.onerror = ()=>{ img.onerror = null; img.src = renderThumb(g, w, h); };
+      img.src = imageUrl(g.world.cover);
+      return;
+    }
+    img.src = renderThumb(g, w, h);
+  }
   function renderThumb(g, w, h){
     const key = thumbKey(g, w, h);
     if(thumbCache[key]) return thumbCache[key];
@@ -254,7 +265,7 @@
       const t0 = performance.now();
       while(i < imgs.length && performance.now() - t0 < 30){
         const img = imgs[i++]; const g = gameByKey(img.dataset.thumb);
-        if(g) img.src = renderThumb(g, 300, 300);
+        if(g) setThumb(img, g, 300, 300);
       }
       if(i < imgs.length) setTimeout(step, 16);
     };
@@ -401,7 +412,7 @@
     $('#nhPlayBtn').addEventListener('click', ()=> playGame(g.key));
     $('#nhUp').addEventListener('click', ()=> vote(g.key, s.myVote>0 ? 0 : 1));
     $('#nhDown').addEventListener('click', ()=> vote(g.key, s.myVote<0 ? 0 : -1));
-    setTimeout(()=>{ const img = $('#nhHero'); if(img) img.src = renderThumb(g, 768, 432); }, 0);
+    setTimeout(()=>{ const img = $('#nhHero'); if(img) setThumb(img, g, 768, 432); }, 0);
     $('#nhAlso').innerHTML = sortedGames('popular').filter(x=>x.key!==g.key).slice(0, 6).map(tileHtml).join('');
     wireTiles($('#nhAlso'));
   }
@@ -427,7 +438,7 @@
     const g = gameByKey(key); if(!g) return;
     const recent = (loadLocal('nb_recent', []) || []).filter(k=>k!==key); recent.unshift(key); saveLocal('nb_recent', recent.slice(0, 8));
     const join = $('#nhJoin');
-    $('#nhJoinImg').src = renderThumb(g, 300, 300);
+    setThumb($('#nhJoinImg'), g, 300, 300);
     $('#nhJoinTitle').textContent = g.name;
     join.hidden = false; join.classList.remove('out');
     setTimeout(()=>{
@@ -657,7 +668,10 @@
 
   // ------------------------------------------------------------------ login modal
   function openLogin(mode, note){
-    const m = $('#nhLoginModal'); m.hidden = false;
+    const m = $('#nhLoginModal');
+    // it lives in the Home screen's markup; move it out so it also works from NeoStudio or a game
+    if(m.parentElement !== document.body){ document.body.appendChild(m); m.style.zIndex = '130'; }
+    m.hidden = false;
     const tab = $(mode==='register' ? '#accTabRegister' : '#accTabLogin'); if(tab) tab.click();
     $('#nhLoginTitle').textContent = note || (mode==='register' ? 'Join Neoblox' : 'Log in to Neoblox');
     setTimeout(()=>{ const u = $('#accUsername'); if(u) u.focus(); }, 30);

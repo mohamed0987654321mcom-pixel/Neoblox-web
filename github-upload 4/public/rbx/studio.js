@@ -129,7 +129,8 @@
     if(open.has('startergui')) (App.studio.ui||[]).forEach(u=>{
       const isSel = sel && sel.kind==='ui' && sel.id===u.id;
       const btn = u.kind==='button';
-      h += row(1, 'data-uiid="'+esc(u.id)+'"', '', '<span class="ic">'+(btn?'🔘':'🏷')+'</span>', esc((btn?'TextButton':'TextLabel')+' "'+String(u.text||'').slice(0,14)+'"'), btn && !u.script ? '<span class="sx-add" data-addscr-gui="'+esc(u.id)+'" title="Insert a Script into this button">+</span>' : '', isSel);
+      const label = u.kind==='image' ? 'ImageLabel' : (btn?'TextButton':'TextLabel')+' "'+String(u.text||'').slice(0,14)+'"';
+      h += row(1, 'data-uiid="'+esc(u.id)+'"', '', '<span class="ic">'+(btn?'🔘':u.kind==='image'?'🌄':'🏷')+'</span>', esc(label), btn && !u.script ? '<span class="sx-add" data-addscr-gui="'+esc(u.id)+'" title="Insert a Script into this button">+</span>' : '', isSel);
       if(btn && u.script) h += row(2, 'data-scr-gui="'+esc(u.id)+'"', '', '<span class="ic">📜</span>', 'Script', '', scriptSel(sel, 'gui', u));
     });
     h += row(0, '', '', '<span class="ic">🎮</span>', 'StarterPlayer');
@@ -206,6 +207,8 @@
         prow('Material', `<select id="spMat">${t.behavior?'<option value="" selected>('+esc(t.label)+')</option>':''}${mats.map(m=>`<option value="${m.id}"${m.id===curMat?' selected':''}>${esc(m.label)}</option>`).join('')}</select>`),
         prow('Transparency', `<input type="range" id="spAlpha" min="0" max="0.9" step="0.05" value="${p.t||0}"><span class="ro" id="spAlphaV">${(p.t||0).toFixed(2)}</span>`),
       ]) +
+      `<div class="sp-cat" data-cat="Decal"><span class="car">${closedCats.has('Decal')?'▸':'▾'}</span>Decal</div>` +
+      (closedCats.has('Decal') ? '' : picRow(p.im, 'decal') + (p.im ? `<div class="sp-row"><label>Face</label><div><select id="spDecalFace">${['front','back','left','right','top','bottom'].map(f=>`<option value="${f}"${(p.imf||'front')===f?' selected':''}>${f[0].toUpperCase()+f.slice(1)}</option>`).join('')}</select></div></div>` : '')) +
       cat('Part', [
         prow('Shape', `<select id="spShape">${SHAPES.map(s=>`<option value="${s.id}"${(p.s||'block')===s.id?' selected':''}>${s.label}</option>`).join('')}</select>`),
         prow('Orientation', `<select id="spRot">${[0,1,2,3].map(r=>`<option value="${r}"${(p.r||0)===r?' selected':''}>${r*90}°</option>`).join('')}</select>`),
@@ -236,6 +239,8 @@
     });
     const st = $('#spStage', el); if(st) st.addEventListener('change', (e)=> setStudioBlockProp(S, 'n', Math.max(0, Math.floor(+e.target.value||0)) || null));
     wireScriptBox(el, 'part', data);
+    wirePicRow(el, (id)=>{ setStudioBlockProp(S, 'im', id); if(id && !p.im) setStudioBlockProp(S, 'imf', faceTowardCamera(S) === 'front' ? null : faceTowardCamera(S)); UI.log(id ? 'Decal set on ' + partName(data) : 'Decal removed from ' + partName(data)); }, p.im, 'Decal for ' + partName(data));
+    const df = $('#spDecalFace', el); if(df) df.addEventListener('change', (e)=> setStudioBlockProp(S, 'imf', e.target.value==='front' ? null : e.target.value));
     $('#spDup', el).addEventListener('click', duplicate);
     $('#spDel', el).addEventListener('click', ()=> removeStudioBlock(S.x, S.y, S.z));
     $$('input[type=text], input[type=number]', el).forEach(i=> i.addEventListener('keydown', (e)=>{ e.stopPropagation(); if(e.key==='Enter') i.blur(); }));
@@ -244,6 +249,7 @@
   function renderUiProps(el, sel){
     const u = findStudioUi(sel.id);
     if(!u){ selectStudioUi(null); return; }
+    if(u.kind==='image') return renderImageProps(el, u);
     el.innerHTML = cat('Data', [prow('Name', '<span class="ro">'+(u.kind==='button'?'TextButton':'TextLabel')+'</span>'), prow('Text', `<input type="text" id="spUiText" maxlength="60" value="${esc(u.text)}">`)]) +
       cat('Position', [prow('X %', `<input type="number" id="spUiX" min="0" max="100" value="${Math.round(u.xPct)}">`), prow('Y %', `<input type="number" id="spUiY" min="0" max="100" value="${Math.round(u.yPct)}">`)]) +
       (u.kind==='button' ? `<div class="sp-cat"><span class="car">▾</span>Script</div>` + scriptBox(!!u.script, 'a button') : '') +
@@ -256,6 +262,74 @@
     $$('input', el).forEach(i=> i.addEventListener('keydown', (e)=> e.stopPropagation()));
     wireCats(el);
   }
+  // an on-screen picture (ImageLabel)
+  function renderImageProps(el, u){
+    el.innerHTML = cat('Data', [prow('Name', '<span class="ro">ImageLabel</span>')]) +
+      `<div class="sp-cat"><span class="car">▾</span>Image</div>` + picRow(u.img, 'image') +
+      cat('Size', [prow('Width (px)', `<input type="number" id="spUiW" min="24" max="600" value="${Math.round(u.w||160)}">`)]) +
+      cat('Position', [prow('X %', `<input type="number" id="spUiX" min="0" max="100" value="${Math.round(u.xPct)}">`), prow('Y %', `<input type="number" id="spUiY" min="0" max="100" value="${Math.round(u.yPct)}">`)]) +
+      `<div class="sp-actions"><button class="danger" id="spUiDel">Delete</button></div>`;
+    wirePicRow(el, (id)=>{ setStudioUiField(u.id, 'img', id); renderStudioProperties(); }, u.img, 'Picture for the ImageLabel');
+    $('#spUiW', el).addEventListener('change', (e)=> setStudioUiField(u.id, 'w', clamp(Math.round(+e.target.value||160), 24, 600)));
+    $('#spUiX', el).addEventListener('change', (e)=> setStudioUiField(u.id, 'xPct', clamp(+e.target.value||0,0,100)));
+    $('#spUiY', el).addEventListener('change', (e)=> setStudioUiField(u.id, 'yPct', clamp(+e.target.value||0,0,100)));
+    $('#spUiDel', el).addEventListener('click', ()=> removeStudioUi(u.id));
+    $$('input', el).forEach(i=> i.addEventListener('keydown', (e)=>{ e.stopPropagation(); if(e.key==='Enter') i.blur(); }));
+    wireCats(el);
+  }
+  // ------------------------------------------------------------------ pictures (decals, images)
+  function picRow(id, what){
+    const has = isImageId(id);
+    return '<div class="sp-pic">' + (has ? '<img alt="" src="' + esc(imageUrl(id)) + '">' : '<span class="none">🖼</span>') +
+      '<button type="button" class="primary" data-pic="choose">' + (has ? 'Change picture' : 'Choose picture…') + '</button>' +
+      (has ? '<button type="button" class="danger" data-pic="remove">Remove</button>' : '') +
+      (what==='decal' && !has ? '<span class="hint">Put a picture on one side of this part — a poster, sign, logo or face.</span>' : '') +
+      (has ? '<span class="hint">Picture id for scripts: <code class="sp-picid">' + esc(id) + '</code></span>' : '') + '</div>';
+  }
+  function wirePicRow(el, set, current, title){
+    const c = el.querySelector('[data-pic="choose"]'), r = el.querySelector('[data-pic="remove"]');
+    if(c) c.addEventListener('click', ()=> pickPicture(title, current, (id)=>{ if(id) set(id); else if(current) set(null); }));
+    if(r) r.addEventListener('click', ()=> set(null));
+  }
+  function pickPicture(title, current, cb){
+    if(!window.NeoPictures){ showToast('Pictures aren\'t available right now'); return; }
+    NeoPictures.pick({ title, current, onPick: cb });
+  }
+  // The side of a part that faces the editor camera — where a new decal is most likely wanted.
+  function faceTowardCamera(sel){
+    const dir = camDirFromYawPitch(App.yaw, App.pitch);
+    const d = App.studio.blocks.get(blockKey(sel.x, sel.y, sel.z));
+    const r = ((d && d.props && d.props.r) || 0) * Math.PI/2;
+    const faces = { front:[0,0,-1], back:[0,0,1], left:[-1,0,0], right:[1,0,0], top:[0,1,0], bottom:[0,-1,0] };
+    let best = 'front', bd = -Infinity;
+    Object.keys(faces).forEach(f=>{
+      const [x, y, z] = faces[f];
+      const wx = x*Math.cos(r) + z*Math.sin(r), wz = -x*Math.sin(r) + z*Math.cos(r); // turned with the part
+      const dot = -(wx*dir.x + y*dir.y + wz*dir.z);
+      if(dot > bd){ bd = dot; best = f; }
+    });
+    return best;
+  }
+  UI.insertDecal = function(){
+    const sb = selectedBlock();
+    if(!sb){ showToast('Select a part first, then add a Decal'); return; }
+    const face = faceTowardCamera(sb.sel), S = sb.sel, name = partName(sb.data);
+    pickPicture('Decal for ' + name, sb.data.props && sb.data.props.im, (id)=>{
+      if(!id) return;
+      setStudioBlockProp(S, 'im', id);
+      setStudioBlockProp(S, 'imf', face === 'front' ? null : face);
+      UI.log('Decal set on ' + name + ' (' + face + ' side)', 'ok');
+    });
+  };
+  UI.insertImage = function(){
+    addStudioUi('image');
+    const u = (App.studio.ui||[])[App.studio.ui.length-1];
+    if(!u || u.kind!=='image') return;
+    UI.log('Added an ImageLabel to StarterGui');
+    pickPicture('Picture for the ImageLabel', null, (id)=>{ if(id){ setStudioUiField(u.id, 'img', id); renderStudioProperties(); } });
+  };
+  UI.faceTowardCamera = faceTowardCamera;
+
   // ------------------------------------------------------------------ scripts
   function scriptBox(has, what){
     return '<div class="sp-scriptrow">' + (has
@@ -640,6 +714,10 @@
     $('#toolRotate').addEventListener('click', ()=> setStudioTool('rotate'));
     $('#sdToolboxBtn').addEventListener('click', ()=> togglePanel('studioToolboxPanel', true));
     ['#sdInsertScript','#sdInsertScript2'].forEach(id=>{ const b = $(id); if(b) b.addEventListener('click', ()=> UI.insertScript()); });
+    const dc = $('#sdInsertDecal'); if(dc) dc.addEventListener('click', ()=> UI.insertDecal());
+    const im = $('#btnInsertImage'); if(im) im.addEventListener('click', ()=> UI.insertImage());
+    // Publish dialog: the game's cover picture
+    const pub = $('#btnPublish'); if(pub) pub.addEventListener('click', renderCover);
     const sh = $('#sdScriptHelp'); if(sh) sh.addEventListener('click', ()=>{ if(window.NeoCodeEditor) NeoCodeEditor.help(); });
     $('#sdPlayHome').addEventListener('click', ()=> startStudioPlaytest());
     $('#sdPublishTop').addEventListener('click', ()=> $('#btnPublish').click());
@@ -684,6 +762,15 @@
     renderPartMenu(); renderColorMenu();
     selectPaletteBlock(App.studio.selectedBlock || 'plastic');
   }
+  function renderCover(){
+    const box = $('#pubCover'); if(!box) return;
+    const id = App.studio.cover;
+    box.innerHTML = (isImageId(id) ? '<img class="pc-img" alt="Cover picture" src="' + esc(imageUrl(id)) + '">' : '<div class="pc-none">Uses a 3D picture of your world</div>') +
+      '<button type="button" data-pc="pick">' + (isImageId(id) ? 'Change' : 'Choose picture…') + '</button>' + (isImageId(id) ? '<button type="button" data-pc="clear">Remove</button>' : '');
+    box.querySelector('[data-pc="pick"]').addEventListener('click', ()=> pickPicture('Cover picture for your game', id, (pid)=>{ App.studio.cover = pid || null; renderCover(); }));
+    const cl = box.querySelector('[data-pc="clear"]'); if(cl) cl.addEventListener('click', ()=>{ App.studio.cover = null; renderCover(); });
+  }
+  UI.renderCover = renderCover;
   function togglePanel(id, show){
     const p = document.getElementById(id); if(!p) return;
     const hide = show===undefined ? !p.classList.contains('sd-hidden') : !show;

@@ -133,6 +133,40 @@ const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
       const r2 = await api('POST', '/api/worlds', { name:'Bad', scripts: 'nope' });
       assert.equal((await api('GET', '/api/worlds')).data.find(x => x.id === r2.data.id).scripts, undefined);
     });
+    await check('pictures: upload, serve safely, list, cover, delete', async ()=>{
+      // a real 1×1 PNG
+      const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+      const up = (body, tok, type)=> fetch(BASE + '/api/images', { method:'POST', headers: Object.assign({ 'content-type': type || 'image/png', 'x-image-name': encodeURIComponent('My <b>Logo</b>.png') }, tok ? { authorization:'Bearer ' + tok } : {}), body });
+      assert.equal((await up(png)).status, 401);                                   // needs an account
+      const html = await up(Buffer.from('<html><script>alert(1)</script></html>'), token, 'image/png');
+      assert.equal(html.status, 400);                                                 // not really a picture
+      const r = await up(png, token);
+      assert.equal(r.status, 200);
+      const img = await r.json();
+      assert.match(img.id, /^[a-z0-9]{12,32}$/);
+      assert.equal(img.name, 'My bLogo/b');                                           // tags stripped
+      const got = await fetch(BASE + img.url);
+      assert.equal(got.status, 200);
+      assert.equal(got.headers.get('content-type'), 'image/png');
+      assert.equal(got.headers.get('x-content-type-options'), 'nosniff');
+      assert.match(got.headers.get('content-security-policy'), /sandbox/);
+      assert.equal(Buffer.from(await got.arrayBuffer()).length, png.length);
+      assert.equal((await fetch(BASE + '/img/../server.js')).status, 404);
+      assert.equal((await fetch(BASE + '/img/notarealpictureid0')).status, 404);
+      const mine = await api('GET', '/api/images/mine', null, token);
+      assert.equal(mine.data.length, 1);
+      // a world can use it as its cover; junk covers are dropped
+      const w1 = await api('POST', '/api/worlds', { name:'Cover', blocks:[], cover: img.id });
+      const w2 = await api('POST', '/api/worlds', { name:'Bad cover', blocks:[], cover: 'javascript:alert(1)' });
+      const list = (await api('GET', '/api/worlds')).data;
+      assert.equal(list.find(x => x.id === w1.data.id).cover, img.id);
+      assert.equal(list.find(x => x.id === w2.data.id).cover, undefined);
+      // only the uploader (or an admin) can delete it
+      const other = await api('POST', '/api/auth/register', { username:'painter2', password:'secret123' });
+      assert.equal((await api('DELETE', '/api/images/' + img.id, null, other.data.token)).status, 403);
+      assert.equal((await api('DELETE', '/api/images/' + img.id, null, token)).status, 200);
+      assert.equal((await fetch(BASE + img.url)).status, 404);
+    });
     await check('knocked-out state and leaderstats reach others in the same world', async ()=>{
       const a = await wsClient(), b = await wsClient();
       a.send({ t:'hello', name:'A' }); b.send({ t:'hello', name:'B' });

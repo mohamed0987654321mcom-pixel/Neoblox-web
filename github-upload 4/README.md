@@ -24,6 +24,15 @@
   API Roblox uses (see below). NeoStudio opens scripts as tabs with syntax highlighting,
   autocomplete, live error checking, an Examples menu and a Help sheet; errors show in
   Output (click one to jump to the line). In published games, F9 opens the Developer Console.
+- **Pictures** — logged-in builders upload pictures ("My Pictures") and use them as a game's
+  **cover** (shown on Home and the game page instead of the 3D snapshot), as **decals** on any
+  side of a part (posters, signs, logos), or as on-screen **ImageLabels**. Scripts can use them
+  too: `Instance.new("Decal")` with `Texture`/`Face`, `Instance.new("ImageLabel")` with `Image`.
+  The browser shrinks each picture to 1024px and re-encodes it before upload (which also
+  strips photo metadata like GPS location); the server only keeps real PNG/JPEG/WebP/GIF data
+  (2 MB max, 150 per account) and serves them at `/img/<id>` as plain images. The uploader can
+  delete a picture; so can an admin (`DELETE /api/images/<id>` with an `X-Admin-Password`
+  header) if something inappropriate gets uploaded.
 
 Run the server checks with `npm test`.
 
@@ -221,7 +230,7 @@ for your players, look into adding a TURN provider and add its `urls`/`username`
 
 Everything the server keeps lives in `data/` (created automatically): published worlds
 (`worlds.json`), accounts with tokens, quests and Avatar Shop items (`users.json`),
-uploaded avatars (`avatars/`) and game stats — visits and thumbs up/down
+uploaded avatars (`avatars/`), uploaded pictures (`images/` + `images.json`) and game stats — visits and thumbs up/down
 (`gamestats.json`). Put `data/` on a persistent volume (a Railway Volume) or it resets on
 every redeploy.
 
@@ -234,7 +243,8 @@ every redeploy.
 - `public/battle-assets/` — 3D model assets used by Thunder Battle.
 - `public/rbx/` — the home page (`home.js/css`), the in-game UI + camera (`hud.js/css`),
   NeoStudio's editor (`studio.js/css`), its script editor (`codeeditor.js/css`) and the
-  scripting runtime (`neoscript.js` + `neoscript-runtime.js`).
+  scripting runtime (`neoscript.js` + `neoscript-runtime.js`) and the picture picker
+  (`pictures.js/css`).
 - `public/vendor/quickjs/` — the QuickJS engine (WebAssembly) that runs scripts.
 - `accounts.js` — accounts, tokens, quests and the Avatar Shop catalog.
 - `test/api.test.js` — server checks (`npm test`).

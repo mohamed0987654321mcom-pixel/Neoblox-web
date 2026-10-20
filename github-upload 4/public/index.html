@@ -540,6 +540,7 @@
 <link rel="stylesheet" href="rbx/studio.css">
 <link rel="stylesheet" href="rbx/ui.css">
 <link rel="stylesheet" href="rbx/codeeditor.css">
+<link rel="stylesheet" href="rbx/pictures.css">
 </head>
 <body>
 <div id="app">
@@ -809,6 +810,8 @@
               <button class="rib-btn" id="btnInsertLabel" title="Add an on-screen text label"><span class="rib-ic">🏷</span><span>Label</span></button>
               <button class="rib-btn" id="btnInsertButton" title="Add a clickable on-screen button"><span class="rib-ic">🔘</span><span>Button</span></button>
               <button class="rib-btn" id="sdInsertScript" title="Insert a Script — into the selected part, or ServerScriptService"><span class="rib-ic">📜</span><span>Script</span></button>
+              <button class="rib-btn" id="sdInsertDecal" title="Put a picture on the selected part (Decal)"><span class="rib-ic">🖼</span><span>Decal</span></button>
+              <button class="rib-btn" id="btnInsertImage" title="Add an on-screen picture (ImageLabel)"><span class="rib-ic">🌄</span><span>Image</span></button>
             </div>
             <div class="ribbon-label">Insert</div>
           </div>
@@ -989,6 +992,10 @@
       <div class="field">
         <label for="worldNameInput">World name</label>
         <input id="worldNameInput" type="text" maxlength="24" placeholder="Sky Temple">
+      </div>
+      <div class="field">
+        <label>Cover picture <span style="opacity:.6;font-weight:500">(optional — shown on Home)</span></label>
+        <div class="pub-cover" id="pubCover"></div>
       </div>
       <div class="menu-actions">
         <button class="btn ghost" id="btnCancelPublish">Cancel</button>
@@ -1252,6 +1259,7 @@ const App = {
     blocks: new Map(), // key "x,y,z" -> {type, props, script:null|{lang:'js',code}}
     ui: [],       // StarterGui-style on-screen elements: {id,kind:'label'|'button',text,xPct,yPct,script}
     scripts: [],  // ServerScriptService: [{id,name,code}] — JavaScript that runs when the game starts
+    cover: null,  // the game's cover picture (an uploaded picture id) for its Home tile and page
     spawn: {x:0,y:1,z:0},
     goal: null,
     selected: null,  // {kind:'block',x,y,z} | {kind:'ui',id} | {kind:'script',…} — whatever's shown in the Properties panel
@@ -2400,8 +2408,53 @@ function partGeometry(shape){
 
 function blockKey(x,y,z){ return x+','+y+','+z; }
 
+// === Pictures: uploaded images builders use as a game's cover, decals on parts and on-screen
+// images. They're stored on the Neoblox server (/api/images) and only ever referenced by id —
+// a world can't point at an arbitrary web address.
+function isImageId(id){ return typeof id==='string' && /^[a-z0-9]{12,32}$/.test(id); }
+function imageUrl(id){ return isImageId(id) ? netHttpBase() + '/img/' + id : ''; }
+const ImageTexCache = {}, DecalMatCache = {};
+function imageTexture(id){
+  if(!isImageId(id)) return null;
+  if(ImageTexCache[id]) return ImageTexCache[id];
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+  const tex = loader.load(imageUrl(id), undefined, undefined, ()=>{ /* missing picture: the decal just stays blank */ });
+  tex.anisotropy = 4;
+  return (ImageTexCache[id] = tex);
+}
+// A decal is a picture laid on one face of a part (it stretches to fill the face, like Roblox).
+const DECAL_FACES = ['front','back','left','right','top','bottom'];
+const DECAL_GEO = new THREE.PlaneGeometry(1, 1); DECAL_GEO.userData.keep = true;
+function decalMaterial(id){
+  if(DecalMatCache[id]) return DecalMatCache[id];
+  const mat = new THREE.MeshStandardMaterial({ map: imageTexture(id), transparent:true, alphaTest:0.02, roughness:0.75, metalness:0,
+    polygonOffset:true, polygonOffsetFactor:-2, polygonOffsetUnits:-2 });
+  mat.userData.keep = true;
+  return (DecalMatCache[id] = mat);
+}
+function addDecal(mesh, id, face, key){
+  if(!isImageId(id)) return null;
+  const d = new THREE.Mesh(DECAL_GEO, decalMaterial(id));
+  const o = 0.503;
+  switch(DECAL_FACES.includes(face) ? face : 'front'){
+    case 'front':  d.position.z = -o; d.rotation.y = Math.PI; break;   // -Z, like Roblox's Front
+    case 'back':   d.position.z =  o; break;
+    case 'left':   d.position.x = -o; d.rotation.y = -Math.PI/2; break;
+    case 'right':  d.position.x =  o; d.rotation.y =  Math.PI/2; break;
+    case 'top':    d.position.y =  o; d.rotation.x = -Math.PI/2; break;
+    case 'bottom': d.position.y = -o; d.rotation.x =  Math.PI/2; break;
+  }
+  d.receiveShadow = true;
+  d.renderOrder = 1;
+  d.userData.decalKey = key || 'w';
+  mesh.add(d);
+  return d;
+}
+
 // props (all optional): c color '#rrggbb', s shape, r yaw quarter-turns 0-3, t transparency 0-0.95,
-// nc no-collide (CanCollide off), n checkpoint stage number, nm part name
+// nc no-collide (CanCollide off), n checkpoint stage number, nm part name,
+// im decal picture id + imf the face it's on
 function makeBlockMesh(typeId, props){
   props = props || {};
   const shape = PART_SHAPES.includes(props.s) ? props.s : 'block';
@@ -2411,6 +2464,7 @@ function makeBlockMesh(typeId, props){
   m.castShadow = true; m.receiveShadow = true;
   m.userData.blockType = typeId;
   m.userData.props = props;
+  if(props.im) addDecal(m, props.im, props.imf || 'front');
   return m;
 }
 function blockBehavior(typeId){ const t = BLOCK_TYPE_BY_ID[typeId]; return t && t.behavior || null; }
@@ -2427,6 +2481,7 @@ function cleanProps(p){
   if(p.nc === true) o.nc = true;
   const n = Math.floor(+p.n||0); if(n>0 && n<1000) o.n = n;
   if(p.nm) o.nm = String(p.nm).replace(/[<>]/g,'').slice(0,24);
+  if(isImageId(p.im)){ o.im = p.im; if(DECAL_FACES.includes(p.imf) && p.imf!=='front') o.imf = p.imf; }
   return Object.keys(o).length ? o : null;
 }
 
@@ -2454,20 +2509,30 @@ function deserializeBlocks(arr){
   });
   return m;
 }
+// kinds: 'label' (TextLabel), 'button' (TextButton, can hold a Script), 'image' (ImageLabel: img
+// picture id + w width in pixels)
+const UI_KINDS = ['label','button','image'];
 function serializeUi(uiArr){
-  return (uiArr||[]).map(u=>({
-    id:u.id, kind:u.kind, text:String(u.text||'').slice(0,60),
-    xPct:clamp(+u.xPct||0,0,100), yPct:clamp(+u.yPct||0,0,100),
-    script: u.kind==='button' ? normalizeScript(u.script, 'click') : null,
-  }));
+  return (uiArr||[]).map(u=>{
+    const o = { id:u.id, kind:u.kind, text:String(u.text||'').slice(0,60),
+      xPct:clamp(+u.xPct||0,0,100), yPct:clamp(+u.yPct||0,0,100),
+      script: u.kind==='button' ? normalizeScript(u.script, 'click') : null };
+    if(u.kind==='image'){ o.img = isImageId(u.img) ? u.img : null; o.w = clamp(Math.round(+u.w||160), 24, 600); }
+    return o;
+  });
 }
 function deserializeUi(arr){
-  return (arr||[]).slice(0,20).map(u=>({
-    id: u.id || uid(), kind: u.kind==='button' ? 'button' : 'label',
-    text: String(u.text||'').slice(0,60),
-    xPct: clamp(+u.xPct||0,0,100), yPct: clamp(+u.yPct||0,0,100),
-    script: u.kind==='button' ? normalizeScript(u.script, 'click') : null,
-  }));
+  return (arr||[]).slice(0,20).map(u=>{
+    const kind = UI_KINDS.includes(u.kind) ? u.kind : 'label';
+    const o = {
+      id: u.id || uid(), kind,
+      text: String(u.text||'').slice(0,60),
+      xPct: clamp(+u.xPct||0,0,100), yPct: clamp(+u.yPct||0,0,100),
+      script: kind==='button' ? normalizeScript(u.script, 'click') : null,
+    };
+    if(kind==='image'){ o.img = isImageId(u.img) ? u.img : null; o.w = clamp(Math.round(+u.w||160), 24, 600); }
+    return o;
+  });
 }
 
 // === SECTION:SCENE ===
@@ -4182,8 +4247,9 @@ function findStudioUi(id){
 function addStudioUi(kind){
   if(!App.studio.ui) App.studio.ui = [];
   if(App.studio.ui.length >= 20){ showToast('StarterGui is full (20 max)'); return; }
-  const isBtn = kind==='button';
-  const u = { id: uid(), kind: isBtn?'button':'label', text: isBtn?'Button':'Label', xPct:50, yPct: isBtn?62:18, script:null };
+  const isBtn = kind==='button', isImg = kind==='image';
+  const u = { id: uid(), kind: isBtn?'button':isImg?'image':'label', text: isBtn?'Button':isImg?'':'Label', xPct:50, yPct: isBtn?62:isImg?40:18, script:null };
+  if(isImg){ u.img = null; u.w = 160; }
   App.studio.ui.push(u);
   App.worldUi = App.studio.ui;
   renderWorldUi();
@@ -4224,9 +4290,16 @@ function renderWorldUi(){
   layer.innerHTML = '';
   (App.worldUi||[]).forEach(u=>{
     const el = document.createElement(u.kind==='button' ? 'button' : 'div');
-    el.className = u.kind==='button' ? 'world-ui-btn' : 'world-ui-label';
+    el.className = u.kind==='button' ? 'world-ui-btn' : u.kind==='image' ? 'world-ui-img' : 'world-ui-label';
     el.dataset.uid = u.id;
-    el.textContent = String(u.text||'');
+    if(u.kind==='image'){
+      // an ImageLabel: the picture (or an empty frame until one is chosen)
+      const img = document.createElement('img');
+      img.alt = ''; img.draggable = false;
+      if(isImageId(u.img)) img.src = imageUrl(u.img);
+      el.appendChild(img);
+      if(App.mode==='studio' && !App.studio.testing) el.addEventListener('click', ()=> selectStudioUi(u.id));
+    } else el.textContent = String(u.text||'');
     styleWorldUiEl(el, u);
     if(u.kind==='button'){
       el.addEventListener('click', ()=>{
@@ -4244,6 +4317,13 @@ function styleWorldUiEl(el, u){
   el.style.left = clamp(+u.xPct||0,0,100) + '%';
   el.style.top = clamp(+u.yPct||0,0,100) + '%';
   el.hidden = !!u.hidden;
+  if(u.kind==='image'){
+    el.style.width = clamp(+u.w||160, 16, 800) + 'px';
+    const img = el.firstChild;
+    if(img && img.tagName==='IMG'){ const want = isImageId(u.img) ? imageUrl(u.img) : ''; if(img.getAttribute('src') !== want){ if(want) img.src = want; else img.removeAttribute('src'); } }
+    el.classList.toggle('empty', !isImageId(u.img));
+    return;
+  }
   const tc = hexToNum(u.tc), bg = hexToNum(u.bg);
   el.style.color = tc===null ? '' : numToHex(tc);
   el.style.background = bg===null ? '' : numToHex(bg);
@@ -5443,6 +5523,7 @@ function loadWorldIntoStudio(w){
   App.studio.goal = w.goal || null;
   App.studio.ui = deserializeUi(w.ui);
   App.studio.scripts = normalizeWorldScripts(w.scripts);
+  App.studio.cover = isImageId(w.cover) ? w.cover : null;
   App.studio.baseplate = w.baseplate !== undefined ? !!w.baseplate : false; // older worlds were built over the void
   App.studio.lighting = { sky: (w.lighting && w.lighting.sky) || 'day' };
   App.studio.lastName = w.name || '';
@@ -5460,6 +5541,7 @@ async function publishWorld(name){
     spawn: App.studio.spawn, goal: App.studio.goal,
     ui: serializeUi(App.studio.ui),
     scripts: serializeWorldScripts(App.studio.scripts),
+    cover: isImageId(App.studio.cover) ? App.studio.cover : null,
     baseplate: App.studio.baseplate !== false,
     lighting: { sky: (App.studio.lighting && App.studio.lighting.sky) || 'day' },
     updatedAt: Date.now(),
@@ -5602,12 +5684,13 @@ function wireUI(){
   document.getElementById('toolGoal').addEventListener('click', ()=> setStudioTool('goal'));
   document.getElementById('btnInsertLabel').addEventListener('click', ()=> addStudioUi('label'));
   document.getElementById('btnInsertButton').addEventListener('click', ()=> addStudioUi('button'));
+  // (the Image and Decal buttons are wired in rbx/studio.js — they open the picture picker)
   document.querySelectorAll('.ribbon-tab[data-ribtab]').forEach(b=> b.addEventListener('click', ()=> setStudioRibbonTab(b.dataset.ribtab)));
   document.getElementById('btnPlayTest').addEventListener('click', startStudioPlaytest);
   document.getElementById('btnStopTest').addEventListener('click', stopStudioPlaytest);
   document.getElementById('btnClearWorld').addEventListener('click', ()=>{
     App.studio.blocks.clear(); App.studio.goal = null; App.studio.spawn = {x:0,y:1,z:0};
-    App.studio.ui = []; App.studio.scripts = []; App.studio.worldId = null; App.studio.lastName = '';
+    App.studio.ui = []; App.studio.scripts = []; App.studio.cover = null; App.studio.worldId = null; App.studio.lastName = '';
     App.studio.baseplate = true; App.studio.lighting = { sky:'day' };
     buildStudioScene(); showToast('Cleared — starting a fresh build');
     if(window.NeoStudioUI) NeoStudioUI.onLoaded(null);
@@ -6885,6 +6968,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 <script src="rbx/hud.js"></script>
 <script src="rbx/neoscript.js"></script>
 <script src="rbx/codeeditor.js"></script>
+<script src="rbx/pictures.js"></script>
 <script src="rbx/home.js"></script>
 <script src="rbx/studio.js"></script>
 </body>

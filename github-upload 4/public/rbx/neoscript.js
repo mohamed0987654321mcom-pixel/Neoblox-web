@@ -142,8 +142,10 @@
     const m = rec.mesh, u = m.userData, p = u.props || {};
     const bt = BLOCK_TYPE_BY_ID[u.blockType] || BLOCK_TYPE_BY_ID.plastic;
     const beh = meshBehaviorOf(m);
+    const face = p.imf || 'front';
     return { id: rec.rid, name: p.nm || bt.label, pos:[m.position.x, m.position.y, m.position.z], size: rec.size, rot: rec.rot, color: rec.color,
-      material: matOfType(u.blockType), t: rec.t, cc: rec.cc, shape: SHAPE_OUT[rec.shape] || 'Block', gameplay: PLAY_OUT[beh] || 'None' };
+      material: matOfType(u.blockType), t: rec.t, cc: rec.cc, shape: SHAPE_OUT[rec.shape] || 'Block', gameplay: PLAY_OUT[beh] || 'None',
+      decal: isImageId(p.im) ? { image: p.im, face: face[0].toUpperCase() + face.slice(1) } : null };
   }
 
   function boot(eng, scripts){
@@ -195,7 +197,7 @@
     App.worldUi = (App.worldUi || []).map(u=> Object.assign({}, u));
     App.worldUi.forEach(u=> S.gui.set(u.id, u));
     renderWorldUi();
-    const ui = App.worldUi.map(u=>({ id:u.id, kind:u.kind, text:u.text, x:u.xPct, y:u.yPct }));
+    const ui = App.worldUi.map(u=>({ id:u.id, kind:u.kind, text:u.text, x:u.xPct, y:u.yPct, img:u.img, w:u.w }));
     const player = { name: Profile.name || 'Player', userId: userIdOf(Profile.id) };
     const studio = S.kind==='studio';
     S.deadline = performance.now() + LIMITS.bootMs;
@@ -641,7 +643,7 @@
       let u = d.id ? S.gui.get(d.id) : null;
       if(!u){
         if(S.gui.size >= LIMITS.gui) throw new Error('Too many on-screen labels/buttons (' + LIMITS.gui + ' max)');
-        u = { id: 'sg' + (++S.guiN), kind: pr.kind==='button' ? 'button' : 'label', script:null };
+        u = { id: 'sg' + (++S.guiN), kind: pr.kind==='button' ? 'button' : pr.kind==='image' ? 'image' : 'label', script:null };
         S.gui.set(u.id, u);
       }
       applyGui(u, pr);
@@ -651,6 +653,16 @@
     },
     'gui.set'(d){ const u = S.gui.get(d.id); if(!u) return; applyGui(u, d.props || {}); if(!patchGui(u)) renderWorldUi(); },
     'gui.remove'(d){ const u = S.gui.get(d.id); if(!u) return; const i = App.worldUi.indexOf(u); if(i >= 0) App.worldUi.splice(i, 1); renderWorldUi(); },
+    // a Decal: a picture on one face of a part (key tells several decals on one part apart)
+    decal(d){
+      const rec = S.parts.get(d.id); if(!rec || rec.removed) return;
+      const m = rec.mesh, key = String(d.key || 'w').slice(0, 20);
+      m.children.filter(c=> c.userData.decalKey === key).forEach(c=>{ m.remove(c); if(c.material && !c.material.userData.keep) c.material.dispose(); });
+      if(d.clear || !isImageId(d.image)) return;
+      if(m.children.filter(c=> c.userData.decalKey).length >= 6) return;
+      const dm = addDecal(m, d.image, String(d.face||'front'), key);
+      if(dm && +d.t > 0){ dm.material = dm.material.clone(); dm.material.userData = {}; dm.material.opacity = 1 - lim(d.t, 0, 1, 0); }
+    },
     clickable(d){ const rec = S.parts.get(d.id); if(rec) rec.click = d.on ? lim(d.dist, 0, 1000, 32) || 0.001 : 0; },
     light(d){
       const rec = S.parts.get(d.id); if(!rec || rec.removed) return;
@@ -697,12 +709,16 @@
     u.tc = hexToNum(pr.tc) === null ? null : numToHex(hexToNum(pr.tc));
     u.bg = hexToNum(pr.bg) === null ? null : numToHex(hexToNum(pr.bg));
     u.ts = pr.ts ? lim(pr.ts, 6, 72, 0) : 0;
+    if(u.kind === 'image'){
+      if(pr.img !== undefined) u.img = isImageId(pr.img) ? pr.img : null;
+      if(pr.w !== undefined) u.w = lim(pr.w, 16, 800, 160);
+    }
   }
   function patchGui(u){
     const layer = document.getElementById('worldUiLayer'); if(!layer) return false;
     const el = Array.from(layer.children).find(e=> e.dataset.uid === u.id);
     if(!el) return false;
-    el.textContent = String(u.text||'');
+    if(u.kind !== 'image') el.textContent = String(u.text||'');
     styleWorldUiEl(el, u);
     return true;
   }

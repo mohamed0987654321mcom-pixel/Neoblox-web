@@ -74,6 +74,8 @@ function worldBody(body){
       id: String(s.id || '').slice(0, 40), name: String(s.name || 'Script').replace(/[<>]/g, '').slice(0, 40), code: s.code.slice(0, 20000),
     }));
   } else delete b.scripts;
+  // the game's cover picture: an uploaded picture's id (see /api/images)
+  if(b.cover !== undefined && !isImageId(b.cover)) delete b.cover;
   return b;
 }
 app.post('/api/worlds', (req, res) => {
@@ -224,6 +226,72 @@ app.use('/api/avatars', express.static(accounts.AVATARS_DIR, {
   maxAge: '1h',
   setHeaders: (res, filePath) => { if(filePath.endsWith('.glb')) res.setHeader('Content-Type', 'model/gltf-binary'); },
 }));
+
+// ---- pictures: uploaded by logged-in builders for their games (cover pictures, decals on parts,
+// on-screen images). The browser shrinks and re-encodes each picture before upload (which also
+// strips photo metadata); here we only accept bytes that really are PNG/JPEG/WebP/GIF, keep them
+// small, and serve them as plain images that can never run as a page.
+const IMAGES_DIR = path.join(DATA_DIR, 'images');
+const IMAGES_FILE = path.join(DATA_DIR, 'images.json');
+const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+const IMAGES_PER_USER = 150;
+const IMAGE_TYPES = { png:'image/png', jpg:'image/jpeg', webp:'image/webp', gif:'image/gif' };
+let images = (()=>{ try{ return JSON.parse(fs.readFileSync(IMAGES_FILE, 'utf8')) || []; }catch(e){ return []; } })();
+const imageById = new Map(images.map(i => [i.id, i]));
+function saveImages(){
+  try{ fs.mkdirSync(DATA_DIR, { recursive:true }); fs.writeFileSync(IMAGES_FILE, JSON.stringify(images)); }
+  catch(e){ console.error('failed to save images.json', e); }
+}
+function isImageId(id){ return typeof id === 'string' && /^[a-z0-9]{12,32}$/.test(id); }
+function sniffImage(buf){
+  if(!buf || buf.length < 12) return null;
+  if(buf[0]===0x89 && buf[1]===0x50 && buf[2]===0x4E && buf[3]===0x47) return 'png';
+  if(buf[0]===0xFF && buf[1]===0xD8 && buf[2]===0xFF) return 'jpg';
+  if(buf.toString('ascii', 0, 4)==='RIFF' && buf.toString('ascii', 8, 12)==='WEBP') return 'webp';
+  if(buf.toString('ascii', 0, 6)==='GIF87a' || buf.toString('ascii', 0, 6)==='GIF89a') return 'gif';
+  return null;
+}
+function imageInfo(i){ return { id:i.id, name:i.name, url:'/img/' + i.id, size:i.size, createdAt:i.createdAt }; }
+app.post('/api/images', requireAuth, express.raw({ type: () => true, limit: IMAGE_MAX_BYTES }), (req, res) => {
+  const u = req.authedUser;
+  const buf = Buffer.isBuffer(req.body) ? req.body : null;
+  const ext = sniffImage(buf);
+  if(!ext) return res.status(400).json({ error:'That file isn\'t a picture Neoblox can use — try a PNG, JPEG, WebP or GIF.' });
+  if(images.filter(i => i.owner === u.id).length >= IMAGES_PER_USER) return res.status(400).json({ error:'You have ' + IMAGES_PER_USER + ' pictures already — delete some to upload more.' });
+  let id; do{ id = require('crypto').randomBytes(10).toString('hex'); }while(imageById.has(id));
+  let name = '';
+  try{ name = decodeURIComponent(String(req.headers['x-image-name'] || '')); }catch(e){ name = ''; }
+  name = name.replace(/[<>\u0000-\u001f]/g, '').replace(/\.[a-z0-9]{2,5}$/i, '').trim().slice(0, 40) || 'Picture';
+  try{ fs.mkdirSync(IMAGES_DIR, { recursive:true }); fs.writeFileSync(path.join(IMAGES_DIR, id + '.' + ext), buf); }
+  catch(e){ return res.status(500).json({ error:'Couldn\'t save the picture — try again.' }); }
+  const rec = { id, owner:u.id, ext, name, size:buf.length, createdAt:Date.now() };
+  images.push(rec); imageById.set(id, rec); saveImages();
+  res.json(imageInfo(rec));
+});
+app.get('/api/images/mine', requireAuth, (req, res) => {
+  res.json(images.filter(i => i.owner === req.authedUser.id).sort((a, b) => b.createdAt - a.createdAt).map(imageInfo));
+});
+// The owner can delete a picture; so can an admin (X-Admin-Password), to take down anything inappropriate.
+app.delete('/api/images/:id', (req, res) => {
+  const rec = imageById.get(String(req.params.id));
+  if(!rec) return res.status(404).json({ error:'No such picture.' });
+  const admin = req.headers['x-admin-password'] === ADMIN_PASSWORD;
+  const u = optionalUser(req);
+  if(!admin && (!u || u.id !== rec.owner)) return res.status(403).json({ error:'Only the person who uploaded a picture can delete it.' });
+  try{ fs.unlinkSync(path.join(IMAGES_DIR, rec.id + '.' + rec.ext)); }catch(e){}
+  images = images.filter(i => i !== rec); imageById.delete(rec.id); saveImages();
+  res.json({ ok:true });
+});
+app.get('/img/:id', (req, res) => {
+  const rec = isImageId(req.params.id) && imageById.get(req.params.id);
+  if(!rec) return res.status(404).end();
+  res.setHeader('Content-Type', IMAGE_TYPES[rec.ext] || 'application/octet-stream');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(IMAGES_DIR, rec.id + '.' + rec.ext), (err) => { if(err && !res.headersSent) res.status(404).end(); });
+});
 
 app.get('/healthz', (req, res) => res.json({ ok: true, players: players.size, parties: parties.size }));
 
