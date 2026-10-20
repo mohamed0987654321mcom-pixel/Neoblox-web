@@ -122,6 +122,17 @@ const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
       const me = await api('GET', '/api/me', null, token);
       assert.ok(me.data.user.quests.find(q => q.id==='world_builder').canClaim);
     });
+    await check('world scripts are stored, capped in number and size', async ()=>{
+      const many = Array.from({ length: 50 }, (_, i) => ({ id:'s'+i, name:'Script<'+i+'>', code: i === 0 ? 'x'.repeat(25000) : 'print(' + i + ')' }));
+      const r = await api('POST', '/api/worlds', { name:'Scripted', blocks:[[0,0,0,'plastic','js','print(1)']], scripts: many });
+      const w = (await api('GET', '/api/worlds')).data.find(x => x.id === r.data.id);
+      assert.equal(w.scripts.length, 40);
+      assert.equal(w.scripts[0].code.length, 20000);
+      assert.equal(w.scripts[1].name, 'Script1');
+      assert.equal(w.blocks[0][4], 'js');
+      const r2 = await api('POST', '/api/worlds', { name:'Bad', scripts: 'nope' });
+      assert.equal((await api('GET', '/api/worlds')).data.find(x => x.id === r2.data.id).scripts, undefined);
+    });
     await check('knocked-out state and leaderstats reach others in the same world', async ()=>{
       const a = await wsClient(), b = await wsClient();
       a.send({ t:'hello', name:'A' }); b.send({ t:'hello', name:'B' });

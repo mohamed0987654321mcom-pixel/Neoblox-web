@@ -67,6 +67,13 @@ function optionalUser(req){
 function worldBody(body){
   const b = Object.assign({}, body || {});
   delete b.id; delete b.createdAt; delete b.updatedAt; delete b.ownerUserId; delete b.visits;
+  // ServerScriptService scripts (JavaScript, run by players' own browsers in a sandbox): keep
+  // them to a sane size — up to 40 scripts of up to 20,000 characters each.
+  if(Array.isArray(b.scripts)){
+    b.scripts = b.scripts.slice(0, 40).filter(s => s && typeof s.code === 'string').map(s => ({
+      id: String(s.id || '').slice(0, 40), name: String(s.name || 'Script').replace(/[<>]/g, '').slice(0, 40), code: s.code.slice(0, 20000),
+    }));
+  } else delete b.scripts;
   return b;
 }
 app.post('/api/worlds', (req, res) => {

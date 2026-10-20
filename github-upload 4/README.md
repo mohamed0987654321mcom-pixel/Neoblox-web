@@ -17,10 +17,57 @@
   wheel zoom, Shift for shift-lock).
 - **NeoStudio** — a game-studio editor: Toolbox, Explorer, Properties, Output; Select /
   Move / Rotate / Build / Delete; block, wedge, sphere and cylinder parts with any color
-  and material; kill bricks, checkpoints, jump pads; touch scripts; day/sunset/night
-  lighting; Play test with F5; Publish.
+  and material; kill bricks, checkpoints, jump pads; day/sunset/night lighting; Play test
+  with F5; Publish.
+- **Scripting (JavaScript, Roblox-style)** — insert a Script into a part, into
+  ServerScriptService, or into an on-screen button, and write JavaScript against the same
+  API Roblox uses (see below). NeoStudio opens scripts as tabs with syntax highlighting,
+  autocomplete, live error checking, an Examples menu and a Help sheet; errors show in
+  Output (click one to jump to the line). In published games, F9 opens the Developer Console.
 
 Run the server checks with `npm test`.
+
+## Scripting
+
+Scripts are JavaScript, shaped like Roblox Lua:
+
+```js
+// a kill brick — a Script inside a part
+const part = script.Parent;
+
+part.Touched.Connect((hit) => {
+  const humanoid = hit.Parent.FindFirstChild("Humanoid");
+  if (humanoid) humanoid.Health = 0;
+});
+```
+
+| Roblox Lua | Neoblox JavaScript |
+| --- | --- |
+| `part.Touched:Connect(function(hit) … end)` | `part.Touched.Connect((hit) => { … })` |
+| `wait(1)` | `await wait(1)` |
+| `Vector3.new(0, 5, 0)` | `new Vector3(0, 5, 0)` (or `Vector3.new(…)`) |
+| `part:Destroy()` | `part.Destroy()` |
+
+What's there: `game`, `workspace`, `script`, `Instance.new` (Part, Model, Folder,
+Int/Number/String/BoolValue, ClickDetector, PointLight, Sound, TextLabel/TextButton,
+BindableEvent, RemoteEvent…), parts (Position, Size, Orientation, CFrame, Color, Material,
+Transparency, CanCollide, Anchored, Shape, Touched/TouchEnded), `Players` (LocalPlayer,
+PlayerAdded, GetPlayerFromCharacter, Character, Humanoid with Health/WalkSpeed/JumpPower,
+leaderstats on the leaderboard), `TweenService`, `RunService` (Heartbeat), `Debris`,
+`Lighting.ClockTime`, `UserInputService`, `StarterGui:SetCore("SendNotification")`,
+`workspace.Raycast`, `wait` / `task.*`, `Vector3`, `Color3`, `CFrame`, `UDim2`, `TweenInfo`,
+`BrickColor`, `Enum`. Neoblox extras: `part.Gameplay = "KillBrick" | "Checkpoint" | "JumpPad"`
+and `player.GiveXP(n)`.
+
+How it runs: scripts run on each player's own device while they're in a game (or in a
+NeoStudio playtest). They never run in the page itself — `public/rbx/neoscript.js` runs
+them inside QuickJS, a separate JavaScript engine compiled to WebAssembly
+(`public/vendor/quickjs`, MIT), so a script has no `window`, DOM, network, cookies or
+storage — only the game API in `public/rbx/neoscript-runtime.js`, and every call from it
+into the game is checked and clamped. A CPU deadline stops endless loops ("Script
+timeout"), and there are caps on memory, new parts, lights, on-screen labels, sounds and
+notifications. Worlds made with the old one-line commands (`say "hi"`, `color #ff0000`…)
+are converted to JavaScript automatically when they load.
 
 This is what makes Neoblox *actually* online: a small Node.js server that the game
 connects to automatically once you deploy it. It gives you:
@@ -185,13 +232,17 @@ every redeploy.
 - `public/` — the game client itself (same file the Electron app and claude.ai
   artifact use), plus `manifest.json` and app icons for PWA install.
 - `public/battle-assets/` — 3D model assets used by Thunder Battle.
-- `public/rbx/` — the home page (`home.js/css`), the in-game UI + camera (`hud.js/css`)
-  and NeoStudio's editor (`studio.js/css`).
+- `public/rbx/` — the home page (`home.js/css`), the in-game UI + camera (`hud.js/css`),
+  NeoStudio's editor (`studio.js/css`), its script editor (`codeeditor.js/css`) and the
+  scripting runtime (`neoscript.js` + `neoscript-runtime.js`).
+- `public/vendor/quickjs/` — the QuickJS engine (WebAssembly) that runs scripts.
 - `accounts.js` — accounts, tokens, quests and the Avatar Shop catalog.
 - `test/api.test.js` — server checks (`npm test`).
 
 ## Credits
 
+- `public/vendor/quickjs/` is QuickJS (© Fabrice Bellard and Charlie Gordon) built for the
+  web by quickjs-emscripten (© Jake Teton-Landis), both MIT-licensed — see its `LICENSE`.
 - `public/battle-assets/thunderbot.glb` is "RobotExpressive" by Tomás Laulhé
   (assets by Quaternius), CC0-licensed (public domain), sourced via the three.js
   project's example assets (github.com/mrdoob/three.js). Used as Thunder Battle's

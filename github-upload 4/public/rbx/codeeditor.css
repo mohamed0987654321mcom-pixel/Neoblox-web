@@ -1,0 +1,134 @@
+/* rbx/codeeditor.css — NeoStudio's script editor (rbx/codeeditor.js) and the in-game
+   Developer Console (F9, rbx/neoscript.js). */
+
+/* ---------------- script editor: tabs over the 3D view, between the docks */
+.sd-code{ position:absolute; top:121px; left:240px; right:270px; bottom:150px; display:flex; flex-direction:column; pointer-events:none; z-index:12;
+  font-family:'Nunito Sans', system-ui, sans-serif; }
+.sd-code[hidden]{ display:none !important; }
+body.sd-no-toolbox .sd-code{ left:0; }
+body.sd-no-right .sd-code{ right:0; }
+body.sd-no-output .sd-code{ bottom:0; }
+body.rbx-studio .sd-code{ display:none !important; } /* playtesting: show the game */
+.ce-tabs{ pointer-events:auto; display:flex; align-items:stretch; height:28px; background:#252526; border-bottom:1px solid #1f1f1f; overflow-x:auto; overflow-y:hidden; pointer-events:auto; flex:none; scrollbar-width:none; }
+.ce-tabs::-webkit-scrollbar{ display:none; }
+.ce-tab{ display:flex; align-items:center; gap:6px; padding:0 10px 0 12px; border:none; border-right:1px solid #1f1f1f; background:#2d2d2d; color:#a8a8a8; font:inherit; font-size:12px; font-weight:600;
+  cursor:pointer; white-space:nowrap; max-width:220px; flex:none; }
+.ce-tab:hover{ color:#e8e8e8; }
+.ce-tab.on{ background:#1e1e1e; color:#fff; box-shadow:inset 0 2px 0 #0f84ff; }
+.ce-tab .ic{ font-size:12px; }
+.ce-tab .x{ margin-left:4px; width:16px; height:16px; line-height:16px; text-align:center; border-radius:3px; color:#8a8a8a; font-size:10px; }
+.ce-tab .x:hover{ background:#3c3c3c; color:#fff; }
+.ce-body{ flex:1; min-height:0; display:flex; flex-direction:column; background:#1e1e1e; pointer-events:auto; position:relative; }
+.ce-body[hidden]{ display:none; }
+.ce-tools{ display:flex; align-items:center; gap:4px; height:30px; padding:0 8px; background:#252526; border-bottom:1px solid #1f1f1f; flex:none; }
+.ce-tool{ border:1px solid transparent; background:transparent; color:#e8e8e8; font:inherit; font-size:12px; padding:3px 9px; border-radius:4px; cursor:pointer; }
+.ce-tool:hover{ background:#3a3a3a; border-color:#4a4a4a; }
+.ce-lang{ margin-left:auto; color:#8a8a8a; font-size:11px; font-weight:700; letter-spacing:.04em; }
+.ce-drop{ position:relative; }
+.ce-menu{ position:absolute; top:28px; left:0; width:300px; max-height:360px; overflow-y:auto; background:#2b2b2b; border:1px solid #474747; border-radius:6px; box-shadow:0 12px 30px rgba(0,0,0,.5); padding:5px; z-index:5; }
+.ce-menu[hidden]{ display:none; }
+.ce-menu-h{ color:#8a8a8a; font-size:11px; padding:4px 8px 6px; }
+.ce-mi{ display:flex; width:100%; align-items:center; justify-content:space-between; gap:10px; border:none; background:transparent; color:#e8e8e8; font:inherit; font-size:12.5px; padding:6px 8px; border-radius:4px; cursor:pointer; text-align:left; }
+.ce-mi span{ color:#8a8a8a; font-size:11px; }
+.ce-mi:hover{ background:#2c5d8f; }
+.ce-mi.dim{ color:#b9b9b9; }
+
+.ce-main{ flex:1; min-height:0; display:flex; position:relative; overflow:hidden; }
+.ce-gutter{ width:46px; flex:none; overflow:hidden; background:#1e1e1e; border-right:1px solid #2a2a2a; position:relative; }
+.ce-gutter-in{ padding:8px 0; will-change:transform; }
+.ce-gutter-in > div{ height:19px; line-height:19px; text-align:right; padding-right:8px; color:#6e7681; font-family:Menlo,Consolas,'Courier New',monospace; font-size:12px; }
+.ce-gutter-in > div.err{ color:#ff6b6b; background:rgba(255,80,80,.14); }
+.ce-gutter-in > div.flash{ background:rgba(15,132,255,.35); color:#fff; }
+.ce-area{ flex:1; min-width:0; position:relative; overflow:hidden; }
+.ce-hl, .ce-ta, .ce-measure{ font-family:Menlo,Consolas,'Courier New',monospace; font-size:13px; line-height:19px; tab-size:2; -moz-tab-size:2; letter-spacing:0; font-variant-ligatures:none; }
+.ce-hl{ position:absolute; left:0; top:0; margin:0; padding:8px 10px; white-space:pre; color:#d4d4d4; pointer-events:none; will-change:transform; min-width:100%; box-sizing:border-box; }
+.ce-ta{ position:absolute; inset:0; width:100%; height:100%; margin:0; padding:8px 10px; border:none; outline:none; resize:none; background:transparent; color:transparent; caret-color:#fff;
+  white-space:pre; overflow:auto; box-sizing:border-box; -webkit-text-fill-color:transparent; user-select:text; -webkit-user-select:text; }
+.ce-ta::selection{ background:rgba(38,79,120,.85); -webkit-text-fill-color:transparent; }
+.ce-ta::-webkit-scrollbar{ width:12px; height:12px; }
+.ce-ta::-webkit-scrollbar-thumb{ background:#424242; border:3px solid #1e1e1e; border-radius:8px; }
+.ce-ta::-webkit-scrollbar-corner{ background:#1e1e1e; }
+.ce-measure{ position:absolute; visibility:hidden; white-space:pre; }
+/* JavaScript colors (dark editor theme) */
+.ce-hl .k{ color:#c586c0; }   /* keywords */
+.ce-hl .l{ color:#569cd6; }   /* true false null */
+.ce-hl .s{ color:#ce9178; }   /* strings */
+.ce-hl .n{ color:#b5cea8; }   /* numbers */
+.ce-hl .c{ color:#6a9955; font-style:italic; } /* comments */
+.ce-hl .g{ color:#4ec9b0; }   /* game, workspace, script, Vector3… */
+.ce-hl .m{ color:#9cdcfe; }   /* .Touched .Position … */
+.ce-hl .f{ color:#dcdcaa; }   /* function calls */
+.ce-hl .p{ color:#d4d4d4; }
+
+.ce-ac{ position:absolute; min-width:180px; max-width:320px; background:#252526; border:1px solid #454545; border-radius:4px; box-shadow:0 8px 22px rgba(0,0,0,.5); z-index:4; padding:2px 0;
+  font-family:Menlo,Consolas,'Courier New',monospace; font-size:12.5px; }
+.ce-ac[hidden]{ display:none; }
+.ce-ac-i{ padding:3px 10px; color:#cfcfcf; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ce-ac-i b{ color:#18a3ff; font-weight:700; }
+.ce-ac-i.on{ background:#04395e; color:#fff; }
+
+.ce-status{ display:flex; align-items:center; gap:10px; height:24px; padding:0 10px; background:#007acc; color:#fff; font-size:11.5px; flex:none; }
+.ce-status .ce-an{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ce-status .ce-an.bad{ font-weight:700; }
+.ce-status .ce-an.bad [data-line]{ cursor:pointer; text-decoration:underline dotted; }
+.ce-status:has(.ce-an.bad){ background:#a1260d; }
+.ce-pos{ opacity:.9; }
+
+.ce-help{ position:absolute; top:30px; right:0; bottom:24px; width:min(430px, 100%); overflow-y:auto; background:#252526; border-left:1px solid #3c3c3c; color:#d4d4d4; padding:14px 16px 20px; z-index:3;
+  font-size:12.5px; line-height:1.5; box-shadow:-10px 0 24px rgba(0,0,0,.35); }
+.ce-help[hidden]{ display:none; }
+.ce-help h3{ margin:0 0 6px; font-size:15px; color:#fff; }
+.ce-help h4{ margin:14px 0 4px; font-size:12.5px; color:#fff; }
+.ce-help p{ margin:6px 0; }
+.ce-help ul{ margin:4px 0; padding-left:18px; }
+.ce-help li{ margin:3px 0; }
+.ce-help code{ font-family:Menlo,Consolas,monospace; font-size:11.5px; color:#9cdcfe; background:#1e1e1e; padding:1px 4px; border-radius:3px; }
+.ce-help table{ width:100%; border-collapse:collapse; margin:8px 0; font-family:Menlo,Consolas,monospace; font-size:11px; }
+.ce-help th{ text-align:left; color:#8a8a8a; font-weight:600; padding:3px 4px; border-bottom:1px solid #3c3c3c; font-family:'Nunito Sans',system-ui,sans-serif; }
+.ce-help td{ padding:3px 4px; border-bottom:1px solid #2e2e2e; vertical-align:top; }
+.ce-help td:first-child{ color:#a8a8a8; }
+.ce-help td:last-child{ color:#dcdcaa; }
+.ce-help .dim{ color:#8a8a8a; }
+.ce-help-x{ position:sticky; top:0; float:right; border:none; background:#3a3a3a; color:#e8e8e8; border-radius:4px; cursor:pointer; padding:2px 7px; }
+
+/* Explorer/Properties bits for scripts (rbx/studio.js) */
+.sx-row .sx-add{ margin-left:auto; display:none; width:18px; height:18px; line-height:16px; text-align:center; border-radius:3px; border:1px solid #4a4a4a; background:#353535; color:#e8e8e8; font-size:13px; flex:none; }
+.sx-row:hover .sx-add, .sx-row.sel .sx-add{ display:inline-block; }
+.sx-row .sx-add:hover{ background:#0f84ff; border-color:#0f84ff; }
+.sx-row .scr ~ .sx-add{ margin-left:6px; }
+.sp-scriptrow{ display:flex; align-items:center; gap:6px; padding:8px; flex-wrap:wrap; }
+.sp-scriptrow .nm{ color:#e8e8e8; font-weight:600; }
+.sp-scriptrow button{ border:1px solid #4a4a4a; background:#353535; color:#e8e8e8; font:inherit; font-size:12px; padding:4px 10px; border-radius:3px; cursor:pointer; }
+.sp-scriptrow button.primary{ background:#1f6fd1; border-color:#1f6fd1; color:#fff; }
+.sp-scriptrow button.danger{ border-color:#7a2a2a; color:#ff9b9b; }
+.sp-scriptrow .hint{ flex-basis:100%; color:#a8a8a8; font-size:11.5px; line-height:1.4; }
+.so-line.jump{ cursor:pointer; }
+.so-line.jump:hover{ text-decoration:underline; }
+
+@media (max-width: 900px){
+  .sd-code{ left:0 !important; right:220px; bottom:0; }
+  body.sd-no-right .sd-code{ right:0; }
+}
+@media (max-width: 600px){
+  .sd-code{ right:0 !important; }
+  .ce-gutter{ width:36px; }
+  .ce-hl, .ce-ta, .ce-measure{ font-size:12px; }
+}
+
+/* ---------------- Developer Console (F9) in games */
+.ns-console{ position:fixed; left:50%; top:60px; transform:translateX(-50%); width:min(760px, calc(100vw - 32px)); height:min(420px, calc(100vh - 120px)); z-index:80;
+  display:flex; flex-direction:column; background:rgba(20,22,26,.96); border:1px solid #3c3c3c; border-radius:10px; box-shadow:0 18px 50px rgba(0,0,0,.55); color:#e8e8e8;
+  font-family:'Nunito Sans',system-ui,sans-serif; overflow:hidden; }
+.ns-console[hidden]{ display:none; }
+.ns-con-head{ display:flex; align-items:center; gap:10px; padding:8px 10px 8px 14px; border-bottom:1px solid #333; font-size:13px; }
+.ns-con-head span{ color:#9a9a9a; font-size:12px; flex:1; }
+.ns-con-head button{ border:1px solid #4a4a4a; background:#2e2e2e; color:#e8e8e8; border-radius:5px; padding:3px 9px; font:inherit; font-size:12px; cursor:pointer; }
+.ns-con-body{ flex:1; overflow-y:auto; padding:6px 12px; font-family:Menlo,Consolas,monospace; font-size:12px; user-select:text; -webkit-user-select:text; }
+.ns-con-line{ padding:1px 0; white-space:pre-wrap; word-break:break-word; }
+.ns-con-line .t{ color:#7c7c7c; margin-right:8px; }
+.ns-con-line.err{ color:#ff6b6b; }
+.ns-con-line.warn{ color:#ffcc66; }
+.ns-con-line.ok{ color:#7ee08a; }
+
+/* keep the floating party/chat button off the code */
+body.sd-on.sd-code-on #partyDock{ display:none !important; }

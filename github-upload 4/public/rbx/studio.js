@@ -1,8 +1,9 @@
 // rbx/studio.js — NeoStudio's editor, laid out like a desktop game studio:
 //   • File menu (New, Open your published builds, Publish, Exit) and HOME / MODEL / TEST / VIEW tabs
 //   • Select / Move (drag the arrows) / Rotate / Build / Delete tools, Part ▾ shapes, Material ▾, Color ▾
-//   • Explorer tree (Workspace, Lighting, StarterGui, …) and a Properties grid (Name, Position, Color,
-//     Material, Transparency, Shape, Orientation, CanCollide, Gameplay, Stage, Script)
+//   • Explorer tree (Workspace, Lighting, ServerScriptService, StarterGui, …) and a Properties grid
+//     (Name, Position, Color, Material, Transparency, Shape, Orientation, CanCollide, Gameplay, Stage)
+//   • Scripts (JavaScript) in parts, ServerScriptService and buttons — opened in rbx/codeeditor.js
 //   • Toolbox of ready-made models, an Output window, copy/paste/duplicate and keyboard shortcuts
 //   • Free mouse cursor: click to use the tool, right-drag to look, wheel to zoom, WASD/QE to fly;
 //     on touch screens tap to use the tool and drag to look.
@@ -41,18 +42,30 @@
         return a.concat(pad(-1,1,-1,1,5,'wood')); })() },
     { id:'spawnplat', name:'Spawn Platform', blocks: pad(-2,2,-2,2,0,'plastic',{c:'#a3a2a5'}) },
     { id:'neonring', name:'Neon Ring', blocks:(function(){ const a=[]; for(let x=-2;x<=2;x++) for(let z=-2;z<=2;z++) if(Math.abs(x)===2||Math.abs(z)===2) a.push([x,0,z,'neon',null,null,{c:'#b480ff'}]); return a; })() },
+    // scripted models: each part carries a JavaScript Script (see rbx/codeeditor.js Examples)
+    { id:'coin', name:'Spinning Coin 📜', blocks:[[0,1,0,'neon','js',scriptExample('Coin + leaderboard'),{c:'#ffcd28',s:'cylinder'}]] },
+    { id:'mover', name:'Moving Platform 📜', blocks:[[0,2,0,'plastic','js',scriptExample('Moving platform'),{c:'#00a2ff'}]] },
+    { id:'fadebridge', name:'Fading Bridge 📜', blocks:[0,-1,-2,-3,-4].map((z, i)=> [0,0,z,'glass','js',scriptExample('Disappearing part'),{c:'#9ff3e9'}]) },
+    { id:'speedpad', name:'Speed Pad 📜', blocks:[[0,0,0,'neon','js',scriptExample('Speed pad'),{c:'#12eed4'}]] },
+    { id:'spinner', name:'Spinning Bar 📜', blocks:[[0,1,0,'neon','js',
+      '// A spinning kill bar — jump over it!\nconst bar = script.Parent;\nbar.Size = new Vector3(9, 0.4, 0.4);\nbar.Gameplay = "KillBrick";\n\ngame.GetService("RunService").Heartbeat.Connect((dt) => {\n  bar.Orientation = bar.Orientation.add(new Vector3(0, 70 * dt, 0));\n});\n',
+      {c:'#ff2b2b'}]] },
+    { id:'lamp', name:'Lamp 📜', blocks:[[0,0,0,'wood'],[0,1,0,'wood'],[0,2,0,'neon','js',scriptExample('Lamp (light at night)'),{c:'#ffdc8c'}]] },
   ];
+  function scriptExample(name){ return (window.NeoCodeEditor && NeoCodeEditor.example) ? NeoCodeEditor.example(name) : ''; }
 
   // ------------------------------------------------------------------ Output
   const outLines = [];
-  UI.log = function(text, kind){
+  // meta (optional): { where, ref, line } — a script error; clicking the line opens that script there
+  UI.log = function(text, kind, meta){
     const t = new Date(); const ts = t.toTimeString().slice(0,8);
     outLines.push({ ts, text:String(text), kind:kind||'' });
     if(outLines.length > 200) outLines.shift();
     const body = $('#studioOutputBody'); if(!body) return;
     const row = document.createElement('div');
-    row.className = 'so-line' + (kind ? ' '+kind : '');
+    row.className = 'so-line' + (kind ? ' '+kind : '') + (meta && meta.ref ? ' jump' : '');
     row.innerHTML = '<span class="t">'+ts+'</span>' + esc(text);
+    if(meta && meta.ref){ row.title = 'Open the script at line ' + meta.line; row.addEventListener('click', ()=>{ if(window.NeoCodeEditor) NeoCodeEditor.openRef(meta.where, meta.ref, meta.line); }); }
     body.appendChild(row);
     while(body.children.length > 200) body.removeChild(body.firstChild);
     body.scrollTop = body.scrollHeight;
@@ -73,7 +86,8 @@
   function updateTitle(){ const t = $('#sdTitle'); if(t) t.textContent = (App.studio.lastName || 'Untitled Place') + (App.studio.worldId ? '' : ' — not published yet'); }
 
   // ------------------------------------------------------------------ Explorer
-  const open = new Set(['workspace','startergui']);
+  const open = new Set(['workspace','startergui','sss']);
+  const scriptSel = (sel, kind, ref)=> sel && sel.kind==='script' && sel.where===kind && sel.ref===ref;
   window.renderStudioExplorer = function(){
     const el = $('#studioExplorerBody'); if(!el) return;
     const sel = App.studio.selected;
@@ -94,7 +108,10 @@
         if(open.has(key)){
           list.slice(0, 80).forEach(it=>{
             const isSel = sel && sel.kind==='block' && sel.x===it.x && sel.y===it.y && sel.z===it.z;
-            h += row(2, `data-x="${it.x}" data-y="${it.y}" data-z="${it.z}"`, '', '<span class="ic part" style="background:'+esc(partColor(it.d))+'"></span>', esc(partName(it.d)), (it.d.script && it.d.script.code ? '<span class="scr" title="Has a script">📜</span>' : '<span class="dim">'+it.x+', '+it.y+', '+it.z+'</span>'), isSel);
+            const hasScr = !!it.d.script;
+            h += row(2, `data-x="${it.x}" data-y="${it.y}" data-z="${it.z}"`, '', '<span class="ic part" style="background:'+esc(partColor(it.d))+'"></span>', esc(partName(it.d)),
+              '<span class="dim">'+it.x+', '+it.y+', '+it.z+'</span>' + (hasScr ? '' : '<span class="sx-add" data-addscr-part="'+it.x+','+it.y+','+it.z+'" title="Insert a Script into this part">+</span>'), isSel);
+            if(hasScr) h += row(3, `data-scr-part="${it.x},${it.y},${it.z}"`, '', '<span class="ic">📜</span>', 'Script', '', scriptSel(sel, 'part', it.d));
           });
           if(list.length > 80) h += row(2, '', '', '', '<span class="dim">…and '+(list.length-80)+' more</span>');
         }
@@ -103,12 +120,17 @@
     h += row(0, 'data-obj="lighting"', '', '<span class="ic">💡</span>', 'Lighting', '<span class="dim">'+esc((App.studio.lighting&&App.studio.lighting.sky)||'day')+'</span>', sel && sel.kind==='lighting');
     h += row(0, '', '', '<span class="ic">👥</span>', 'Players');
     h += row(0, '', '', '<span class="ic">📦</span>', 'ReplicatedStorage');
-    let scripts = 0; App.studio.blocks.forEach(v=>{ if(v.script && v.script.code) scripts++; }); (App.studio.ui||[]).forEach(u=>{ if(u.script && u.script.code) scripts++; });
-    h += row(0, '', '', '<span class="ic">📜</span>', 'ServerScriptService', '<span class="dim">'+scripts+' script'+(scripts===1?'':'s')+'</span>');
+    const wscripts = App.studio.scripts || [];
+    h += row(0, 'data-tog="sss"', wscripts.length ? caret('sss') : '', '<span class="ic">📜</span>', 'ServerScriptService', '<span class="dim">('+wscripts.length+')</span><span class="sx-add" data-addscr-world="1" title="Insert a Script">+</span>');
+    if(open.has('sss')) wscripts.forEach((sc, i)=>{
+      h += row(1, 'data-scr-world="'+i+'"', '', '<span class="ic">📜</span>', esc(sc.name || 'Script'), '', scriptSel(sel, 'world', sc));
+    });
     h += row(0, 'data-tog="startergui"', caret('startergui'), '<span class="ic">🖥</span>', 'StarterGui', '<span class="dim">('+(App.studio.ui||[]).length+')</span>');
     if(open.has('startergui')) (App.studio.ui||[]).forEach(u=>{
       const isSel = sel && sel.kind==='ui' && sel.id===u.id;
-      h += row(1, 'data-uiid="'+esc(u.id)+'"', '', '<span class="ic">'+(u.kind==='button'?'🔘':'🏷')+'</span>', esc((u.kind==='button'?'TextButton':'TextLabel')+' "'+String(u.text||'').slice(0,14)+'"'), u.script&&u.script.code?'<span class="scr">📜</span>':'', isSel);
+      const btn = u.kind==='button';
+      h += row(1, 'data-uiid="'+esc(u.id)+'"', '', '<span class="ic">'+(btn?'🔘':'🏷')+'</span>', esc((btn?'TextButton':'TextLabel')+' "'+String(u.text||'').slice(0,14)+'"'), btn && !u.script ? '<span class="sx-add" data-addscr-gui="'+esc(u.id)+'" title="Insert a Script into this button">+</span>' : '', isSel);
+      if(btn && u.script) h += row(2, 'data-scr-gui="'+esc(u.id)+'"', '', '<span class="ic">📜</span>', 'Script', '', scriptSel(sel, 'gui', u));
     });
     h += row(0, '', '', '<span class="ic">🎮</span>', 'StarterPlayer');
     h += row(0, '', '', '<span class="ic">🔊</span>', 'SoundService');
@@ -116,6 +138,14 @@
     $$('[data-tog]', el).forEach(r=> r.addEventListener('click', ()=>{ const k = r.dataset.tog; if(open.has(k)) open.delete(k); else open.add(k); renderStudioExplorer(); }));
     $$('[data-x]', el).forEach(r=> r.addEventListener('click', ()=> selectStudioBlock(+r.dataset.x, +r.dataset.y, +r.dataset.z)));
     $$('[data-uiid]', el).forEach(r=> r.addEventListener('click', ()=> selectStudioUi(r.dataset.uiid)));
+    // scripts: click selects it (Properties) and opens it in the code editor
+    const pk = (s)=> App.studio.blocks.get(blockKey.apply(null, s.split(',').map(Number)));
+    $$('[data-scr-part]', el).forEach(r=> r.addEventListener('click', ()=> openScript('part', pk(r.dataset.scrPart))));
+    $$('[data-scr-world]', el).forEach(r=> r.addEventListener('click', ()=> openScript('world', (App.studio.scripts||[])[+r.dataset.scrWorld])));
+    $$('[data-scr-gui]', el).forEach(r=> r.addEventListener('click', ()=> openScript('gui', findStudioUi(r.dataset.scrGui))));
+    $$('[data-addscr-part]', el).forEach(b=> b.addEventListener('click', (e)=>{ e.stopPropagation(); insertScript('part', pk(b.dataset.addscrPart)); }));
+    $$('[data-addscr-world]', el).forEach(b=> b.addEventListener('click', (e)=>{ e.stopPropagation(); insertScript('world'); }));
+    $$('[data-addscr-gui]', el).forEach(b=> b.addEventListener('click', (e)=>{ e.stopPropagation(); insertScript('gui', findStudioUi(b.dataset.addscrGui)); }));
     $$('[data-obj]', el).forEach(r=> r.addEventListener('click', ()=>{
       const o = r.dataset.obj;
       if(o==='camera'){ UI.log('Tip: right-drag to look around, WASD to fly, Q/E down/up, mouse wheel to zoom.'); return; }
@@ -137,6 +167,7 @@
     const sel = App.studio.selected;
     if(!sel){ el.innerHTML = '<div class="sp-empty">Select a part in the world or in the Explorer to see its properties.<br><br>Tip: pick the <b>Select</b> tool (C) and click a part.</div>'; return; }
     if(sel.kind==='ui') return renderUiProps(el, sel);
+    if(sel.kind==='script') return renderScriptProps(el, sel);
     if(sel.kind==='lighting'){
       const sky = (App.studio.lighting && App.studio.lighting.sky) || 'day';
       el.innerHTML = cat('Appearance', [prow('Sky', `<select id="spSky">${['day','sunset','night'].map(k=>`<option value="${k}"${k===sky?' selected':''}>${k[0].toUpperCase()+k.slice(1)}</option>`).join('')}</select>`)]);
@@ -183,9 +214,8 @@
         prow('CanCollide', `<input type="checkbox" id="spCollide" ${p.nc?'':'checked'}>`),
         prow('Gameplay', `<select id="spPlay">${GAMEPLAY.map(g=>`<option value="${g.id}"${(t.behavior||'')===g.id?' selected':''}>${g.label}</option>`).join('')}</select>`),
       ].concat(t.behavior==='checkpoint' ? [prow('Stage', `<input type="number" id="spStage" min="1" max="999" value="${p.n||''}" placeholder="auto">`)] : [])) +
-      `<div class="sp-cat" data-cat="Script"><span class="car">${closedCats.has('Script')?'▸':'▾'}</span>Script — runs when a player touches this part</div>` +
-      (closedCats.has('Script') ? '' : `<div class="sp-script"><textarea id="spScript" spellcheck="false" placeholder='say "You found the secret!"'>${esc(data.script && data.script.code || '')}</textarea>
-        <details><summary>Commands</summary><pre>${esc(SCRIPT_HELP)}</pre></details></div>`) +
+      `<div class="sp-cat" data-cat="Script"><span class="car">${closedCats.has('Script')?'▸':'▾'}</span>Script</div>` +
+      (closedCats.has('Script') ? '' : scriptBox(!!data.script, 'a part')) +
       `<div class="sp-actions"><button id="spDup">Duplicate (Ctrl+D)</button><button class="danger" id="spDel">Delete (Del)</button></div>`;
     const S = sb.sel;
     $('#spName', el).addEventListener('change', (e)=> setStudioBlockProp(S, 'nm', e.target.value.trim().slice(0,24)));
@@ -205,11 +235,7 @@
       else { const back = data.props && data.props.c ? 'plastic' : 'plastic'; changeStudioBlockType(S, back); }
     });
     const st = $('#spStage', el); if(st) st.addEventListener('change', (e)=> setStudioBlockProp(S, 'n', Math.max(0, Math.floor(+e.target.value||0)) || null));
-    const sc = $('#spScript', el);
-    if(sc){
-      sc.addEventListener('keydown', (e)=>{ e.stopPropagation(); if(e.key==='Tab'){ e.preventDefault(); const p0 = sc.selectionStart; sc.value = sc.value.slice(0,p0)+'  '+sc.value.slice(sc.selectionEnd); sc.selectionStart = sc.selectionEnd = p0+2; } });
-      sc.addEventListener('change', ()=>{ setStudioBlockScript(S, 'touched', sc.value); UI.log('Script saved on '+partName(data)+' ('+S.x+', '+S.y+', '+S.z+')'); });
-    }
+    wireScriptBox(el, 'part', data);
     $('#spDup', el).addEventListener('click', duplicate);
     $('#spDel', el).addEventListener('click', ()=> removeStudioBlock(S.x, S.y, S.z));
     $$('input[type=text], input[type=number]', el).forEach(i=> i.addEventListener('keydown', (e)=>{ e.stopPropagation(); if(e.key==='Enter') i.blur(); }));
@@ -220,14 +246,100 @@
     if(!u){ selectStudioUi(null); return; }
     el.innerHTML = cat('Data', [prow('Name', '<span class="ro">'+(u.kind==='button'?'TextButton':'TextLabel')+'</span>'), prow('Text', `<input type="text" id="spUiText" maxlength="60" value="${esc(u.text)}">`)]) +
       cat('Position', [prow('X %', `<input type="number" id="spUiX" min="0" max="100" value="${Math.round(u.xPct)}">`), prow('Y %', `<input type="number" id="spUiY" min="0" max="100" value="${Math.round(u.yPct)}">`)]) +
-      (u.kind==='button' ? `<div class="sp-cat"><span class="car">▾</span>Script — runs when clicked</div><div class="sp-script"><textarea id="spUiScript" spellcheck="false" placeholder='say "Hi!"'>${esc(u.script && u.script.code || '')}</textarea><details><summary>Commands</summary><pre>${esc(SCRIPT_HELP)}</pre></details></div>` : '') +
+      (u.kind==='button' ? `<div class="sp-cat"><span class="car">▾</span>Script</div>` + scriptBox(!!u.script, 'a button') : '') +
       `<div class="sp-actions"><button class="danger" id="spUiDel">Delete</button></div>`;
     $('#spUiText', el).addEventListener('change', (e)=> setStudioUiField(u.id, 'text', e.target.value.slice(0,60)));
     $('#spUiX', el).addEventListener('change', (e)=> setStudioUiField(u.id, 'xPct', clamp(+e.target.value||0,0,100)));
     $('#spUiY', el).addEventListener('change', (e)=> setStudioUiField(u.id, 'yPct', clamp(+e.target.value||0,0,100)));
-    const sc = $('#spUiScript', el); if(sc){ sc.addEventListener('keydown', (e)=> e.stopPropagation()); sc.addEventListener('change', ()=> setStudioUiScript(u.id, sc.value)); }
+    wireScriptBox(el, 'gui', u);
     $('#spUiDel', el).addEventListener('click', ()=> removeStudioUi(u.id));
     $$('input', el).forEach(i=> i.addEventListener('keydown', (e)=> e.stopPropagation()));
+    wireCats(el);
+  }
+  // ------------------------------------------------------------------ scripts
+  function scriptBox(has, what){
+    return '<div class="sp-scriptrow">' + (has
+      ? '<span class="nm">📜 Script</span><button type="button" class="primary" data-sb="open">Edit script</button><button type="button" class="danger" data-sb="del">Remove</button>'
+      : '<button type="button" class="primary" data-sb="add">+ Add a Script</button><span class="hint">JavaScript that runs while the game plays — script.Parent is ' + what + '.</span>') + '</div>';
+  }
+  function wireScriptBox(el, kind, ref){
+    const b = (k)=> el.querySelector('[data-sb="'+k+'"]');
+    if(b('open')) b('open').addEventListener('click', ()=> openScript(kind, ref));
+    if(b('add')) b('add').addEventListener('click', ()=> insertScript(kind, ref));
+    if(b('del')) b('del').addEventListener('click', ()=> deleteScript(kind, ref));
+  }
+  function ownerOf(kind, ref){ return window.NeoCodeEditor ? NeoCodeEditor.ownerOf(kind, ref) : null; }
+  function scriptLabel(kind, ref){
+    if(kind==='world') return 'ServerScriptService.' + (ref.name || 'Script');
+    if(kind==='gui') return 'StarterGui.TextButton.Script';
+    return 'Workspace.' + partName(ref) + '.Script';
+  }
+  function hasScript(kind, ref){ return kind==='world' ? (App.studio.scripts||[]).includes(ref) : !!(ref && ref.script); }
+  function openScript(kind, ref){
+    if(!ref || !hasScript(kind, ref)) return;
+    App.studio.selected = { kind:'script', where:kind, ref };
+    refreshStudioSelectionOutline(); renderStudioExplorer(); renderStudioProperties();
+    if(window.NeoCodeEditor) NeoCodeEditor.open(ownerOf(kind, ref));
+  }
+  // Insert a Script: into a part, a button, or ServerScriptService — with starter code, then open it.
+  function insertScript(kind, ref){
+    if(App.studio.testing){ showToast('Stop the playtest to add scripts'); return; }
+    const T = window.NeoCodeEditor ? NeoCodeEditor.templates : { part:'', world:'', gui:'' };
+    if(kind==='world'){
+      const n = (App.studio.scripts||[]).length;
+      ref = addWorldScript(n ? 'Script' + (n+1) : 'Script', T.world);
+      if(!ref) return;
+      open.add('sss');
+    } else if(kind==='gui'){
+      if(!ref || ref.kind!=='button'){ showToast('Scripts go in TextButtons'); return; }
+      if(!ref.script) ref.script = { lang:'js', code: T.gui };
+      open.add('startergui');
+    } else {
+      if(!ref) return;
+      if(!ref.script) setPartScript(ref, T.part);
+      open.add('workspace'); open.add('g:'+ref.type);
+    }
+    UI.log('Inserted a Script into ' + scriptLabel(kind, ref).replace(/\.Script$/, ''), 'ok');
+    openScript(kind, ref);
+  }
+  function deleteScript(kind, ref){
+    const owner = ownerOf(kind, ref);
+    if(owner && window.NeoCodeEditor) NeoCodeEditor.closeFor(owner);
+    if(kind==='world') removeWorldScript(ref);
+    else if(kind==='gui') ref.script = null;
+    else setPartScript(ref, null);
+    UI.log('Removed ' + scriptLabel(kind, ref));
+    const sel = App.studio.selected;
+    if(sel && sel.kind==='script' && sel.ref===ref) App.studio.selected = null;
+    renderStudioExplorer(); renderStudioProperties();
+  }
+  // Ribbon "Script": into the selected part / button, otherwise ServerScriptService
+  UI.insertScript = function(){
+    const sb = selectedBlock();
+    if(sb) return insertScript('part', sb.data);
+    const sel = App.studio.selected;
+    if(sel && sel.kind==='ui'){ const u = findStudioUi(sel.id); if(u && u.kind==='button') return insertScript('gui', u); }
+    insertScript('world');
+  };
+  UI.openScript = openScript;
+  function renderScriptProps(el, sel){
+    if(!hasScript(sel.where, sel.ref)){ App.studio.selected = null; renderStudioProperties(); return; }
+    const isWorld = sel.where==='world';
+    const parent = isWorld ? 'ServerScriptService' : sel.where==='gui' ? 'TextButton' : partName(sel.ref);
+    el.innerHTML = cat('Data', [
+        prow('Name', isWorld ? `<input type="text" id="spScrName" maxlength="40" value="${esc(sel.ref.name||'Script')}">` : '<span class="ro">Script</span>'),
+        prow('ClassName', '<span class="ro">Script</span>'),
+        prow('Parent', '<span class="ro">'+esc(parent)+'</span>'),
+        prow('Language', '<span class="ro">JavaScript</span>'),
+      ]) +
+      '<div class="sp-scriptrow"><button type="button" class="primary" data-sb="open">Edit script</button><button type="button" class="danger" data-sb="del">Delete</button>' +
+      '<span class="hint">' + (isWorld ? 'Runs once when the game starts.' : sel.where==='gui' ? 'script.Parent is the button — use MouseButton1Click.' : 'script.Parent is the part — use Touched, ClickDetector…') + '</span></div>';
+    const nm = $('#spScrName', el);
+    if(nm){
+      nm.addEventListener('keydown', (e)=>{ e.stopPropagation(); if(e.key==='Enter') nm.blur(); });
+      nm.addEventListener('change', ()=>{ sel.ref.name = (nm.value.replace(/[<>.]/g,'').trim() || 'Script').slice(0, 40); renderStudioExplorer(); if(window.NeoCodeEditor) NeoCodeEditor.refresh(); });
+    }
+    wireScriptBox(el, sel.where, sel.ref);
     wireCats(el);
   }
   function wireCats(el){ $$('.sp-cat[data-cat]', el).forEach(c=> c.addEventListener('click', ()=>{ const n = c.dataset.cat; if(closedCats.has(n)) closedCats.delete(n); else closedCats.add(n); renderStudioProperties(); })); }
@@ -429,7 +541,7 @@
     deserializeBlocks(pf.blocks).forEach((v,k)=>{
       const [dx,dy,dz] = k.split(',').map(Number);
       const x = ax+dx, y = ay+dy, z = az+dz;
-      if(free(x,y,z)){ addStudioBlock(x,y,z, v.type, v.props, { quiet:true }); placed++; } else skipped++;
+      if(free(x,y,z)){ addStudioBlock(x,y,z, v.type, v.props, { quiet:true, script: v.script }); placed++; } else skipped++;
     });
     if(placed){ SFX.place(); renderStudioExplorer(); }
     UI.log('Inserted "'+pf.name+'" — '+placed+' part'+(placed===1?'':'s')+(skipped?' ('+skipped+' blocked or out of bounds)':''), placed ? 'ok' : 'warn');
@@ -527,6 +639,8 @@
     $('#toolMove').addEventListener('click', ()=> setStudioTool('move'));
     $('#toolRotate').addEventListener('click', ()=> setStudioTool('rotate'));
     $('#sdToolboxBtn').addEventListener('click', ()=> togglePanel('studioToolboxPanel', true));
+    ['#sdInsertScript','#sdInsertScript2'].forEach(id=>{ const b = $(id); if(b) b.addEventListener('click', ()=> UI.insertScript()); });
+    const sh = $('#sdScriptHelp'); if(sh) sh.addEventListener('click', ()=>{ if(window.NeoCodeEditor) NeoCodeEditor.help(); });
     $('#sdPlayHome').addEventListener('click', ()=> startStudioPlaytest());
     $('#sdPublishTop').addEventListener('click', ()=> $('#btnPublish').click());
     $('#sdExit').addEventListener('click', ()=> handleMenuClick());
@@ -576,6 +690,7 @@
     p.classList.toggle('sd-hidden', hide);
     document.body.classList.toggle('sd-no-toolbox', $('#studioToolboxPanel').classList.contains('sd-hidden'));
     document.body.classList.toggle('sd-no-right', $('#studioExplorerPanel').classList.contains('sd-hidden') && $('#studioPropertiesPanel').classList.contains('sd-hidden'));
+    document.body.classList.toggle('sd-no-output', $('#studioOutputPanel').classList.contains('sd-hidden'));
     if(id==='studioToolboxPanel' && !hide) renderToolbox();
   }
   UI.onLoaded = function(w){ updateTitle(); if(w) UI.log('Opened "'+(w.name||'Untitled')+'" ('+((w.blocks||[]).length)+' parts)'); else UI.log('New place'); };

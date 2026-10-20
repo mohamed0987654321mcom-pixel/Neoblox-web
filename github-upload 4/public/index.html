@@ -539,6 +539,7 @@
 <link rel="stylesheet" href="rbx/home.css">
 <link rel="stylesheet" href="rbx/studio.css">
 <link rel="stylesheet" href="rbx/ui.css">
+<link rel="stylesheet" href="rbx/codeeditor.css">
 </head>
 <body>
 <div id="app">
@@ -648,7 +649,7 @@
           <div class="nh-create-hero">
             <div>
               <h1>Create with NeoStudio</h1>
-              <p>Build your own obby, hangout or adventure out of parts — kill bricks, checkpoints, jump pads, scripts and on-screen buttons — then publish it so everyone can play.</p>
+              <p>Build your own obby, hangout or adventure out of parts — kill bricks, checkpoints, jump pads and on-screen buttons — bring it to life with Roblox-style scripts written in JavaScript, then publish it so everyone can play.</p>
               <button class="nh-cta green" id="nhStartCreating">Start Creating</button>
             </div>
             <img id="nhCreateArt" alt="">
@@ -807,6 +808,7 @@
               </div>
               <button class="rib-btn" id="btnInsertLabel" title="Add an on-screen text label"><span class="rib-ic">🏷</span><span>Label</span></button>
               <button class="rib-btn" id="btnInsertButton" title="Add a clickable on-screen button"><span class="rib-ic">🔘</span><span>Button</span></button>
+              <button class="rib-btn" id="sdInsertScript" title="Insert a Script — into the selected part, or ServerScriptService"><span class="rib-ic">📜</span><span>Script</span></button>
             </div>
             <div class="ribbon-label">Insert</div>
           </div>
@@ -851,6 +853,13 @@
           <div class="ribbon-group">
             <div class="ribbon-buttons" id="sdShapeButtons"></div>
             <div class="ribbon-label">Shapes</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
+              <button class="rib-btn" id="sdInsertScript2" title="Insert a Script — into the selected part, or ServerScriptService"><span class="rib-ic">📜</span><span>Script</span></button>
+              <button class="rib-btn" id="sdScriptHelp" title="How scripting works in Neoblox"><span class="rib-ic">❔</span><span>Script Help</span></button>
+            </div>
+            <div class="ribbon-label">Advanced</div>
           </div>
           <div class="ribbon-group">
             <div class="ribbon-buttons">
@@ -1127,141 +1136,33 @@ const BLOCK_TYPE_BY_ID = {}; BLOCK_TYPES.forEach(t=>{ BLOCK_TYPE_BY_ID[t.id] = t
 const PART_SHAPES = ['block','wedge','sphere','cylinder'];
 
 // === SECTION:SCRIPTING ===
-// NeoStudio "scripts" are a small fixed vocabulary of safe commands, interpreted line-by-line
-// by hand below — never eval()'d or run as real JavaScript. That's a deliberate choice, not a
-// missing feature: a script attached to a block runs on every player who touches it once that
-// world is published, so this has to be safe to execute in a stranger's browser. A real
-// scripting language (arbitrary JS/Lua) would let a published world run attacker-controlled
-// code on everyone who plays it — this interpreter physically cannot do anything beyond the
-// commands listed in SCRIPT_HELP, whatever text someone puts in the box.
-const SCRIPT_CODE_MAXLEN = 600;
-const SCRIPT_HELP = 'say "text"        — show a message\nprint "text"      — write to Output (chat in play)\ncolor #ff0000     — recolor this part\nchangecolor neon  — change this part\'s material\ntransparency 0.5  — make this part see-through\ndestroy           — remove this part\ncheckpoint        — save the player\'s spot here\nteleport x,y,z    — move the player\njump 20           — launch the player up\nheal 25 · damage 25 · kill\nplaysound goal    — place, erase, jump, land, goal, publish, checkpoint, boing\nwait 1            — pause (max 5 s)\n\nYou can also write them like functions: print("hi")';
-const SCRIPT_COMMANDS = ['givexp','say','print','color','changecolor','transparency','destroy','checkpoint','teleport','jump','heal','damage','kill','playsound','wait'];
-
-function parseScriptLine(line){
-  line = line.trim().replace(/;$/, '');
-  if(!line || line.startsWith('//') || line.startsWith('--')) return null;
-  const fn = line.match(/^(\w+)\s*\((.*)\)$/);   // print("hi") style
-  if(fn) return { cmd: fn[1].toLowerCase(), args: fn[2].trim() };
-  const m = line.match(/^(\w+)\s*(.*)$/);
-  if(!m) return { cmd:'?', args:line };
-  return { cmd: m[1].toLowerCase(), args: m[2].trim() };
+// Scripts are JavaScript written against a Roblox-style API (game, workspace, script.Parent,
+// part.Touched.Connect, Instance.new, TweenService…). rbx/neoscript.js runs them inside a
+// sandboxed JavaScript engine while you play — see that file for how and why.
+//   • a part can hold a Script (script.Parent is the part)
+//   • ServerScriptService holds world scripts that run when the game starts
+//   • an on-screen TextButton can hold a Script (script.Parent is the button)
+const SCRIPT_CODE_MAXLEN = 20000;
+const WORLD_SCRIPTS_MAX = 40;
+// A part's or button's script is { lang:'js', code }. Worlds saved before scripts were JavaScript
+// stored a few line-by-line commands (say "hi", color #ff0000…) plus an event name; those are
+// rewritten as the same thing in JavaScript the moment they load (NeoScript.convertLegacy).
+function normalizeScript(s, legacyEvent){
+  if(!s || typeof s!=='object') return null;
+  let code = String(s.code||'');
+  if(!code.trim()) return null;
+  if(s.lang!=='js') code = window.NeoScript ? NeoScript.convertLegacy(code.slice(0, 4000), s.event || legacyEvent) : '// ' + code.split('\n').join('\n// ');
+  return { lang:'js', code: code.slice(0, SCRIPT_CODE_MAXLEN) };
 }
-function scriptText(args){ const m = String(args).match(/^["'](.*)["']$/); return (m ? m[1] : args).slice(0,120); }
-
-// ctx: { player, blockPos:{x,y,z}|null } — blockPos is null for UI-button scripts (no block to
-// recolor/destroy/checkpoint from), player is whichever local avatar triggered this.
-async function runScriptCode(code, ctx){
-  if(!code) return;
-  const lines = String(code).split('\n').slice(0,40); // a runaway script can't loop forever below
-  for(let i=0;i<lines.length;i++){
-    const parsed = parseScriptLine(lines[i]);
-    if(!parsed) continue;
-    if(!SCRIPT_COMMANDS.includes(parsed.cmd)){ scriptLog('Unknown command "'+parsed.cmd+'" on line '+(i+1)+' — see the Commands list', 'err'); continue; }
-    try{ await runScriptCommand(parsed, ctx); }catch(e){ /* a bad line just gets skipped */ }
-  }
+// ServerScriptService: [{ id, name, code }]
+function normalizeWorldScripts(arr){
+  return (Array.isArray(arr) ? arr : []).slice(0, WORLD_SCRIPTS_MAX).filter(s=> s && typeof s.code==='string').map(s=>({
+    id: String(s.id || uid()).slice(0, 40),
+    name: (String(s.name || 'Script').replace(/[<>.]/g, '').trim() || 'Script').slice(0, 40),
+    code: String(s.code).slice(0, SCRIPT_CODE_MAXLEN),
+  }));
 }
-function scriptLog(text, kind){
-  if(window.NeoStudioUI && App.mode==='studio') NeoStudioUI.log('[Script] '+text, kind);
-}
-// Scripts change parts only for this play session — the saved world never changes.
-function scriptReplacePart(pos, type, patch){
-  if(!pos || !App.worldMeshes) return;
-  const key = blockKey(pos.x,pos.y,pos.z);
-  const m = App.worldMeshes.get(key); if(!m) return;
-  const props = cleanProps(Object.assign({}, m.userData.props||{}, patch||{})) || {};
-  const n = makeBlockMesh(type || m.userData.blockType, props);
-  n.position.copy(m.position);
-  ['gx','gy','gz','script','stage'].forEach(k=>{ n.userData[k] = m.userData[k]; });
-  App.blockGroup.remove(m); App.blockGroup.add(n);
-  App.worldMeshes.set(key, n);
-}
-async function runScriptCommand({cmd, args}, ctx){
-  const editing = App.mode==='studio' && !App.studio.testing;
-  if(editing) return; // scripts run when playing, not while you're building
-  switch(cmd){
-    case 'say': {
-      const t = scriptText(args);
-      if(window.RbxHud && RbxHud.active()) RbxHud.flash(t); else showToast('💬 ' + t);
-      scriptLog('say: '+t);
-      break;
-    }
-    case 'print': {
-      const t = scriptText(args);
-      scriptLog(t);
-      if(App.mode!=='studio' && window.RbxHud && RbxHud.active()) RbxHud.addSystemMessage(t);
-      break;
-    }
-    case 'changecolor': {
-      const type = args.trim().toLowerCase();
-      if(ctx.blockPos && BLOCK_TYPE_BY_ID[type]) scriptReplacePart(ctx.blockPos, type);
-      break;
-    }
-    case 'color': {
-      const c = hexToNum(scriptText(args).trim());
-      if(ctx.blockPos && c!==null) scriptReplacePart(ctx.blockPos, null, { c: numToHex(c) });
-      break;
-    }
-    case 'transparency': {
-      const t = clamp(parseFloat(args)||0, 0, 0.95);
-      if(ctx.blockPos) scriptReplacePart(ctx.blockPos, null, { t });
-      break;
-    }
-    case 'teleport': {
-      const parts = args.replace(/[()]/g,'').split(',').map(s=>parseFloat(s.trim()));
-      if(parts.length===3 && parts.every(Number.isFinite) && ctx.player){
-        ctx.player.pos.set(parts[0]+0.5, parts[1]+0.3, parts[2]+0.5);
-        ctx.player.vel.set(0,0,0);
-      }
-      break;
-    }
-    case 'jump': {
-      if(ctx.player){ ctx.player.vel.y = clamp(parseFloat(args)||12, 0, 40); ctx.player.grounded = false; }
-      break;
-    }
-    case 'heal': {
-      const n = clamp(parseInt(args)||0, 0, 100);
-      if(App.battle && App.mode==='battle' && App.battle.alive){ App.battle.health = clamp(App.battle.health+n,0,100); updateBattleHud(); }
-      else if(App.hum && !App.hum.dead){ App.hum.health = Math.min(App.hum.maxHealth, App.hum.health+n); if(window.RbxHud) RbxHud.onHealth(); }
-      break;
-    }
-    case 'damage': {
-      const n = clamp(parseInt(args)||0, 0, 100);
-      if(App.hum) humDamage(n, 'script');
-      break;
-    }
-    case 'kill': {
-      if(App.hum) humDie('kill');
-      break;
-    }
-    case 'givexp': {
-      battlePassAddXp(clamp(parseInt(args)||0, 0, 100));
-      break;
-    }
-    case 'playsound': {
-      const name = args.replace(/["'()]/g,'').trim().toLowerCase();
-      if(SFX[name]) SFX[name]();
-      break;
-    }
-    case 'checkpoint': {
-      if(ctx.blockPos){ App.checkpoint = { x:ctx.blockPos.x, y:ctx.blockPos.y+1, z:ctx.blockPos.z }; if(window.RbxHud && RbxHud.active()) RbxHud.flash('🚩 Checkpoint saved'); else showToast('🚩 Checkpoint!'); }
-      break;
-    }
-    case 'destroy': {
-      if(ctx.blockPos && App.worldMeshes){
-        const key = blockKey(ctx.blockPos.x, ctx.blockPos.y, ctx.blockPos.z);
-        const m = App.worldMeshes.get(key);
-        if(m){ App.blockGroup.remove(m); App.worldMeshes.delete(key); }
-      }
-      break;
-    }
-    case 'wait': {
-      const secs = clamp(parseFloat(String(args).replace(/[()]/g,''))||0, 0, 5);
-      await new Promise(res=>setTimeout(res, secs*1000));
-      break;
-    }
-  }
-}
+function serializeWorldScripts(arr){ return normalizeWorldScripts(arr).filter(s=> s.code.trim()); }
 
 function loadLocal(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
@@ -1348,11 +1249,12 @@ const App = {
     tool:'place', // select | move | rotate | place | erase | spawn | goal | prefab
     partShape:'block', partColor:null, // what new parts look like (ribbon Part ▾ / Color ▾)
     baseplate:true, lighting:{ sky:'day' }, prefab:null,
-    blocks: new Map(), // key "x,y,z" -> {type, script:null|{event,code}}
+    blocks: new Map(), // key "x,y,z" -> {type, props, script:null|{lang:'js',code}}
     ui: [],       // StarterGui-style on-screen elements: {id,kind:'label'|'button',text,xPct,yPct,script}
+    scripts: [],  // ServerScriptService: [{id,name,code}] — JavaScript that runs when the game starts
     spawn: {x:0,y:1,z:0},
     goal: null,
-    selected: null,  // {kind:'block',x,y,z} | {kind:'ui',id} — whatever's shown in the Properties panel
+    selected: null,  // {kind:'block',x,y,z} | {kind:'ui',id} | {kind:'script',…} — whatever's shown in the Properties panel
     testing: false,  // true while playtesting the build from inside the editor (Test > Play)
   },
   worldUi: [], // the UI elements actually rendered right now (play/battle/studio-test), incl. builtin worlds
@@ -2512,6 +2414,8 @@ function makeBlockMesh(typeId, props){
   return m;
 }
 function blockBehavior(typeId){ const t = BLOCK_TYPE_BY_ID[typeId]; return t && t.behavior || null; }
+// A script can change what a part does (part.Gameplay = "KillBrick"), which overrides its type.
+function meshBehavior(m){ return m.userData.behavior !== undefined ? m.userData.behavior : blockBehavior(m.userData.blockType); }
 
 function cleanProps(p){
   if(!p || typeof p!=='object') return null;
@@ -2530,12 +2434,12 @@ function serializeBlocks(blocksMap){
   const arr = [];
   blocksMap.forEach((v,k)=>{
     const [x,y,z] = k.split(',').map(Number);
-    // Trailing [event, code] only when a script is attached and [props] only when the part has
+    // Trailing ['js', code] only when a script is attached and [props] only when the part has
     // any, so plain worlds serialize exactly as before (older clients just see the type).
     const props = cleanProps(v.props);
-    const hasScript = !!(v.script && v.script.code);
-    if(props) arr.push([x,y,z,v.type, hasScript ? (v.script.event||'touched') : null, hasScript ? v.script.code : null, props]);
-    else if(hasScript) arr.push([x,y,z,v.type,v.script.event||'touched',v.script.code]);
+    const sc = normalizeScript(v.script, 'touched');
+    if(props) arr.push([x,y,z,v.type, sc ? 'js' : null, sc ? sc.code : null, props]);
+    else if(sc) arr.push([x,y,z,v.type,'js',sc.code]);
     else arr.push([x,y,z,v.type]);
   });
   return arr;
@@ -2544,7 +2448,7 @@ function deserializeBlocks(arr){
   const m = new Map();
   (arr||[]).forEach(b=>{
     if(!Array.isArray(b)) return;
-    const script = b[5] ? { event:b[4]||'touched', code:String(b[5]).slice(0,SCRIPT_CODE_MAXLEN) } : null;
+    const script = b[5] ? normalizeScript({ lang: b[4]==='js' ? 'js' : null, event: b[4]||'touched', code: b[5] }, 'touched') : null;
     const type = BLOCK_TYPE_BY_ID[b[3]] ? b[3] : 'stone';
     m.set(blockKey(b[0],b[1],b[2]), { type, script, props: cleanProps(b[6]) });
   });
@@ -2554,7 +2458,7 @@ function serializeUi(uiArr){
   return (uiArr||[]).map(u=>({
     id:u.id, kind:u.kind, text:String(u.text||'').slice(0,60),
     xPct:clamp(+u.xPct||0,0,100), yPct:clamp(+u.yPct||0,0,100),
-    script: (u.script && u.script.code) ? { event:u.script.event||'click', code:String(u.script.code).slice(0,SCRIPT_CODE_MAXLEN) } : null,
+    script: u.kind==='button' ? normalizeScript(u.script, 'click') : null,
   }));
 }
 function deserializeUi(arr){
@@ -2562,7 +2466,7 @@ function deserializeUi(arr){
     id: u.id || uid(), kind: u.kind==='button' ? 'button' : 'label',
     text: String(u.text||'').slice(0,60),
     xPct: clamp(+u.xPct||0,0,100), yPct: clamp(+u.yPct||0,0,100),
-    script: (u.script && u.script.code) ? { event:u.script.event||'click', code:String(u.script.code).slice(0,SCRIPT_CODE_MAXLEN) } : null,
+    script: u.kind==='button' ? normalizeScript(u.script, 'click') : null,
   }));
 }
 
@@ -2594,6 +2498,7 @@ function disposeObj(obj){
 }
 
 function teardownScene(){
+  if(window.NeoScript) NeoScript.stop();
   if(App.scene){
     disposeObj(App.scene);
   }
@@ -3865,6 +3770,16 @@ function touchedPartsAt(pos){
   const found = [];
   if(!App.worldMeshes) return found;
   const seen = new Set();
+  // parts a script has moved/resized/turned (userData.free) aren't on the grid: test their box
+  App.worldMeshes.forEach(m=>{
+    const u = m.userData;
+    if(!u.free) return;
+    const dx = Math.abs(pos.x - m.position.x), dz = Math.abs(pos.z - m.position.z);
+    if(dx > u.hx + 0.35 || dz > u.hz + 0.35) return;
+    const top = m.position.y + u.hy, bottom = m.position.y - u.hy;
+    if(bottom > pos.y + 1.9 || top < pos.y - 0.2) return;
+    found.push({ mesh:m, below: Math.abs(pos.y - top) <= 0.25 && dx <= u.hx && dz <= u.hz });
+  });
   const feetY = pos.y;
   const levels = [Math.round(feetY-1), Math.floor(feetY+0.1), Math.floor(feetY+1.1)];
   const offs = [[0,0],[0.32,0],[-0.32,0],[0,0.32],[0,-0.32]];
@@ -3885,14 +3800,14 @@ function humCheckTouches(p){
   const h = App.hum; if(!h || h.dead) return;
   const touched = touchedPartsAt(p.pos);
   for(const t of touched){
-    const beh = blockBehavior(t.mesh.userData.blockType);
+    const beh = meshBehavior(t.mesh);
     if(beh==='kill'){ humDie('kill'); return; }
     if(beh==='bounce' && t.below && p.grounded){ p.vel.y = 16; p.grounded = false; SFX.boing(); }
     if(beh==='checkpoint' && t.below){
       const m = t.mesh;
       const stage = m.userData.stage || 2;
       const cur = (App.leaderstats && App.leaderstats.Stage) || 1;
-      const here = { x:m.userData.gx, y:m.userData.gy+1, z:m.userData.gz };
+      const here = m.userData.free ? { x:Math.floor(m.position.x), y:m.position.y + m.userData.hy, z:Math.floor(m.position.z) } : { x:m.userData.gx, y:m.userData.gy+1, z:m.userData.gz };
       const same = App.checkpoint && App.checkpoint.x===here.x && App.checkpoint.y===here.y && App.checkpoint.z===here.z;
       if(stage >= cur && !same){
         App.checkpoint = here;
@@ -3903,23 +3818,34 @@ function humCheckTouches(p){
 }
 
 // ---- physics: shared avatar controller for lobby + play ----
-function columnTopAt(x,z){
+// The highest solid top in the column at (x,z). Grid parts fill their 1×1 cell; parts a script
+// has moved/resized/turned (userData.free) count as a box at their real position, and those
+// floating well above your head (feetY given) are ignored so you can walk under a platform.
+let columnTopMesh = null; // which part that top belongs to (for riding moving platforms)
+function columnTopAt(x,z,feetY){
+  columnTopMesh = null;
   if(!App.worldMeshes) return null;
   const bx = Math.floor(x), bz = Math.floor(z);
   let top = null;
   App.worldMeshes.forEach(m=>{
-    if(m.userData.gx===bx && m.userData.gz===bz){
-      if(m.userData.props && m.userData.props.nc) return; // CanCollide off: walk right through it
-      const t = m.userData.gy+1;
-      if(top===null || t>top) top = t;
-    }
+    const u = m.userData;
+    if(u.props && u.props.nc) return; // CanCollide off: walk right through it
+    let t;
+    if(u.free){
+      if(Math.abs(x - m.position.x) > u.hx || Math.abs(z - m.position.z) > u.hz) return;
+      if(feetY !== undefined && m.position.y - u.hy > feetY + 1.8) return;
+      t = m.position.y + u.hy;
+    } else if(u.gx===bx && u.gz===bz){
+      t = u.gy+1;
+    } else return;
+    if(top===null || t>top){ top = t; columnTopMesh = m; }
   });
   return top;
 }
 
 function canEnterColumn(x,z,feetY){
   if(App.mode==='lobby') return Math.hypot(x,z) < 23;
-  const top = columnTopAt(x,z);
+  const top = columnTopAt(x,z,feetY);
   // Battle's open field has no real ground blocks (see THUNDER_ARENA) — a real block (a POI
   // wall/tower/cover piece, or a player build) still blocks movement normally above; absent one,
   // any column within the island's ground extent is walkable flat ground.
@@ -3954,19 +3880,38 @@ function updateAvatarController(dt){
   let moving = false;
   if(mv.lengthSq() > 0){ mv.normalize(); moving = true; }
 
-  const tryX = p.pos.x + mv.x*MOVE_SPEED*dt;
+  // scripts can change these: Humanoid.WalkSpeed / JumpPower, workspace.Gravity, a velocity push,
+  // and a moving part you're standing on carries you along with it
+  const h = humActive() ? App.hum : null;
+  const speed = MOVE_SPEED * (h && h.walkMul !== undefined ? h.walkMul : 1);
+  if(h && p.grounded && p.groundMesh && p.groundMesh.userData.carry){
+    const c = p.groundMesh.userData.carry;
+    if(c.x || c.z){ if(canEnterColumn(p.pos.x + c.x, p.pos.z, p.pos.y)) p.pos.x += c.x; if(canEnterColumn(p.pos.x, p.pos.z + c.z, p.pos.y)) p.pos.z += c.z; }
+    if(c.y > 0) p.pos.y += c.y;
+  }
+  if(h && h.knock){
+    const k = h.knock;
+    const kx = p.pos.x + k.x*dt; if(canEnterColumn(kx, p.pos.z, p.pos.y)) p.pos.x = kx;
+    const kz = p.pos.z + k.z*dt; if(canEnterColumn(p.pos.x, kz, p.pos.y)) p.pos.z = kz;
+    const f = Math.max(0, 1 - dt*(p.grounded ? 8 : 1.2)); k.x *= f; k.z *= f;
+    if(Math.abs(k.x) + Math.abs(k.z) < 0.05) h.knock = null;
+  }
+
+  const tryX = p.pos.x + mv.x*speed*dt;
   if(canEnterColumn(tryX, p.pos.z, p.pos.y)) p.pos.x = tryX;
-  const tryZ = p.pos.z + mv.z*MOVE_SPEED*dt;
+  const tryZ = p.pos.z + mv.z*speed*dt;
   if(canEnterColumn(p.pos.x, tryZ, p.pos.y)) p.pos.z = tryZ;
 
-  p.vel.y -= GRAVITY*dt;
+  p.vel.y -= GRAVITY*(h && App.gravMul !== undefined ? App.gravMul : 1)*dt;
   p.pos.y += p.vel.y*dt;
   // Battle's open field (no real ground blocks — see THUNDER_ARENA) falls back to flat ground at
   // y:1 (the same standing height a real gy:0 ground block would give) anywhere within the
   // island's ground extent; a real block (POI structure or a player build) still wins when present.
   const battleFallback = Math.hypot(p.pos.x,p.pos.z) <= BATTLE_GROUND_R ? 1 : -999;
   const plateFallback = (humActive() && worldHasBaseplate() && insideBuildArea(p.pos)) ? 0 : -999;
-  const groundY = App.mode==='lobby' ? 0 : (columnTopAt(p.pos.x,p.pos.z) ?? (App.mode==='battle' ? battleFallback : plateFallback));
+  const colTop = App.mode==='lobby' ? null : columnTopAt(p.pos.x,p.pos.z,p.pos.y);
+  const groundY = App.mode==='lobby' ? 0 : (colTop ?? (App.mode==='battle' ? battleFallback : plateFallback));
+  p.groundMesh = colTop !== null ? columnTopMesh : null;
   const wasAirborne = !p.grounded;
   if(p.pos.y <= groundY){
     p.pos.y = groundY; p.vel.y = 0;
@@ -3975,7 +3920,7 @@ function updateAvatarController(dt){
   } else {
     p.grounded = false;
   }
-  if(App.input.jump && p.grounded){ p.vel.y = JUMP_SPEED; p.grounded = false; SFX.jump(); }
+  if(App.input.jump && p.grounded){ p.vel.y = JUMP_SPEED * (h && h.jumpMul !== undefined ? h.jumpMul : 1); p.grounded = false; SFX.jump(); }
 
   if(App.mode==='battle' && p.pos.y < -8){
     const sp = battlePickSpawn();
@@ -3992,8 +3937,8 @@ function updateAvatarController(dt){
     RbxCam.update(dt, p, false);
     sendPresence();
     humCheckTouches(p);
-    if(App.mode==='play'){ checkGoal(p.pos); checkBlockScripts(p); }
-    else checkBlockScripts(p);
+    if(App.mode==='play') checkGoal(p.pos);
+    if(window.NeoScript) NeoScript.touches(p);
     return;
   }
   p.rig.group.rotation.y = App.yaw;
@@ -4030,25 +3975,9 @@ function updateAvatarController(dt){
     checkPortals(p.pos);
   } else if(App.mode==='play'){
     checkGoal(p.pos);
-    checkBlockScripts(p);
   } else if(App.mode==='battle'){
     updateBattle(dt, p.pos);
-  } else if(App.mode==='studio' && App.studio.testing){
-    checkBlockScripts(p);
   }
-}
-
-// "Touched"-style trigger: fires a block's script once the moment a player's feet land on a new
-// block, never again while they stay put (edge-triggered on the grid cell changing, not a
-// cooldown timer) — one-shot-per-contact, like a classic "touched" event.
-function checkBlockScripts(p){
-  const gx = Math.floor(p.pos.x), gy = Math.round(p.pos.y-1), gz = Math.floor(p.pos.z);
-  const key = blockKey(gx,gy,gz);
-  if(key === p.lastScriptKey) return;
-  p.lastScriptKey = key;
-  const mesh = App.worldMeshes && App.worldMeshes.get(key);
-  const script = mesh && mesh.userData && mesh.userData.script;
-  if(script && script.code) runScriptCode(script.code, { player:p, blockPos:{x:gx,y:gy,z:gz} });
 }
 
 // ---- portals ----
@@ -4197,9 +4126,11 @@ function changeStudioBlockType(sel, newType){
   const key = blockKey(sel.x,sel.y,sel.z);
   const old = App.studio.blocks.get(key);
   if(!old || !BLOCK_TYPES.find(t=>t.id===newType)) return;
-  const script = old.script || null; // swapping material shouldn't wipe out a script you wrote
+  // the same data object is kept (only its type changes), so a script open in the editor stays
+  // attached to this part — and swapping material never wipes out a script you wrote
+  old.type = newType;
+  const script = old.script || null;
   const props = old.props || null;
-  App.studio.blocks.set(key, { type:newType, script, props });
   const oldMesh = App.worldMeshes.get(key);
   if(oldMesh) App.blockGroup.remove(oldMesh);
   const m = makeBlockMesh(newType, props);
@@ -4212,16 +4143,36 @@ function changeStudioBlockType(sel, newType){
   renderStudioProperties();
 }
 
-// ---- block scripts (Properties panel "Script — Touched" box) ----
-function setStudioBlockScript(sel, event, code){
-  const key = blockKey(sel.x, sel.y, sel.z);
-  const data = App.studio.blocks.get(key);
+// ---- scripts in the editor: a part's Script, a button's Script, ServerScriptService ----
+// (the code editor itself is rbx/codeeditor.js; these just keep the build data up to date)
+function studioKeyOfData(data){
+  for(const [k, v] of App.studio.blocks) if(v === data) return k;
+  return null;
+}
+// code === null removes the script
+function setPartScript(data, code){
   if(!data) return;
-  const trimmed = String(code||'').slice(0, SCRIPT_CODE_MAXLEN);
-  data.script = trimmed.trim() ? { event: event||'touched', code: trimmed } : null;
-  const mesh = App.worldMeshes.get(key);
+  data.script = code === null ? null : { lang:'js', code: String(code||'').slice(0, SCRIPT_CODE_MAXLEN) };
+  const key = studioKeyOfData(data);
+  const mesh = key && App.worldMeshes ? App.worldMeshes.get(key) : null;
   if(mesh) mesh.userData.script = data.script;
+}
+function setStudioBlockScript(sel, event, code){
+  const data = App.studio.blocks.get(blockKey(sel.x, sel.y, sel.z));
+  if(!data) return;
+  setPartScript(data, String(code||'').trim() ? code : null);
   renderStudioExplorer(); // refresh the 📜 indicator
+}
+function addWorldScript(name, code){
+  if(!App.studio.scripts) App.studio.scripts = [];
+  if(App.studio.scripts.length >= WORLD_SCRIPTS_MAX){ showToast('ServerScriptService is full ('+WORLD_SCRIPTS_MAX+' scripts max)'); return null; }
+  const s = { id: uid(), name: name || 'Script', code: String(code||'').slice(0, SCRIPT_CODE_MAXLEN) };
+  App.studio.scripts.push(s);
+  return s;
+}
+function removeWorldScript(s){
+  const i = (App.studio.scripts||[]).indexOf(s);
+  if(i >= 0) App.studio.scripts.splice(i, 1);
 }
 
 // ---- StarterGui-style UI elements (labels/buttons) ----
@@ -4261,8 +4212,7 @@ function setStudioUiField(id, field, value){
 function setStudioUiScript(id, code){
   const u = findStudioUi(id);
   if(!u) return;
-  const trimmed = String(code||'').slice(0, SCRIPT_CODE_MAXLEN);
-  u.script = trimmed.trim() ? { event:'click', code: trimmed } : null;
+  u.script = code === null ? null : { lang:'js', code: String(code||'').slice(0, SCRIPT_CODE_MAXLEN) };
   renderStudioExplorer(); // refresh the 📜 indicator
 }
 // Renders App.worldUi (whatever's live right now — the studio build, or a loaded/published
@@ -4275,19 +4225,29 @@ function renderWorldUi(){
   (App.worldUi||[]).forEach(u=>{
     const el = document.createElement(u.kind==='button' ? 'button' : 'div');
     el.className = u.kind==='button' ? 'world-ui-btn' : 'world-ui-label';
-    el.style.left = clamp(+u.xPct||0,0,100) + '%';
-    el.style.top = clamp(+u.yPct||0,0,100) + '%';
+    el.dataset.uid = u.id;
     el.textContent = String(u.text||'');
+    styleWorldUiEl(el, u);
     if(u.kind==='button'){
       el.addEventListener('click', ()=>{
         // While editing (not testing), clicking your own button in the viewport selects it —
         // matching how you'd click a GUI element in a game studio's viewport to edit it.
         if(App.mode==='studio' && !App.studio.testing){ selectStudioUi(u.id); return; }
-        if(u.script && u.script.code) runScriptCode(u.script.code, { player: App.player, blockPos: null });
+        if(window.NeoScript) NeoScript.guiClick(u.id); // its script's MouseButton1Click / Activated
       });
     }
     layer.appendChild(el);
   });
+}
+// Position, visibility and the colors/size a script may have set (validated hex values only).
+function styleWorldUiEl(el, u){
+  el.style.left = clamp(+u.xPct||0,0,100) + '%';
+  el.style.top = clamp(+u.yPct||0,0,100) + '%';
+  el.hidden = !!u.hidden;
+  const tc = hexToNum(u.tc), bg = hexToNum(u.bg);
+  el.style.color = tc===null ? '' : numToHex(tc);
+  el.style.background = bg===null ? '' : numToHex(bg);
+  el.style.fontSize = u.ts ? clamp(+u.ts, 6, 72) + 'px' : '';
 }
 
 // ---- ribbon tabs (Home / Test) ----
@@ -4315,10 +4275,12 @@ function startStudioPlaytest(){
   document.getElementById('btnPlayTest').hidden = true;
   document.getElementById('btnStopTest').hidden = false;
   showToast('▶ Testing your build — WASD to move, Space to jump. Hit Stop when you\'re done.');
+  if(window.NeoScript) NeoScript.start('studio');
 }
 function stopStudioPlaytest(){
   if(!App.studio.testing) return;
   App.studio.testing = false;
+  if(window.NeoScript) NeoScript.stop();
   clearDebris(); App.hum = null; App.checkpoint = null; App.leaderstats = null;
   if(App.player && App.player.rig && App.player.rig.group.parent) App.player.rig.group.parent.remove(App.player.rig.group);
   App.player = null;
@@ -4422,6 +4384,7 @@ function animate(){
     syncRemotePeers(dt);
   } else if(App.mode==='play'){
     if(App.markers.goal && App.markers.goal.userData.trophy){ const tr = App.markers.goal.userData.trophy; tr.rotation.y += dt*1.6; tr.position.y = 1.0 + Math.sin(App.clockT*2)*0.08; }
+    if(window.NeoScript) NeoScript.step(dt);
     updateAvatarController(dt);
     if(Net.connected) syncRemotePeers(dt);
     const chip = document.getElementById('timerChip');
@@ -4431,7 +4394,7 @@ function animate(){
     if(Net.connected) syncRemotePeers(dt);
   } else if(App.mode==='studio'){
     if(App.markers.goal && App.markers.goal.userData.trophy) App.markers.goal.userData.trophy.rotation.y += dt*1.6;
-    if(App.studio.testing) updateAvatarController(dt);
+    if(App.studio.testing){ if(window.NeoScript) NeoScript.step(dt); updateAvatarController(dt); }
     else { updateStudioCamera(dt); if(window.NeoStudioUI) NeoStudioUI.tick(dt); }
   }
 
@@ -4469,6 +4432,7 @@ function goToPlay(worldData, worldId){
   App.playStart = App.clockT;
   startExperienceState();
   showHudFor('play', worldData);
+  if(window.NeoScript) NeoScript.start('play', worldData);
 }
 
 // Fresh per-visit state for an experience: full health, no checkpoint yet, and leaderstats
@@ -5478,6 +5442,7 @@ function loadWorldIntoStudio(w){
   App.studio.spawn = w.spawn || { x:0,y:1,z:0 };
   App.studio.goal = w.goal || null;
   App.studio.ui = deserializeUi(w.ui);
+  App.studio.scripts = normalizeWorldScripts(w.scripts);
   App.studio.baseplate = w.baseplate !== undefined ? !!w.baseplate : false; // older worlds were built over the void
   App.studio.lighting = { sky: (w.lighting && w.lighting.sky) || 'day' };
   App.studio.lastName = w.name || '';
@@ -5494,6 +5459,7 @@ async function publishWorld(name){
     blocks: serializeBlocks(App.studio.blocks),
     spawn: App.studio.spawn, goal: App.studio.goal,
     ui: serializeUi(App.studio.ui),
+    scripts: serializeWorldScripts(App.studio.scripts),
     baseplate: App.studio.baseplate !== false,
     lighting: { sky: (App.studio.lighting && App.studio.lighting.sky) || 'day' },
     updatedAt: Date.now(),
@@ -5641,7 +5607,7 @@ function wireUI(){
   document.getElementById('btnStopTest').addEventListener('click', stopStudioPlaytest);
   document.getElementById('btnClearWorld').addEventListener('click', ()=>{
     App.studio.blocks.clear(); App.studio.goal = null; App.studio.spawn = {x:0,y:1,z:0};
-    App.studio.ui = []; App.studio.worldId = null; App.studio.lastName = '';
+    App.studio.ui = []; App.studio.scripts = []; App.studio.worldId = null; App.studio.lastName = '';
     App.studio.baseplate = true; App.studio.lighting = { sky:'day' };
     buildStudioScene(); showToast('Cleared — starting a fresh build');
     if(window.NeoStudioUI) NeoStudioUI.onLoaded(null);
@@ -6917,6 +6883,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 });
 </script>
 <script src="rbx/hud.js"></script>
+<script src="rbx/neoscript.js"></script>
+<script src="rbx/codeeditor.js"></script>
 <script src="rbx/home.js"></script>
 <script src="rbx/studio.js"></script>
 </body>

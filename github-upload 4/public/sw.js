@@ -15,11 +15,13 @@
 // Bump CACHE_NAME whenever this file changes so the activate handler below clears out any
 // previous cache instead of leaving it (and whatever it served) around forever.
 
-const CACHE_NAME = 'neoblox-v5';
+const CACHE_NAME = 'neoblox-v6';
 // The game's own code (the page + rbx/*) is network-first too, so updates always show up.
-const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/rbx/hud.css', '/rbx/hud.js', '/rbx/home.css', '/rbx/home.js', '/rbx/studio.css', '/rbx/studio.js', '/rbx/ui.css'];
+const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/rbx/hud.css', '/rbx/hud.js', '/rbx/home.css', '/rbx/home.js', '/rbx/studio.css', '/rbx/studio.js', '/rbx/ui.css', '/rbx/codeeditor.css', '/rbx/codeeditor.js', '/rbx/neoscript.js', '/rbx/neoscript-runtime.js'];
 const FULL_ASSETS = [
   '/three.min.js',
+  '/vendor/quickjs/quickjs.js',
+  '/vendor/quickjs/quickjs.wasm',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon-180.png',

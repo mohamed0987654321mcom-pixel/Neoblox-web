@@ -149,6 +149,7 @@
   function sendChat(raw){
     const text = String(raw||'').trim();
     if(!text) return;
+    if(window.NeoScript) NeoScript.onChat(text); // player.Chatted in the game's scripts
     const low = text.toLowerCase();
     if(low.indexOf('/e ')===0 || low.indexOf('/emote ')===0){
       const what = low.split(/\s+/)[1];
