@@ -36,7 +36,7 @@ function wsClient(){
 const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
 
 (async ()=>{
-  const srv = spawn(process.execPath, ['server.js'], { cwd: TMP, env: Object.assign({}, process.env, { PORT: String(PORT) }), stdio: 'ignore' });
+  const srv = spawn(process.execPath, ['server.js'], { cwd: TMP, env: Object.assign({}, process.env, { PORT: String(PORT), ADMIN_PASSWORD: 'test-admin-secret-42' }), stdio: 'ignore' });
   try{
     for(let i=0;i<60;i++){ try{ if((await fetch(BASE + '/healthz')).ok) break; }catch(e){} await wait(100); }
 
@@ -166,6 +166,26 @@ const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
       assert.equal((await api('DELETE', '/api/images/' + img.id, null, other.data.token)).status, 403);
       assert.equal((await api('DELETE', '/api/images/' + img.id, null, token)).status, 200);
       assert.equal((await fetch(BASE + img.url)).status, 404);
+    });
+    await check('admin needs the server\'s own password — the old built-in one no longer works', async ()=>{
+      const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+      const img = await (await fetch(BASE + '/api/images', { method:'POST', headers:{ 'content-type':'image/png', authorization:'Bearer ' + token }, body: png })).json();
+      const del = (pass)=> fetch(BASE + '/api/images/' + img.id, { method:'DELETE', headers:{ 'x-admin-password': pass } });
+      assert.equal((await del('ThunderKing2026')).status, 403);
+      assert.equal((await del('')).status, 403);
+      assert.equal((await del('test-admin-secret-42')).status, 200);
+      const c = await wsClient();
+      c.send({ t:'hello', name:'Guesser' });
+      for(let i = 0; i < 6; i++) c.send({ t:'admin_auth', pass: i < 5 ? 'wrong' + i : 'test-admin-secret-42' });
+      await wait(250);
+      assert.equal(c.inbox.filter(m => m.t==='admin_fail').length, 6);   // the right one is refused after 5 misses
+      assert.ok(!c.inbox.some(m => m.t==='admin_ok'));
+      c.ws.close();
+      const d = await wsClient();
+      d.send({ t:'hello', name:'Owner' }); d.send({ t:'admin_auth', pass:'test-admin-secret-42' });
+      await wait(200);
+      assert.ok(d.inbox.some(m => m.t==='admin_ok'));
+      d.ws.close();
     });
     await check('knocked-out state and leaderstats reach others in the same world', async ()=>{
       const a = await wsClient(), b = await wsClient();

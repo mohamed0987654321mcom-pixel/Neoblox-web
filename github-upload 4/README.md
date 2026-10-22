@@ -226,6 +226,13 @@ corporate/school networks or behind certain routers. If that becomes a real prob
 for your players, look into adding a TURN provider and add its `urls`/`username`/
 `credential` to the `ICE_SERVERS` array in the game's client code.
 
+## Admin password
+
+There is no built-in admin password (the code is public, so one would be public too). Admin —
+kicking people, taking down pictures — only exists once you set **`ADMIN_PASSWORD`** (10+
+characters) as an environment variable on your host (Railway → your service → Variables).
+Without it, nobody can become admin. Change it any time you think it may have leaked.
+
 ## Data
 
 Everything the server keeps lives in `data/` (created automatically): published worlds

@@ -21,9 +21,18 @@ const DATA_DIR = path.join(__dirname, 'data');
 const WORLDS_FILE = path.join(DATA_DIR, 'worlds.json');
 
 // Real, server-enforced admin auth — a client can never just claim to be admin, it has to
-// prove it with this password. Override it on your host (Railway → Variables → ADMIN_PASSWORD)
-// instead of leaving the default in place once friends know it exists.
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ThunderKing2026';
+// prove it with this password. There is deliberately NO built-in password (this code is public):
+// admin only exists once you set ADMIN_PASSWORD on your host (Railway → Variables), at least
+// 10 characters. Without it, nobody can become admin.
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
+const ADMIN_ENABLED = ADMIN_PASSWORD.length >= 10;
+if(!ADMIN_ENABLED) console.log('Admin is off — set ADMIN_PASSWORD (10+ characters) to turn it on.');
+function isAdminPassword(p){
+  if(!ADMIN_ENABLED || typeof p !== 'string' || !p) return false;
+  const a = require('crypto').createHash('sha256').update(p).digest();
+  const b = require('crypto').createHash('sha256').update(ADMIN_PASSWORD).digest();
+  return require('crypto').timingSafeEqual(a, b); // same time whether it's close or not
+}
 
 const app = express();
 
@@ -275,7 +284,7 @@ app.get('/api/images/mine', requireAuth, (req, res) => {
 app.delete('/api/images/:id', (req, res) => {
   const rec = imageById.get(String(req.params.id));
   if(!rec) return res.status(404).json({ error:'No such picture.' });
-  const admin = req.headers['x-admin-password'] === ADMIN_PASSWORD;
+  const admin = isAdminPassword(req.headers['x-admin-password']);
   const u = optionalUser(req);
   if(!admin && (!u || u.id !== rec.owner)) return res.status(403).json({ error:'Only the person who uploaded a picture can delete it.' });
   try{ fs.unlinkSync(path.join(IMAGES_DIR, rec.id + '.' + rec.ext)); }catch(e){}
@@ -591,7 +600,9 @@ wss.on('connection', (ws) => {
       case 'admin_auth': {
         // Real server-side check — a client can set whatever it wants locally, but only
         // this comparison against the server's own password can ever set isAdmin=true.
-        if(String(msg.pass || '') === ADMIN_PASSWORD){
+        // a few tries per connection, so the password can't be guessed by brute force
+        player.adminTries = (player.adminTries || 0) + 1;
+        if(player.adminTries <= 5 && isAdminPassword(String(msg.pass || ''))){
           player.isAdmin = true;
           send(ws, { t:'admin_ok' });
           broadcastAll({ t:'admin_status', id, name:player.name, isAdmin:true }, id);
