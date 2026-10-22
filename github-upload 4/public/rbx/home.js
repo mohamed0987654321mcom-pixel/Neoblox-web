@@ -298,7 +298,7 @@
     const u = Session.user;
     const right = $('#nhRight');
     if(u){
-      right.innerHTML = `<button class="nh-tokens" id="nhTokens" title="Tokens">${COIN}<span>${fmt(u.tokens)}</span></button>
+      right.innerHTML = `<button class="nh-tokens" id="nhTokens" title="Tokens">${COIN}<span>${u.unlimited ? '∞' : fmt(u.tokens)}</span></button>
         <button class="nh-me" id="nhMe"><img alt="" src="${myHeadshot(64)}"><span>${esc(u.username)}</span></button>`;
       $('#nhTokens').addEventListener('click', ()=> go('quests'));
       $('#nhMe').addEventListener('click', toggleMeMenu);
@@ -309,7 +309,7 @@
     }
     $('#nhSideHead').src = myHeadshot(80);
     $('#nhSideName').textContent = u ? u.username : Profile.name;
-    $('#nhSideSub').textContent = u ? ('Tokens: '+fmt(u.tokens)) : 'Playing as a guest';
+    $('#nhSideSub').textContent = u ? ('Tokens: '+(u.unlimited ? '∞ unlimited' : fmt(u.tokens))) : 'Playing as a guest';
     const claimable = u ? (u.quests||[]).filter(q=>q.canClaim).length : 0;
     const pill = $('#nhQuestPill'); pill.hidden = !claimable; pill.textContent = claimable;
     $$('[data-go]').forEach(a=> a.classList.toggle('on', a.dataset.go===page || (page==='game' && a.dataset.go==='discover' && false)));
@@ -562,7 +562,7 @@
         <h3>Buy Item</h3>
         <img alt="" src="${itemPic(item)}" style="width:120px;height:120px;border-radius:14px;background:#2a2d34;">
         <p style="font-weight:800;margin:14px 0 4px;">Would you like to buy <b>${esc(item.name)}</b> for ${COIN} ${item.price}?</p>
-        <p class="fine" style="margin:0 0 16px;">Your balance after this: ${COIN} ${after}</p>
+        <p class="fine" style="margin:0 0 16px;">${Session.user.unlimited ? 'Free for you — unlimited tokens ∞' : 'Your balance after this: ' + COIN + ' ' + after}</p>
         <div style="display:flex;gap:10px;"><button class="nh-cta green" id="nhBuyYes" style="flex:1;margin:0;">Buy Now</button><button class="nh-cta" id="nhBuyNo" style="flex:1;margin:0;">Cancel</button></div>
       </div>`;
       document.body.appendChild(m);

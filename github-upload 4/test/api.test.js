@@ -36,7 +36,7 @@ function wsClient(){
 const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
 
 (async ()=>{
-  const srv = spawn(process.execPath, ['server.js'], { cwd: TMP, env: Object.assign({}, process.env, { PORT: String(PORT), ADMIN_PASSWORD: 'test-admin-secret-42' }), stdio: 'ignore' });
+  const srv = spawn(process.execPath, ['server.js'], { cwd: TMP, env: Object.assign({}, process.env, { PORT: String(PORT), ADMIN_PASSWORD: 'test-admin-secret-42', UNLIMITED_TOKENS: 'RichKid1, someoneelse' }), stdio: 'ignore' });
   try{
     for(let i=0;i<60;i++){ try{ if((await fetch(BASE + '/healthz')).ok) break; }catch(e){} await wait(100); }
 
@@ -186,6 +186,19 @@ const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
       await wait(200);
       assert.ok(d.inbox.some(m => m.t==='admin_ok'));
       d.ws.close();
+    });
+    await check('UNLIMITED_TOKENS accounts buy anything for free; others still pay', async ()=>{
+      const rich = await api('POST', '/api/auth/register', { username:'richkid1', password:'secret123' });
+      assert.equal(rich.data.user.unlimited, true);
+      assert.ok(rich.data.user.tokens > 1000000);
+      const shopList = (await api('GET', '/api/shop')).data;
+      const priciest = shopList.slice().sort((a, b) => b.price - a.price)[0];
+      const bought = await api('POST', '/api/shop/buy/' + priciest.id, null, rich.data.token);
+      assert.equal(bought.status, 200);
+      assert.ok(bought.data.user.inventory.includes(priciest.id));
+      const poor = await api('POST', '/api/auth/register', { username:'poorkid1', password:'secret123' });
+      assert.equal(poor.data.user.unlimited, false);
+      assert.equal((await api('POST', '/api/shop/buy/' + priciest.id, null, poor.data.token)).status, 400);
     });
     await check('knocked-out state and leaderstats reach others in the same world', async ()=>{
       const a = await wsClient(), b = await wsClient();

@@ -4772,9 +4772,10 @@ function refreshAccountUI(){
     guestView.hidden = true;
     signedInView.hidden = false;
     document.getElementById('accWhoLabel').textContent = Session.user.username;
-    document.getElementById('accTokenLabel').textContent = Session.user.tokens;
+    const tok = Session.user.unlimited ? '∞' : Session.user.tokens;
+    document.getElementById('accTokenLabel').textContent = tok;
     tokenDock.hidden = false;
-    tokenDockCount.textContent = Session.user.tokens;
+    tokenDockCount.textContent = tok;
   } else {
     guestView.hidden = false;
     signedInView.hidden = true;

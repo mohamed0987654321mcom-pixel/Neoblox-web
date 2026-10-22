@@ -133,14 +133,21 @@ const SHOP_ITEMS = [
   { id:'face_chill',   name:'Chill',               kind:'face', price:40  },
 ];
 const SHOP_BY_ID = new Map(SHOP_ITEMS.map(i => [i.id, i]));
+// Unlimited tokens for the game owner's own accounts: set UNLIMITED_TOKENS on the server to a
+// comma-separated list of usernames (e.g. UNLIMITED_TOKENS=mohamed111111). Those accounts can buy
+// anything without spending tokens. Only whoever runs the server can set it.
+const UNLIMITED = new Set(String(process.env.UNLIMITED_TOKENS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
+function hasUnlimitedTokens(u){ return !!(u && u.username && UNLIMITED.has(String(u.username).toLowerCase())); }
+
 function buyItem(u, itemId){
   if(!u) return { error:'Log in to buy items.' };
   const item = SHOP_BY_ID.get(String(itemId||''));
   if(!item) return { error:'That item isn\'t in the shop.' };
   u.inventory = Array.isArray(u.inventory) ? u.inventory : [];
   if(u.inventory.includes(item.id)) return { error:'You already own this.' };
-  if((u.tokens||0) < item.price) return { error:'Not enough tokens — finish quests to earn more!' };
-  u.tokens -= item.price;
+  const unlimited = hasUnlimitedTokens(u);
+  if(!unlimited && (u.tokens||0) < item.price) return { error:'Not enough tokens — finish quests to earn more!' };
+  if(!unlimited) u.tokens -= item.price;
   u.inventory.push(item.id);
   markDirty(); saveNow();
   return { user:u, item };
@@ -158,7 +165,8 @@ function publicUser(u){
   return {
     id: u.id,
     username: u.username,
-    tokens: u.tokens || 0,
+    tokens: hasUnlimitedTokens(u) ? 999999999 : (u.tokens || 0),
+    unlimited: hasUnlimitedTokens(u),
     avatarUrl: u.avatarFile ? ('/api/avatars/' + u.id + '.glb') : null,
     quests: questProgressFor(u),
     inventory: Array.isArray(u.inventory) ? u.inventory.slice() : [],
