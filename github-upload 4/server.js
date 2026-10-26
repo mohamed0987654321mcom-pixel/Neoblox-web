@@ -302,6 +302,82 @@ app.get('/img/:id', (req, res) => {
   res.sendFile(path.join(IMAGES_DIR, rec.id + '.' + rec.ext), (err) => { if(err && !res.headersSent) res.status(404).end(); });
 });
 
+// ---- game saves (DataStoreService): each player's progress in each game — coins, levels,
+// items — saved by the game's scripts and loaded again the next time they play, on any device.
+// Kept per account in data/saves/u<userId>/<worldId>.json. Scripts run on each player's own
+// device, so a player only ever reads or writes their OWN save for a game, never anyone else's.
+const SAVES_DIR = path.join(DATA_DIR, 'saves');
+const SAVE_MAX_BYTES = 50000;       // per player, per game (the browser checks this too)
+const SAVE_GAMES_PER_USER = 500;    // games one account can have saves in
+const saveBuckets = new Map();      // userId -> { n, at }: about one write every 2s, bursts of 30
+const saveChains = new Map();       // file -> the write in progress, so writes land in order
+function saveIdsOk(userId, worldId){ return /^\d{1,12}$/.test(String(userId)) && /^\d{1,12}$/.test(String(worldId)); }
+function saveFileOf(userId, worldId){ return path.join(SAVES_DIR, 'u' + userId, worldId + '.json'); }
+function saveAllowed(userId){
+  const now = Date.now();
+  const b = saveBuckets.get(userId) || { n: 30, at: now };
+  b.n = Math.min(30, b.n + (now - b.at) / 2000); b.at = now;
+  saveBuckets.set(userId, b);
+  if(b.n < 1) return false;
+  b.n -= 1;
+  return true;
+}
+setInterval(() => { const old = Date.now() - 120000; saveBuckets.forEach((b, k) => { if(b.at < old) saveBuckets.delete(k); }); }, 60000).unref();
+function saveGameOk(req, res){
+  const wid = String(req.params.worldId);
+  if(!saveIdsOk(req.authedUser.id, wid) || !worlds.some(w => w.id === wid)){ res.status(404).json({ error:'No such game.' }); return null; }
+  return wid;
+}
+app.get('/api/saves/:worldId', requireAuth, (req, res) => {
+  const wid = saveGameOk(req, res); if(!wid) return;
+  res.setHeader('Cache-Control', 'no-store');
+  fs.readFile(saveFileOf(req.authedUser.id, wid), 'utf8', (err, txt) => {
+    // nothing saved yet is fine; any OTHER read problem must not look like an empty save,
+    // or the game would start this player from zero and then save over their progress
+    if(err) return err.code === 'ENOENT' ? res.json({ data:null, updatedAt:0 }) : res.status(500).json({ error:'Couldn\'t load your save — try again.' });
+    try{ const rec = JSON.parse(txt); res.json({ data: rec.data || null, updatedAt: rec.updatedAt || 0 }); }
+    catch(e){ res.status(500).json({ error:'Couldn\'t load your save — try again.' }); }
+  });
+});
+app.put('/api/saves/:worldId', requireAuth, (req, res) => {
+  const wid = saveGameOk(req, res); if(!wid) return;
+  const u = req.authedUser;
+  const data = req.body && req.body.data;
+  if(!data || typeof data !== 'object' || Array.isArray(data)) return res.status(400).json({ error:'Save data must be a table.' });
+  const json = JSON.stringify(data);
+  if(Buffer.byteLength(json) > SAVE_MAX_BYTES) return res.status(413).json({ error:'Too much saved data — each player can save up to 50 KB per game.' });
+  if(!saveAllowed(u.id)) return res.status(429).json({ error:'Saving too often — try again in a moment.' });
+  // sid/rev: one play session's writes are numbered, so if two of them arrive out of order (one
+  // sent while leaving the game while an earlier one was still on its way) the older one is dropped
+  const sid = typeof req.body.sid === 'string' && /^[a-z0-9]{1,40}$/.test(req.body.sid) ? req.body.sid : null;
+  const rev = sid && Number.isSafeInteger(req.body.rev) && req.body.rev > 0 ? req.body.rev : 0;
+  const dir = path.join(SAVES_DIR, 'u' + u.id), file = saveFileOf(u.id, wid);
+  const updatedAt = Date.now();
+  const prev = saveChains.get(file) || Promise.resolve();
+  const job = prev.then(async () => {
+    await fs.promises.mkdir(dir, { recursive:true });
+    let old = null, exists = true;
+    try{ old = await fs.promises.readFile(file, 'utf8'); }catch(e){ exists = false; }
+    if(old && sid){
+      let rec = null; try{ rec = JSON.parse(old); }catch(e){}
+      if(rec && rec.sid === sid && rec.rev >= rev) return { status:200, body:{ ok:true, updatedAt: rec.updatedAt, stale:true } };
+    }
+    if(!exists){
+      const n = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.json')).length;
+      if(n >= SAVE_GAMES_PER_USER) return { status:400, body:{ error:'You have saves in ' + SAVE_GAMES_PER_USER + ' games already.' } };
+    }
+    // write a temp file and rename it over the old one, so a crash never leaves half a save
+    const tmp = file + '.' + process.pid + '.' + updatedAt + '.tmp';
+    await fs.promises.writeFile(tmp, '{"updatedAt":' + updatedAt + (sid ? ',"sid":"' + sid + '","rev":' + rev : '') + ',"data":' + json + '}');
+    await fs.promises.rename(tmp, file);
+    return { status:200, body:{ ok:true, updatedAt } };
+  });
+  const settled = job.catch(() => {});
+  saveChains.set(file, settled);
+  settled.then(() => { if(saveChains.get(file) === settled) saveChains.delete(file); });
+  job.then(r => res.status(r.status).json(r.body), (e) => { console.error('failed to write a save', e); res.status(500).json({ error:'Couldn\'t save — try again.' }); });
+});
+
 app.get('/healthz', (req, res) => res.json({ ok: true, players: players.size, parties: parties.size }));
 
 const server = http.createServer(app);

@@ -194,6 +194,45 @@ Players.PlayerAdded.Connect(async (player) => {
   }
 });
 ` },
+    { name:'Save coins (DataStore)', where:'world', code:
+`// Saves each player's Coins, so they're still there the next time they play.
+// Add the "Coin + leaderboard" example to some parts so there are coins to collect!
+const Players = game.GetService("Players");
+const DataStoreService = game.GetService("DataStoreService");
+const store = DataStoreService.GetDataStore("PlayerData");
+
+Players.PlayerAdded.Connect(async (player) => {
+  const leaderstats = Instance.new("Folder");
+  leaderstats.Name = "leaderstats";
+  leaderstats.Parent = player;
+
+  const coins = Instance.new("IntValue");
+  coins.Name = "Coins";
+  coins.Parent = leaderstats;
+
+  // load what was saved last time (nothing yet the first time someone plays)
+  const key = "Player_" + player.UserId;
+  const saved = await store.GetAsync(key);
+  if (saved) coins.Value = saved.Coins || 0;
+
+  // save whenever the coins change (Neoblox writes it a moment later, and when you leave)
+  coins.Changed.Connect(() => {
+    store.SetAsync(key, { Coins: coins.Value });
+  });
+});
+` },
+    { name:'Visit counter (DataStore)', where:'world', code:
+`// Remembers how many times each player has played this game
+const store = game.GetService("DataStoreService").GetDataStore("Visits");
+
+game.Players.PlayerAdded.Connect(async (player) => {
+  const visits = await store.IncrementAsync("Player_" + player.UserId, 1);
+  game.StarterGui.SetCore("SendNotification", {
+    Title: visits === 1 ? "Welcome!" : "Welcome back!",
+    Text: "This is your visit number " + visits,
+  });
+});
+` },
     { name:'Day / night cycle', where:'world', code:
 `// Time of day keeps moving: day, sunset, night, sunrise…
 const Lighting = game.GetService("Lighting");
@@ -278,6 +317,7 @@ button.MouseButton1Click.Connect(async () => {
 <tr><td>while true do … end</td><td>while (true) { … await wait(); }</td></tr>
 <tr><td>-- comment</td><td>// comment</td></tr>
 <tr><td>nil / ~= / ..</td><td>null / !== / +</td></tr>
+<tr><td>store:GetAsync(key)</td><td>await store.GetAsync(key)</td></tr>
 </table>
 <h4>Where scripts go</h4>
 <ul><li><b>Inside a part</b> — <code>script.Parent</code> is that part.</li>
@@ -294,6 +334,7 @@ button.MouseButton1Click.Connect(async () => {
 <li><code>wait(s)</code>, <code>task.wait / task.spawn / task.delay</code>, <code>print / warn</code>, <code>math.random(1, 10)</code></li>
 <li><code>Vector3 Color3 CFrame UDim2 TweenInfo BrickColor Enum</code></li>
 <li><code>player.leaderstats</code> — a Folder named "leaderstats" with IntValues shows on the leaderboard</li>
+<li>Saving — <code>const store = game.GetService("DataStoreService").GetDataStore("PlayerData")</code>, then <code>await store.GetAsync(key)</code>, <code>store.SetAsync(key, value)</code>, <code>UpdateAsync IncrementAsync RemoveAsync</code>. Use keys like <code>"Player_" + player.UserId</code>. Saves follow the player's account to every device (up to 50 KB per game); in a playtest they stay on this computer (Test ▸ Clear Saves).</li>
 <li>Neoblox extras: <code>part.Gameplay = "KillBrick" | "Checkpoint" | "JumpPad"</code>, <code>player.GiveXP(10)</code></li>
 </ul>
 <p class="dim">Scripts run on each player's own device, in a safe sandbox. Errors show in the Output window — click one to jump to the line. In a published game, press F9 for the Developer Console.</p>`;
@@ -309,7 +350,8 @@ button.MouseButton1Click.Connect(async () => {
     'fromRGB fromHex fromHSV fromScale fromOffset Angles lookAt Magnitude Unit Lerp Dot Cross EasingStyle EasingDirection Linear Sine Quad Cubic Bounce Elastic Back InOut ' +
     'PartType Ball Block Cylinder Wedge Plastic Neon Wood Slate Brick Metal Grass Sand Ice Glass SmoothPlastic ClickDetector PointLight IntValue NumberValue StringValue BoolValue ' +
     'Folder Model Part TextLabel TextButton ScreenGui Sound SoundId Volume BindableEvent RemoteEvent FireServer OnServerEvent Fire Event ReplicatedStorage ServerScriptService ' +
-    'Decal Texture Face NormalId Front Back Left Right Top Bottom ImageLabel Image').split(' ');
+    'Decal Texture Face NormalId Front Back Left Right Top Bottom ImageLabel Image ' +
+    'DataStoreService GetDataStore GetGlobalDataStore GetAsync SetAsync UpdateAsync IncrementAsync RemoveAsync BindToClose UserId DisplayName').split(' ');
   const GLOBAL_WORDS = 'game workspace script Instance Vector3 Vector2 Color3 BrickColor CFrame UDim2 TweenInfo Enum RaycastParams wait task print warn math tick time spawn delay console const let function async await return if else for while true false null new break continue typeof'.split(' ');
 
   // ------------------------------------------------------------------ syntax highlighting

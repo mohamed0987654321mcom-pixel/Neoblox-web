@@ -882,6 +882,12 @@
           </div>
           <div class="ribbon-group">
             <div class="ribbon-buttons">
+              <button class="rib-btn" id="btnClearSaves" title="Forget what your playtests have saved (DataStoreService), so the next one starts like a first visit"><span class="rib-ic">💾</span><span>Clear Saves</span></button>
+            </div>
+            <div class="ribbon-label">Saves</div>
+          </div>
+          <div class="ribbon-group">
+            <div class="ribbon-buttons">
               <button class="rib-btn primary" id="btnPublish" title="Publish this world"><span class="rib-ic">⇪</span><span>Publish</span></button>
             </div>
             <div class="ribbon-label">Game</div>
@@ -5689,6 +5695,11 @@ function wireUI(){
   document.querySelectorAll('.ribbon-tab[data-ribtab]').forEach(b=> b.addEventListener('click', ()=> setStudioRibbonTab(b.dataset.ribtab)));
   document.getElementById('btnPlayTest').addEventListener('click', startStudioPlaytest);
   document.getElementById('btnStopTest').addEventListener('click', stopStudioPlaytest);
+  // forget what playtests of this build have saved (DataStoreService), to test a first visit again
+  document.getElementById('btnClearSaves').addEventListener('click', ()=>{
+    if(window.NeoScript && NeoScript.clearTestSaves) NeoScript.clearTestSaves();
+    showToast('💾 Test saves cleared — the next playtest starts like a first visit');
+  });
   document.getElementById('btnClearWorld').addEventListener('click', ()=>{
     App.studio.blocks.clear(); App.studio.goal = null; App.studio.spawn = {x:0,y:1,z:0};
     App.studio.ui = []; App.studio.scripts = []; App.studio.cover = null; App.studio.worldId = null; App.studio.lastName = '';

@@ -1071,7 +1071,8 @@
     FindService(name){ return SERVICES[String(name)] || null; }
     get PlaceId(){ return 0; } get GameId(){ return 0; } get JobId(){ return ''; }
     get CreatorId(){ return 0; }
-    BindToClose(){ }
+    // game.BindToClose(fn): runs fn when the player leaves the game (a good time to save)
+    BindToClose(fn){ if(typeof fn !== 'function') throw new TypeError('BindToClose needs a function'); if(CLOSE_FNS.length < 50) CLOSE_FNS.push(fn); }
     IsLoaded(){ return true; }
     Clone(){ return null; }
   }
@@ -1158,7 +1159,112 @@
     SetCoreGuiEnabled(){ }
     GetCoreGuiEnabled(){ return true; }
   }
-  const SIMPLE_SERVICES = ['ReplicatedStorage','ServerScriptService','ServerStorage','StarterPlayer','StarterPack','Teams','Chat','HttpService','MarketplaceService','DataStoreService','CollectionService','PathfindingService','PhysicsService','ContextActionService','TextChatService','BadgeService','Selection','GuiService','ContentProvider','LocalizationService','InsertService','TeleportService','ReplicatedFirst','SoundGroup'];
+  const SIMPLE_SERVICES = ['ReplicatedStorage','ServerScriptService','ServerStorage','StarterPlayer','StarterPack','Teams','Chat','HttpService','MarketplaceService','CollectionService','PathfindingService','PhysicsService','ContextActionService','TextChatService','BadgeService','Selection','GuiService','ContentProvider','LocalizationService','InsertService','TeleportService','ReplicatedFirst','SoundGroup'];
+
+  // ------------------------------------------------------------------ DataStoreService: game saves
+  // Each player's progress — coins, levels, items — saved to their Neoblox account (or to this
+  // device when they play logged out) and loaded again the next time they play this game:
+  //   const store = game.GetService("DataStoreService").GetDataStore("PlayerData");
+  //   const coins = (await store.GetAsync("Player_" + player.UserId)) || 0;
+  //   await store.SetAsync("Player_" + player.UserId, coins + 1);
+  // Scripts run on each player's own device, and that device saves that player's data. So a key
+  // with the local player's UserId in it is theirs (on every device they log in on), and a key
+  // with SOMEONE ELSE's UserId is skipped here — their own device saves it.
+  const CLOSE_FNS = [];
+  let LEFT = false, DS_NOTED = false;
+  function dsName(v, what){
+    if(typeof v === 'number' && Number.isFinite(v)) v = String(v);
+    if(typeof v !== 'string' || !v) throw new TypeError(what + ' must be text, like "PlayerData"');
+    if(v.length > 50) throw new Error(what + ' can be up to 50 characters');
+    return v;
+  }
+  function dsKey(k){
+    k = dsName(k, 'DataStore keys');
+    const me = LOCAL_PLAYER ? String(LOCAL_PLAYER.UserId) : '';
+    if(me.length >= 3 && k.indexOf(me) >= 0) return k.split(me).join('{me}');
+    for(const p of REMOTES.values()){
+      const id = String(p.UserId);
+      if(id.length >= 3 && k.indexOf(id) >= 0){
+        if(!DS_NOTED){ DS_NOTED = true; host('log', { kind:'warn', text:'DataStore: another player\'s key ("' + k + '") was skipped — each player\'s own device saves their data' }); }
+        return null;
+      }
+    }
+    return k;
+  }
+  // what can be saved: numbers, text, true/false, lists and tables of those (like Roblox)
+  function dsValue(v, depth){
+    if(v === null) return null;
+    const t = typeof v;
+    if(t === 'string' || t === 'boolean') return v;
+    if(t === 'number'){ if(!Number.isFinite(v)) throw new Error('DataStore can\'t save NaN or Infinity'); return v; }
+    if(depth > 16) throw new Error('DataStore value is nested too deeply (or a table contains itself)');
+    if(Array.isArray(v)) return v.map(x => x === undefined ? null : dsValue(x, depth + 1));
+    if(t === 'object' && !isInst(v)){
+      const proto = Object.getPrototypeOf(v);
+      if(proto === Object.prototype || proto === null){
+        const o = {};
+        Object.keys(v).forEach(k => { if(v[k] !== undefined) o[k] = dsValue(v[k], depth + 1); });
+        return o;
+      }
+    }
+    const what = isInst(v) ? 'an Instance (' + v.ClassName + ')' : v instanceof Vector3 ? 'a Vector3 — save { X: v.X, Y: v.Y, Z: v.Z } instead' : v instanceof Color3 ? 'a Color3 — save color.ToHex() instead' : t === 'function' ? 'a function' : 'that kind of value';
+    throw new Error('DataStore can only save numbers, text, true/false, lists and tables — not ' + what);
+  }
+  const dsGot = (r) => r && Object.prototype.hasOwnProperty.call(r, 'v') ? r.v : undefined;
+  class DataStore {
+    constructor(name, scope){
+      this.Name = name; this.Scope = scope;
+      Object.defineProperty(this, '_id', { value: scope === 'global' ? name : name + '/' + scope });
+      Object.freeze(this);
+    }
+    // the saved value, or undefined if nothing is saved under this key yet
+    async GetAsync(key){ const k = dsKey(key); if(k === null) return undefined; return dsGot(host('ds.get', { s: this._id, k })); }
+    async SetAsync(key, value){
+      if(value === undefined) throw new Error('SetAsync needs a value to save — use RemoveAsync to delete a key');
+      const v = dsValue(value, 0), k = dsKey(key);
+      if(k !== null) host('ds.set', { s: this._id, k, v });
+    }
+    // store.UpdateAsync(key, (old) => new): change a value based on what's saved; return undefined to cancel
+    async UpdateAsync(key, fn){
+      if(typeof fn !== 'function') throw new TypeError('UpdateAsync needs a function, like store.UpdateAsync(key, (old) => (old || 0) + 1)');
+      const k = dsKey(key); if(k === null) return undefined;
+      const nv = fn(dsGot(host('ds.get', { s: this._id, k })));
+      if(nv && typeof nv.then === 'function') throw new Error('The UpdateAsync function can\'t wait — return the new value right away');
+      if(nv === undefined) return undefined;
+      const v = dsValue(nv, 0);
+      host('ds.set', { s: this._id, k, v });
+      return v;
+    }
+    // add to a saved number (starts at 0) and return the new total
+    async IncrementAsync(key, delta){
+      const d = delta === undefined ? 1 : Math.round(num(delta, 'IncrementAsync amount'));
+      const k = dsKey(key); if(k === null) return undefined;
+      const old = dsGot(host('ds.get', { s: this._id, k }));
+      if(old !== undefined && old !== null && typeof old !== 'number') throw new Error('IncrementAsync can only add to a number — "' + key + '" holds ' + (Array.isArray(old) ? 'a list' : typeof old === 'object' ? 'a table' : typeof old));
+      const v = (old || 0) + d;
+      host('ds.set', { s: this._id, k, v });
+      return v;
+    }
+    // delete a key; returns what was saved there
+    async RemoveAsync(key){ const k = dsKey(key); if(k === null) return undefined; return dsGot(host('ds.remove', { s: this._id, k })); }
+    toString(){ return this.Name; }
+  }
+  ['GetAsync','SetAsync','UpdateAsync','IncrementAsync','RemoveAsync'].forEach(m => { DataStore.prototype[m[0].toLowerCase() + m.slice(1)] = DataStore.prototype[m]; });
+  class DataStoreService extends Service {
+    constructor(){ super('DataStoreService'); this._stores = new Map(); }
+    GetDataStore(name, scope){
+      name = dsName(name, 'The DataStore name');
+      scope = scope === undefined || scope === null ? 'global' : dsName(scope, 'The DataStore scope');
+      const id = name + '\u0000' + scope, all = this._t._stores;
+      let s = all.get(id);
+      if(!s){ if(all.size >= 50) throw new Error('A game can use up to 50 DataStores'); s = new DataStore(name, scope); all.set(id, s); }
+      return s;
+    }
+    GetGlobalDataStore(){ return this.GetDataStore('GlobalDataStore'); }
+    GetOrderedDataStore(){ throw new Error('OrderedDataStore (global leaderboards) isn\'t in Neoblox yet — use GetDataStore to save each player\'s progress'); }
+    GetRequestBudgetForRequestType(){ return 100; }
+  }
+  DataStoreService.prototype.getDataStore = DataStoreService.prototype.GetDataStore;
 
   // ------------------------------------------------------------------ Instance.new
   const CREATORS = {
@@ -1207,6 +1313,7 @@
   addService(wrap(new SoundService()));
   addService(wrap(new UserInputService()));
   STARTERGUI = addService(wrap(new StarterGui()));
+  addService(wrap(new DataStoreService()));
   SIMPLE_SERVICES.forEach(n => addService(wrap(new Service(n))));
   WORKSPACE._t._live = true;
   // game.Workspace, game.Players… are reached by name through the Proxy like any child.
@@ -1356,6 +1463,15 @@
           return;
         }
         case 'chat': if(LOCAL_PLAYER) LOCAL_PLAYER._t.Chatted._fire(String(e.text || '')); return;
+        // the player is leaving (back to the menu, closing the tab, Stop in a playtest): last
+        // chance to save — PlayerRemoving for them, then every game.BindToClose function
+        case 'leave': {
+          if(LEFT || !LOCAL_PLAYER) return;
+          LEFT = true;
+          if(LOCAL_PLAYER._t._parent) PLAYERS._t.PlayerRemoving._fire(LOCAL_PLAYER);
+          CLOSE_FNS.forEach(fn => spawnFn(fn, []));
+          return;
+        }
         case 'padd': {
           if(REMOTES.has(e.id)) return;
           const p = makePlayer({ id: e.id, name: e.name, userId: e.userId || 0 }, false);

@@ -68,6 +68,33 @@ leaderstats on the leaderboard), `TweenService`, `RunService` (Heartbeat), `Debr
 `BrickColor`, `Enum`. Neoblox extras: `part.Gameplay = "KillBrick" | "Checkpoint" | "JumpPad"`
 and `player.GiveXP(n)`.
 
+**Game saves (DataStoreService)** — games can remember each player's progress (coins, levels,
+items) for next time, like Roblox:
+
+```js
+const store = game.GetService("DataStoreService").GetDataStore("PlayerData");
+
+game.Players.PlayerAdded.Connect(async (player) => {
+  const key = "Player_" + player.UserId;
+  const saved = (await store.GetAsync(key)) || { Coins: 0 };
+  // … later, whenever it changes:
+  store.SetAsync(key, { Coins: saved.Coins + 1 });
+});
+```
+
+`GetAsync`, `SetAsync`, `UpdateAsync(key, (old) => new)`, `IncrementAsync(key, n)`,
+`RemoveAsync`, plus `Players.PlayerRemoving` and `game.BindToClose` when a player leaves.
+Values can be numbers, text, true/false, lists and tables (up to 50 KB per player per game).
+Logged in, a player's save is kept on their account (`/api/saves/<game id>`, stored in
+`data/saves/u<account id>/<game id>.json`) and follows them to every device; logged out, it
+stays in that browser. Changes are written a couple of seconds after a script makes them and
+right away when the player leaves, with a copy kept in the browser in case the tab closes or
+the internet drops first. Scripts run on each player's own device, so each device saves only
+its own player: a key with *another* player's UserId in it is skipped there. That also means a
+player could edit their own save with browser tools, so don't use saves for anything that
+must be cheat-proof. NeoStudio playtests save in the browser only, apart from the real game
+(Test ▸ Clear Saves resets them). The Examples menu has "Save coins" and "Visit counter".
+
 How it runs: scripts run on each player's own device while they're in a game (or in a
 NeoStudio playtest). They never run in the page itself — `public/rbx/neoscript.js` runs
 them inside QuickJS, a separate JavaScript engine compiled to WebAssembly
@@ -237,14 +264,15 @@ Without it, nobody can become admin. Change it any time you think it may have le
 
 Everything the server keeps lives in `data/` (created automatically): published worlds
 (`worlds.json`), accounts with tokens, quests and Avatar Shop items (`users.json`),
-uploaded avatars (`avatars/`), uploaded pictures (`images/` + `images.json`) and game stats — visits and thumbs up/down
-(`gamestats.json`). Put `data/` on a persistent volume (a Railway Volume) or it resets on
-every redeploy.
+uploaded avatars (`avatars/`), uploaded pictures (`images/` + `images.json`), players' game
+saves (`saves/`) and game stats — visits and thumbs up/down (`gamestats.json`). Put `data/`
+on a persistent volume (a Railway Volume) or it resets on every redeploy.
 
 ## Files
 
 - `server.js` — the whole server: static file serving, the WebSocket realtime layer
-  (presence, party, chat, voice signaling), and the `/api/worlds` REST endpoints.
+  (presence, party, chat, voice signaling), and the REST endpoints (`/api/worlds`,
+  `/api/images`, `/api/saves`…).
 - `public/` — the game client itself (same file the Electron app and claude.ai
   artifact use), plus `manifest.json` and app icons for PWA install.
 - `public/battle-assets/` — 3D model assets used by Thunder Battle.

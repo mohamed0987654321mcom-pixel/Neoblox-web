@@ -216,6 +216,50 @@ const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
       assert.equal(m.stats.Long.length, 16);     // trimmed value
       a.ws.close(); b.ws.close();
     });
+    await check('game saves: each account keeps its own progress per game, with limits', async ()=>{
+      const game = (await api('POST', '/api/worlds', { name:'Coins', blocks:[] }, token)).data.id;
+      const game2 = (await api('POST', '/api/worlds', { name:'Other', blocks:[] })).data.id;
+      const other = (await api('POST', '/api/auth/register', { username:'saver2', password:'secret123' })).data.token;
+      // needs an account, and a real game
+      assert.equal((await api('GET', '/api/saves/' + game)).status, 401);
+      assert.equal((await api('GET', '/api/saves/99999', null, token)).status, 404);
+      assert.equal((await api('GET', '/api/saves/..%2F..%2Fusers', null, token)).status, 404);
+      // nothing saved yet
+      let r = await api('GET', '/api/saves/' + game, null, token);
+      assert.equal(r.status, 200); assert.equal(r.data.data, null);
+      // save, then load it back
+      const data = { PlayerData: { 'Player_{me}': { Coins: 42, Items: ['sword'] } } };
+      r = await api('PUT', '/api/saves/' + game, { data }, token);
+      assert.equal(r.status, 200); assert.ok(r.data.updatedAt > 0);
+      r = await api('GET', '/api/saves/' + game, null, token);
+      assert.deepEqual(r.data.data, data);
+      // another account and another game don't see it
+      assert.equal((await api('GET', '/api/saves/' + game, null, other)).data.data, null);
+      assert.equal((await api('GET', '/api/saves/' + game2, null, token)).data.data, null);
+      // bad shapes and too much data are refused (and don't replace the good save)
+      assert.equal((await api('PUT', '/api/saves/' + game, { data:[1,2] }, token)).status, 400);
+      assert.equal((await api('PUT', '/api/saves/' + game, { data:'hi' }, token)).status, 400);
+      assert.equal((await api('PUT', '/api/saves/' + game, { data:{ big:'x'.repeat(60000) } }, token)).status, 413);
+      assert.deepEqual((await api('GET', '/api/saves/' + game, null, token)).data.data, data);
+      // a burst of numbered writes from one play session: whatever order they arrive in, the newest wins
+      const puts = []; for(let i = 1; i <= 8; i++) puts.push(api('PUT', '/api/saves/' + game, { data:{ n: i }, sid:'burst1', rev: i }, other));
+      await Promise.all(puts);
+      assert.deepEqual((await api('GET', '/api/saves/' + game, null, other)).data.data, { n: 8 });
+      // within one play session, an older write that arrives late doesn't replace a newer one
+      assert.equal((await api('PUT', '/api/saves/' + game2, { data:{ v:'new' }, sid:'abc123', rev:5 }, token)).status, 200);
+      r = await api('PUT', '/api/saves/' + game2, { data:{ v:'old' }, sid:'abc123', rev:4 }, token);
+      assert.equal(r.status, 200); assert.equal(r.data.stale, true);
+      assert.deepEqual((await api('GET', '/api/saves/' + game2, null, token)).data.data, { v:'new' });
+      assert.equal((await api('PUT', '/api/saves/' + game2, { data:{ v:'next visit' }, sid:'zzz999', rev:1 }, token)).status, 200);
+      assert.deepEqual((await api('GET', '/api/saves/' + game2, null, token)).data.data, { v:'next visit' });
+      // saving too often is slowed down
+      let limited = false;
+      for(let i = 0; i < 40 && !limited; i++) limited = (await api('PUT', '/api/saves/' + game, { data:{ i } }, other)).status === 429;
+      assert.ok(limited, 'rate limited');
+      // on disk: one file per account per game, inside data/saves
+      const f = path.join(TMP, 'data', 'saves', 'u' + reg.data.user.id, game + '.json');
+      assert.deepEqual(JSON.parse(fs.readFileSync(f, 'utf8')).data, data);
+    });
     console.log('\nALL ' + passed + ' NEOBLOX SERVER CHECKS PASSED');
   }catch(err){
     console.error('\nFAILED:', err);

@@ -104,8 +104,13 @@
           remotes:new Set(), lastPlayer:App.player, lastDead:false, lastHealth: App.hum ? App.hum.health : 100, logWin:0, logN:0, noteWin:0, noteN:0, chatWin:0, chatN:0,
           sndWin:0, sndN:0, xp:0, made:0, lights:0, gui:new Map(), guiN:0, statKeys:[], statsDirty:false, statsAt:0, sky:null, t0: App.clockT, kick:null, remoteAt:0 };
     if(kind==='studio' && window.NeoStudioUI) NeoStudioUI.log('Loading '+scripts.list.length+' script'+(scripts.list.length===1?'':'s')+'…');
-    loadEngine().then((eng)=>{
+    // games that save (DataStoreService) get this player's saved data loaded first, so their
+    // scripts can read it straight away
+    const wantsSaves = scripts.list.some(s=> /DataStore/.test(s.code));
+    Promise.all([loadEngine(), wantsSaves ? openSave(kind, world) : null]).then(([eng, sv])=>{
       if(!S || S.id !== id) return;
+      S.save = sv;
+      if(sv) saveNotice(sv, kind);
       boot(eng, scripts);
     }).catch((e)=>{
       if(!S || S.id !== id) return;
@@ -293,7 +298,7 @@
     if(window.NeoQuickJS && NeoQuickJS.reset) NeoQuickJS.reset();
     enginePromise = null; checker = null;
     const s = S; S = null;
-    if(s){ s.rt = null; s.vm = null; } // a crashed engine can't be cleaned up safely; let it go
+    if(s){ s.rt = null; s.vm = null; if(s.save) flushSave(s.save, true); } // a crashed engine can't be cleaned up safely; let it go
   }
 
   // What the Output window needs to open the script an error came from, at that line.
@@ -311,14 +316,155 @@
       enginePromise = null; checker = null;
     }
   }
-  NS.stop = function(){
+  NS.stop = function(quiet){
     if(!S) return;
-    const s = S; S = null;
-    if(s.inGuest) return; // never free an engine mid-call; it's dropped instead
+    const s = S;
+    if(!s.inGuest) farewell(s, quiet);
+    S = null;
+    if(s.inGuest){ if(s.save) flushSave(s.save, true); return; } // never free an engine mid-call; it's dropped instead
     teardownVm(s);
     App.gravMul = 1;
     const c = document.getElementById('gamecanvas'); if(c && c.style.cursor==='pointer') c.style.cursor = '';
   };
+
+  // ------------------------------------------------------------------ game saves (DataStoreService)
+  // A player's saved data for one game: { "<DataStore name>": { "<key>": value } }. Logged in, it
+  // lives on their account (server.js /api/saves) and follows them to every device; logged out,
+  // it stays in this browser. A NeoStudio playtest saves in this browser too, apart from the real
+  // game's saves. Changes are written a couple of seconds after a script makes them (and right
+  // away when the player leaves); a copy in this browser keeps progress safe if the tab closes or
+  // the internet drops before the server has it, and it's sent on the next visit.
+  const SAVE_MAX = 50000, SAVE_FLUSH_MS = 2000;
+  const SAVES = new Set(); // saves with changes still being written — kept until they're written, even after the game ends
+  const isTable = (v)=> !!v && typeof v === 'object' && !Array.isArray(v);
+  function u8(str){ let n = str.length; for(let i = 0; i < str.length; i++) if(str.charCodeAt(i) > 127) n += 2; return n; } // never less than the UTF-8 size
+  function saveSlotFor(kind, world){
+    if(kind === 'studio') return { key: 'nb_save_test_' + (App.studio.worldId || 'draft'), test:true };
+    const wid = App.currentWorldId !== null && App.currentWorldId !== undefined ? String(App.currentWorldId) : '';
+    const token = Session.token || null;
+    const who = Session.user ? 'u' + Session.user.id : token ? 't' + userIdOf(token) : 'guest';
+    const game = wid || ('local-' + userIdOf((world && world.name) || 'world'));
+    return { key: 'nb_save_' + who + '_' + game, server: !!token && /^\d{1,12}$/.test(wid), world: wid, token };
+  }
+  function readBackup(key){ try{ const t = localStorage.getItem(key); const b = t ? JSON.parse(t) : null; return b && isTable(b.d) ? b : null; }catch(e){ return null; } }
+  function writeBackup(sv){ try{ localStorage.setItem(sv.slot.key, JSON.stringify({ d: sv.data, dirty: sv.unsynced, base: sv.base })); }catch(e){} }
+  function newSave(slot){
+    return { slot, data:{}, sizes:new Map(), bytes:2, ok:false, err:null, changed:false, unsynced:false, base:0, timer:0, inflight:false, again:false, fails:0, warned:false,
+             sid: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), rev:0 };
+  }
+  function useData(sv, data){
+    sv.data = {}; sv.sizes = new Map(); sv.bytes = 2;
+    Object.keys(isTable(data) ? data : {}).forEach(s=>{
+      const st = data[s]; if(!isTable(st)) return;
+      const keys = Object.keys(st); if(!keys.length) return;
+      const sc = u8(JSON.stringify(s)) + 3;
+      sv.data[s] = st; sv.sizes.set(s + '\u0000', sc); sv.bytes += sc;
+      keys.forEach(k=>{ const add = u8(JSON.stringify(k)) + u8(JSON.stringify(st[k])) + 2; sv.sizes.set(s + '\u0000' + k, add); sv.bytes += add; });
+    });
+  }
+  function openSave(kind, world){
+    const slot = saveSlotFor(kind, world);
+    // still writing this same save from a moment ago (left and came right back)? carry on with it
+    for(const old of SAVES) if(old.ok && old.slot.key === slot.key && old.slot.token === slot.token) return Promise.resolve(old);
+    const sv = newSave(slot);
+    const b = readBackup(slot.key);
+    if(!slot.server){ useData(sv, b && b.d); sv.ok = true; return Promise.resolve(sv); }
+    const ctl = window.AbortController ? new AbortController() : null;
+    const to = setTimeout(()=>{ if(ctl) ctl.abort(); }, 8000);
+    return fetch('/api/saves/' + slot.world, { headers:{ Authorization: 'Bearer ' + slot.token }, cache:'no-store', signal: ctl ? ctl.signal : undefined })
+      .then(r=> r.json().catch(()=> null).then(j=>{ if(!r.ok) throw new Error(j && j.error || ('the server said ' + r.status)); return j; }))
+      .then(j=>{
+        sv.base = j && j.updatedAt || 0;
+        // progress from last time that never reached the server (tab closed, offline) — used
+        // unless the save has changed since then (played on another device in the meantime)
+        if(b && b.dirty && (b.base || 0) >= sv.base){ useData(sv, b.d); sv.unsynced = true; sv.changed = true; }
+        else useData(sv, j && j.data);
+        sv.ok = true;
+        if(sv.changed){ SAVES.add(sv); scheduleSave(sv, 500); }
+        return sv;
+      })
+      .catch(e=>{ sv.err = e && e.name === 'AbortError' ? 'the server didn\'t answer' : (e && e.message || String(e)); return sv; })
+      .then(v=>{ clearTimeout(to); return v; });
+  }
+  function saveNotice(sv, kind){
+    if(!sv.ok){ out2('warn', 'Couldn\'t load your saved progress (' + sv.err + ') — this game won\'t save until you play it again.'); if(kind !== 'studio') showToast('⚠️ Couldn\'t load your saved progress — this game won\'t save right now'); return; }
+    if(kind === 'studio') out2('', '💾 Playtest saves stay on this computer, just for testing — Test → Clear Saves starts fresh.');
+    else if(!sv.slot.server && !sv.slot.token) showToast('💾 This game saves your progress on this device — log in to keep it everywhere');
+  }
+  function saveFor(){
+    const sv = S.save;
+    if(!sv) throw new Error('DataStoreService isn\'t available in this game');
+    if(!sv.ok) throw new Error('Couldn\'t load saved data (' + sv.err + ') — saving is off until the game is played again');
+    return sv;
+  }
+  function saveChanged(sv){ sv.changed = true; if(sv.slot.server) sv.unsynced = true; SAVES.add(sv); scheduleSave(sv); }
+  function scheduleSave(sv, ms){ if(sv.timer) return; sv.timer = setTimeout(()=>{ sv.timer = 0; flushSave(sv); }, ms === undefined ? SAVE_FLUSH_MS : ms); }
+  function saveWarn(sv, msg){
+    out2('warn', 'Your progress couldn\'t be saved: ' + msg);
+    if(!sv.warned && !sv.slot.test){ sv.warned = true; showToast('⚠️ Your progress couldn\'t be saved — ' + msg); }
+  }
+  // Write the save now: to this browser, then (logged in) to the server. `leaving` = the page
+  // may be about to close, so the request is sent so that it finishes even then.
+  function flushSave(sv, leaving){
+    if(!sv || !sv.ok) return;
+    if(sv.timer && leaving){ clearTimeout(sv.timer); sv.timer = 0; }
+    if(!sv.changed) return;
+    writeBackup(sv);
+    if(!sv.slot.server){ sv.changed = false; SAVES.delete(sv); return; }
+    if(sv.dead) return;
+    if(sv.inflight && !leaving){ sv.again = true; return; }
+    const rev = ++sv.rev;
+    const body = JSON.stringify({ data: sv.data, sid: sv.sid, rev });
+    sv.changed = false; sv.inflight = true; sv.again = false;
+    fetch('/api/saves/' + sv.slot.world, { method:'PUT', headers:{ 'Content-Type':'application/json', Authorization: 'Bearer ' + sv.slot.token }, body, keepalive: !!leaving && body.length < 63000 })
+      .then(r=> r.json().catch(()=> null).then(j=>({ r, j })))
+      .then(({ r, j })=>{
+        sv.inflight = false;
+        if(r.ok){
+          sv.fails = 0;
+          if(j && j.updatedAt) sv.base = Math.max(sv.base, j.updatedAt);
+          if(rev === sv.rev && !sv.changed){ sv.unsynced = false; writeBackup(sv); SAVES.delete(sv); }
+        } else if(r.status === 429 || r.status >= 500){
+          retrySave(sv);
+        } else {
+          // 401/403/404/413: trying again won't help; what was saved in this browser is kept
+          sv.dead = true; SAVES.delete(sv);
+          saveWarn(sv, r.status === 401 ? 'log in again to keep saving' : (j && j.error || 'the server said ' + r.status));
+          return;
+        }
+        if(sv.again || sv.changed){ sv.changed = true; scheduleSave(sv); }
+      }, ()=>{ sv.inflight = false; retrySave(sv); });
+  }
+  function retrySave(sv){
+    sv.changed = true; sv.fails++;
+    if(sv.fails === 3) saveWarn(sv, 'no connection — it\'ll keep trying');
+    scheduleSave(sv, Math.min(60000, 2000 * Math.pow(2, sv.fails)));
+  }
+  // The player is leaving this game: PlayerRemoving + game.BindToClose run (a script's last
+  // chance to save), then the save is written. quiet = the scripts were stopped for misbehaving,
+  // so they don't get to run again.
+  function farewell(s, quiet){
+    if(!s || s.left) return;
+    s.left = true;
+    if(!quiet && s.ready && s.vm && S === s){
+      s.leaving = true;
+      s.deadline = performance.now() + 250;
+      callGuest('event', [JSON.stringify({ t:'leave' })]);
+      if(S === s) pump();
+    }
+    if(s.save) flushSave(s.save, true);
+  }
+  // NeoStudio → Test → Clear Saves: forget what playtests of this build have saved
+  NS.clearTestSaves = function(){
+    const key = 'nb_save_test_' + (App.studio.worldId || 'draft');
+    SAVES.forEach(sv=>{ if(sv.slot.key === key){ if(sv.timer) clearTimeout(sv.timer); SAVES.delete(sv); } });
+    if(S && S.save && S.save.slot.key === key){ useData(S.save, {}); S.save.changed = false; }
+    try{ localStorage.removeItem(key); }catch(e){}
+  };
+  NS.flushSaves = function(){ if(S && S.save) flushSave(S.save, true); SAVES.forEach(sv=> flushSave(sv, true)); };
+  // closing the tab or switching away: write what's waiting (and say goodbye if the tab is closing)
+  window.addEventListener('pagehide', ()=>{ if(S) farewell(S); NS.flushSaves(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'hidden') NS.flushSaves(); });
 
   // ------------------------------------------------------------------ per frame
   // Called every frame while playing (before the avatar moves): runs waits, tweens and
@@ -338,7 +484,7 @@
     if(!S) return;
     stepLoose(dt);
     if(S.hitDeadline){
-      if(++S.strikes >= LIMITS.strikes){ out2('err', 'Scripts were stopped: a script kept running without ever waiting. Use "await wait()" inside loops.'); NS.stop(); return; }
+      if(++S.strikes >= LIMITS.strikes){ out2('err', 'Scripts were stopped: a script kept running without ever waiting. Use "await wait()" inside loops.'); NS.stop(true); return; }
     } else S.strikes = 0;
     if(S.statsDirty && App.clockT - S.statsAt > 0.4){ S.statsDirty = false; S.statsAt = App.clockT; if(Net.connected) netSend({ t:'pstate', stats: App.leaderstats || {} }); }
     // leave the game after this frame is done, never in the middle of it
@@ -600,7 +746,7 @@
       }
     },
     'pl.get'(d){ const av = App.remoteAvatars && App.remoteAvatars[d.id]; if(!av) return { pos:null }; const g = av.rig.group.position; return { pos:[g.x, g.y, g.z], health:100, max:100, ws:16, jp:50 }; },
-    'player.kick'(d){ S.kick = String(d.msg||'').slice(0, 200); },
+    'player.kick'(d){ if(!S.leaving) S.kick = String(d.msg||'').slice(0, 200); },
     'player.respawn'(){ if(App.hum) humRespawn(); },
     'player.spawnat'(d){
       if(d.clear){ App.checkpoint = null; return; }
@@ -678,6 +824,35 @@
       if(sky !== S.sky){ S.sky = sky; applySky(sky); }
     },
     gravity(d){ App.gravMul = lim(d.g, 0, 1000, 196.2) / 196.2; },
+    // DataStoreService: the runtime has already checked keys and values; sizes are checked here
+    'ds.get'(d){
+      const sv = saveFor(), st = sv.data[String(d.s)], k = String(d.k);
+      return st && Object.prototype.hasOwnProperty.call(st, k) ? { v: st[k] } : {};
+    },
+    'ds.set'(d){
+      const sv = saveFor(), s = String(d.s||'').slice(0, 101), k = String(d.k||'');
+      if(!s || !k || k.length > 50) throw new Error('bad DataStore key');
+      const vj = JSON.stringify(d.v === undefined ? null : d.v);
+      const add = u8(JSON.stringify(k)) + u8(vj) + 2;
+      const storeCost = sv.data[s] ? 0 : u8(JSON.stringify(s)) + 3;
+      const id = s + '\u0000' + k;
+      const next = sv.bytes - (sv.sizes.get(id) || 0) + add + storeCost;
+      if(next > SAVE_MAX) throw new Error('This game\'s save is full — each player can save up to 50 KB per game');
+      if(!sv.data[s]){ sv.data[s] = {}; sv.sizes.set(s + '\u0000', storeCost); }
+      sv.data[s][k] = JSON.parse(vj);
+      sv.sizes.set(id, add); sv.bytes = next;
+      saveChanged(sv);
+    },
+    'ds.remove'(d){
+      const sv = saveFor(), s = String(d.s), k = String(d.k), st = sv.data[s];
+      if(!st || !Object.prototype.hasOwnProperty.call(st, k)) return {};
+      const old = st[k], id = s + '\u0000' + k;
+      delete st[k];
+      sv.bytes -= sv.sizes.get(id) || 0; sv.sizes.delete(id);
+      if(!Object.keys(st).length){ delete sv.data[s]; sv.bytes -= sv.sizes.get(s + '\u0000') || 0; sv.sizes.delete(s + '\u0000'); }
+      saveChanged(sv);
+      return { v: old };
+    },
     raycast(d){
       if(!App.blockGroup) return null;
       const o = vec(d.o, 5000), dir = vec(d.d, 5000);
