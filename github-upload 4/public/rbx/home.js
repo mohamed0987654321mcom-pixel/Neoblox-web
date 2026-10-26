@@ -385,7 +385,8 @@
     el.innerHTML = `<button class="nh-back" id="nhBack">‹ Back</button>
       <div class="nh-game">
         <div><div class="hero"><img id="nhHero" alt=""></div>
-          <h2>About</h2><div class="nh-about">${esc(g.desc)}</div></div>
+          <h2>About</h2><div class="nh-about">${esc(g.desc)}</div>
+          <div id="nhStore" hidden></div></div>
         <div>
           <h1 class="title">${esc(g.name)}</h1>
           <div class="by">By <b>${esc(g.creator)}</b></div>
@@ -413,6 +414,8 @@
     $('#nhUp').addEventListener('click', ()=> vote(g.key, s.myVote>0 ? 0 : 1));
     $('#nhDown').addEventListener('click', ()=> vote(g.key, s.myVote<0 ? 0 : -1));
     setTimeout(()=>{ const img = $('#nhHero'); if(img) setThumb(img, g, 768, 432); }, 0);
+    // game passes the creator sells (bought with tokens) — community games only
+    if(window.NeoMarket && /^\d+$/.test(String(g.key))) NeoMarket.renderStore($('#nhStore'), g.key);
     $('#nhAlso').innerHTML = sortedGames('popular').filter(x=>x.key!==g.key).slice(0, 6).map(tileHtml).join('');
     wireTiles($('#nhAlso'));
   }
@@ -453,6 +456,7 @@
     }, 60);
   }
   NH.playGame = playGame;
+  NH.openGame = openGame;
 
   // ------------------------------------------------------------------ avatar editor
   function renderAvatar(){

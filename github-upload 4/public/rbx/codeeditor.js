@@ -233,6 +233,52 @@ game.Players.PlayerAdded.Connect(async (player) => {
   });
 });
 ` },
+    { name:'VIP game pass', where:'world', code:
+`// Players who own your game pass run faster. Make the pass in 🛒 Paid Items first.
+const MarketplaceService = game.GetService("MarketplaceService");
+const PASS_ID = 0; // ← paste your game pass id here
+
+function givePerk(player) {
+  const speedUp = (character) => { character.Humanoid.WalkSpeed = 24; };
+  player.CharacterAdded.Connect(speedUp);
+  if (player.Character) speedUp(player.Character);
+  game.StarterGui.SetCore("SendNotification", { Title: "⭐ VIP", Text: "Thanks for supporting this game!" });
+}
+
+game.Players.PlayerAdded.Connect(async (player) => {
+  if (await MarketplaceService.UserOwnsGamePassAsync(player.UserId, PASS_ID)) givePerk(player);
+});
+
+// bought it in the middle of the game? give it right away
+MarketplaceService.PromptGamePassPurchaseFinished.Connect((player, passId, purchased) => {
+  if (purchased && passId === PASS_ID) givePerk(player);
+});
+` },
+    { name:'Sell coins (developer product)', where:'world', code:
+`// Sells 100 Coins for tokens, as many times as players like. Make a developer product in
+// 🛒 Paid Items first. (Add "Save coins (DataStore)" too, so bought coins are kept.)
+const MarketplaceService = game.GetService("MarketplaceService");
+const PRODUCT_ID = 0; // ← paste your developer product id here
+
+// Runs for every purchase. Return PurchaseGranted once the player has what they paid for;
+// anything else and they get it the next time they play.
+MarketplaceService.ProcessReceipt = (receipt) => {
+  if (receipt.ProductId !== PRODUCT_ID) return Enum.ProductPurchaseDecision.NotProcessedYet;
+  const player = game.Players.GetPlayerByUserId(receipt.PlayerId);
+  const stats = player && player.FindFirstChild("leaderstats");
+  const coins = stats && stats.FindFirstChild("Coins");
+  if (!coins) return Enum.ProductPurchaseDecision.NotProcessedYet;
+  coins.Value += 100;
+  return Enum.ProductPurchaseDecision.PurchaseGranted;
+};
+
+// press B to open the buy window (or use a button: "Button: buy something")
+game.GetService("UserInputService").InputBegan.Connect((input, typing) => {
+  if (!typing && input.KeyCode === Enum.KeyCode.B) {
+    MarketplaceService.PromptProductPurchase(game.Players.LocalPlayer, PRODUCT_ID);
+  }
+});
+` },
     { name:'Day / night cycle', where:'world', code:
 `// Time of day keeps moving: day, sunset, night, sunrise…
 const Lighting = game.GetService("Lighting");
@@ -301,6 +347,17 @@ button.MouseButton1Click.Connect(async () => {
   counting = false;
 });
 ` },
+    { name:'Button: buy something', where:'gui', code:
+`// Clicking this button opens the buy window for your game pass.
+// For a developer product, use PromptProductPurchase instead.
+const MarketplaceService = game.GetService("MarketplaceService");
+const PASS_ID = 0; // ← paste your game pass id here
+const button = script.Parent;
+
+button.MouseButton1Click.Connect(() => {
+  MarketplaceService.PromptGamePassPurchase(game.Players.LocalPlayer, PASS_ID);
+});
+` },
   ];
 
   const HELP = `
@@ -335,6 +392,7 @@ button.MouseButton1Click.Connect(async () => {
 <li><code>Vector3 Color3 CFrame UDim2 TweenInfo BrickColor Enum</code></li>
 <li><code>player.leaderstats</code> — a Folder named "leaderstats" with IntValues shows on the leaderboard</li>
 <li>Saving — <code>const store = game.GetService("DataStoreService").GetDataStore("PlayerData")</code>, then <code>await store.GetAsync(key)</code>, <code>store.SetAsync(key, value)</code>, <code>UpdateAsync IncrementAsync RemoveAsync</code>. Use keys like <code>"Player_" + player.UserId</code>. Saves follow the player's account to every device (up to 50 KB per game); in a playtest they stay on this computer (Test ▸ Clear Saves).</li>
+<li>Selling — make game passes and developer products in <b>🛒 Paid Items</b> (Test tab), then use their ids: <code>await MarketplaceService.UserOwnsGamePassAsync(player.UserId, id)</code>, <code>PromptGamePassPurchase(player, id)</code>, <code>PromptProductPurchase(player, id)</code>, <code>PromptGamePassPurchaseFinished</code>, <code>MarketplaceService.ProcessReceipt = (receipt) =&gt; Enum.ProductPurchaseDecision.PurchaseGranted</code>. Players pay tokens in Neoblox's own buy window; you earn 70%. Playtest purchases are pretend.</li>
 <li>Neoblox extras: <code>part.Gameplay = "KillBrick" | "Checkpoint" | "JumpPad"</code>, <code>player.GiveXP(10)</code></li>
 </ul>
 <p class="dim">Scripts run on each player's own device, in a safe sandbox. Errors show in the Output window — click one to jump to the line. In a published game, press F9 for the Developer Console.</p>`;
@@ -351,7 +409,9 @@ button.MouseButton1Click.Connect(async () => {
     'PartType Ball Block Cylinder Wedge Plastic Neon Wood Slate Brick Metal Grass Sand Ice Glass SmoothPlastic ClickDetector PointLight IntValue NumberValue StringValue BoolValue ' +
     'Folder Model Part TextLabel TextButton ScreenGui Sound SoundId Volume BindableEvent RemoteEvent FireServer OnServerEvent Fire Event ReplicatedStorage ServerScriptService ' +
     'Decal Texture Face NormalId Front Back Left Right Top Bottom ImageLabel Image ' +
-    'DataStoreService GetDataStore GetGlobalDataStore GetAsync SetAsync UpdateAsync IncrementAsync RemoveAsync BindToClose UserId DisplayName').split(' ');
+    'DataStoreService GetDataStore GetGlobalDataStore GetAsync SetAsync UpdateAsync IncrementAsync RemoveAsync BindToClose UserId DisplayName ' +
+    'MarketplaceService UserOwnsGamePassAsync PromptGamePassPurchase PromptProductPurchase PromptGamePassPurchaseFinished PromptProductPurchaseFinished ProcessReceipt ' +
+    'GetProductInfo ProductPurchaseDecision PurchaseGranted NotProcessedYet ProductId PlayerId PurchaseId CurrencySpent GetPlayerByUserId InfoType GamePass Product').split(' ');
   const GLOBAL_WORDS = 'game workspace script Instance Vector3 Vector2 Color3 BrickColor CFrame UDim2 TweenInfo Enum RaycastParams wait task print warn math tick time spawn delay console const let function async await return if else for while true false null new break continue typeof'.split(' ');
 
   // ------------------------------------------------------------------ syntax highlighting

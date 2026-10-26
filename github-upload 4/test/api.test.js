@@ -13,7 +13,7 @@ const BASE = 'http://localhost:' + PORT;
 const ROOT = path.join(__dirname, '..');
 // run a copy of the app in a temp folder so the real ./data is never touched
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'neoblox-test-'));
-for(const f of ['server.js','accounts.js','package.json']) fs.copyFileSync(path.join(ROOT, f), path.join(TMP, f));
+for(const f of ['server.js','accounts.js','market.js','package.json']) fs.copyFileSync(path.join(ROOT, f), path.join(TMP, f));
 fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(TMP, 'node_modules'), 'dir');
 fs.mkdirSync(path.join(TMP, 'public'));
 
@@ -259,6 +259,90 @@ const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
       // on disk: one file per account per game, inside data/saves
       const f = path.join(TMP, 'data', 'saves', 'u' + reg.data.user.id, game + '.json');
       assert.deepEqual(JSON.parse(fs.readFileSync(f, 'utf8')).data, data);
+    });
+    await check('paid items: creators sell passes + products for tokens and earn 70%', async ()=>{
+      const reg2 = async (name)=> (await api('POST', '/api/auth/register', { username:name, password:'secret123' })).data;
+      const me = async (tok)=> (await api('GET', '/api/me', null, tok)).data.user || (await api('GET', '/api/me', null, tok)).data;
+      const creator = await reg2('maker1'), buyer = await reg2('buyer1'), other = await reg2('nosy1');
+      await api('POST', '/api/quests/welcome/claim', null, buyer.token);   // buyer: 50 tokens
+      const game = (await api('POST', '/api/worlds', { name:'Shop Game', blocks:[] }, creator.token)).data.id;
+      const anon = (await api('POST', '/api/worlds', { name:'No Owner', blocks:[] })).data.id;
+      const P = (p)=> '/api/market' + p;
+      // only the creator adds items; a game published without an account can't sell
+      assert.equal((await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'VIP', price:30 }, other.token)).status, 403);
+      assert.equal((await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'VIP', price:30 })).status, 401);
+      assert.equal((await api('POST', P('/games/' + anon + '/items'), { kind:'pass', name:'VIP', price:30 }, creator.token)).status, 403);
+      // checks on what an item can be
+      assert.equal((await api('POST', P('/games/' + game + '/items'), { kind:'hat', name:'X', price:5 }, creator.token)).status, 400);
+      assert.equal((await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'  ', price:5 }, creator.token)).status, 400);
+      assert.equal((await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'X', price:0 }, creator.token)).status, 400);
+      assert.equal((await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'X', price:2.5 }, creator.token)).status, 400);
+      assert.equal((await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'X', price:5, image:'notapicture1234' }, creator.token)).status, 400);
+      const vip = (await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'<b>VIP</b>', desc:'Run faster', price:30 }, creator.token)).data;
+      const coins = (await api('POST', P('/games/' + game + '/items'), { kind:'product', name:'100 Coins', price:10 }, creator.token)).data;
+      assert.match(vip.id, /^\d+$/); assert.equal(vip.name, 'bVIP/b'); assert.equal(vip.onSale, true);
+      // anyone sees the list; only the creator sees sales
+      let list = (await api('GET', P('/games/' + game))).data;
+      assert.equal(list.items.length, 2); assert.equal(list.items[0].sales, undefined); assert.equal(list.creator, false);
+      assert.equal((await api('GET', P('/games/' + game), null, creator.token)).data.items[0].sales, 0);
+      // buying: price shown must match, tokens move 30 → creator gets 21 (70%)
+      const before = (await me(creator.token)).tokens;
+      assert.equal((await api('POST', P('/items/' + vip.id + '/buy'), { price:25 }, buyer.token)).status, 409);
+      let r = await api('POST', P('/items/' + vip.id + '/buy'), { price:30 }, buyer.token);
+      assert.equal(r.status, 200); assert.equal(r.data.charged, 30); assert.equal(r.data.user.tokens, 20);
+      assert.equal((await me(creator.token)).tokens, before + 21);
+      assert.equal((await api('POST', P('/items/' + vip.id + '/buy'), { price:30 }, buyer.token)).status, 400);   // already own it
+      let mine = (await api('GET', P('/games/' + game + '/mine'), null, buyer.token)).data;
+      assert.deepEqual(mine.passes, [vip.id]);
+      // not enough tokens
+      const pricey = (await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'Mega', price:500 }, creator.token)).data;
+      r = await api('POST', P('/items/' + pricey.id + '/buy'), { price:500 }, buyer.token);
+      assert.equal(r.status, 400); assert.match(r.data.error, /Not enough tokens — you need 480 more/);
+      // products: bought again and again, each one a receipt the game hands out
+      r = await api('POST', P('/items/' + coins.id + '/buy'), { price:10 }, buyer.token);
+      assert.equal(r.status, 200); assert.ok(r.data.receipt.id);
+      const rid = r.data.receipt.id;
+      assert.equal((await api('POST', P('/items/' + coins.id + '/buy'), { price:10 }, buyer.token)).status, 200);
+      mine = (await api('GET', P('/games/' + game + '/mine'), null, buyer.token)).data;
+      assert.equal(mine.receipts.length, 2);
+      assert.equal((await api('POST', P('/receipts/' + rid + '/granted'), null, other.token)).status, 404);   // not theirs
+      assert.equal((await api('POST', P('/receipts/' + rid + '/granted'), null, buyer.token)).status, 200);
+      mine = (await api('GET', P('/games/' + game + '/mine'), null, buyer.token)).data;
+      assert.equal(mine.receipts.length, 1);
+      assert.equal((await me(buyer.token)).tokens, 0);
+      // too many purchases the game hasn't handed out yet: no more for now
+      const rich = (await api('POST', '/api/auth/login', { username:'richkid1', password:'secret123' })).data;
+      for(let i = 0; i < 5; i++) await api('POST', P('/items/' + coins.id + '/buy'), { price:10 }, rich.token);
+      r = await api('POST', P('/items/' + coins.id + '/buy'), { price:10 }, rich.token);
+      assert.equal(r.status, 400); assert.match(r.data.error, /hasn't handed out your last purchases/);
+      // unlimited-token accounts and the creator buying their own: free, and nobody earns from it
+      const c1 = (await me(creator.token)).tokens;
+      assert.equal((await api('POST', P('/items/' + pricey.id + '/buy'), { price:500 }, rich.token)).data.charged, 0);
+      assert.equal((await api('POST', P('/items/' + pricey.id + '/buy'), { price:500 }, creator.token)).data.charged, 0);
+      assert.equal((await me(creator.token)).tokens, c1);
+      // the creator's sales: 1 VIP (21) + 2 coins (7 each) — free buys aren't counted
+      list = (await api('GET', P('/games/' + game), null, creator.token)).data;
+      const byName = Object.fromEntries(list.items.map(i => [i.name, i]));
+      assert.equal(byName['bVIP/b'].sales, 1); assert.equal(byName['bVIP/b'].earned, 21);
+      assert.equal(byName['100 Coins'].sales, 2); assert.equal(byName['100 Coins'].earned, 14);
+      assert.equal(byName.Mega.sales, 0);
+      // editing: price changes, off sale; only the creator
+      assert.equal((await api('PUT', P('/items/' + vip.id), { price:40 }, other.token)).status, 403);
+      assert.equal((await api('PUT', P('/items/' + vip.id), { price:40, onSale:false }, creator.token)).data.price, 40);
+      assert.equal((await api('POST', P('/items/' + vip.id + '/buy'), { price:40 }, other.token)).status, 400);    // off sale
+      assert.deepEqual((await api('GET', P('/games/' + game + '/mine'), null, buyer.token)).data.passes, [vip.id]); // buyers keep it
+      // delete: only items nobody bought
+      assert.equal((await api('DELETE', P('/items/' + vip.id), null, creator.token)).status, 400);
+      const unsold = (await api('POST', P('/games/' + game + '/items'), { kind:'pass', name:'Unsold', price:5 }, creator.token)).data;
+      assert.equal((await api('DELETE', P('/items/' + unsold.id), null, other.token)).status, 403);
+      assert.equal((await api('DELETE', P('/items/' + unsold.id), null, creator.token)).status, 200);
+      assert.equal((await api('GET', P('/games/' + game))).data.items.length, 3);
+      // unknown game / item
+      assert.equal((await api('GET', P('/games/99999'))).status, 404);
+      assert.equal((await api('POST', P('/items/99999/buy'), {}, buyer.token)).status, 404);
+      // kept on disk
+      const disk = JSON.parse(fs.readFileSync(path.join(TMP, 'data', 'market.json'), 'utf8'));
+      assert.ok(disk.items.length === 3 && disk.owned[buyer.user.id].includes(vip.id));
     });
     console.log('\nALL ' + passed + ' NEOBLOX SERVER CHECKS PASSED');
   }catch(err){

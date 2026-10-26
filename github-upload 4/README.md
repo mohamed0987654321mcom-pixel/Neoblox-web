@@ -34,6 +34,10 @@
   delete a picture; so can an admin (`DELETE /api/images/<id>` with an `X-Admin-Password`
   header) if something inappropriate gets uploaded.
 
+- **Game saves and paid items** — games can save each player's progress to their account
+  (`DataStoreService`), and creators can sell game passes and developer products for tokens,
+  earning 70% of each sale (`MarketplaceService`, NeoStudio ▸ Test ▸ 🛒 Paid Items). See below.
+
 Run the server checks with `npm test`.
 
 ## Scripting
@@ -94,6 +98,38 @@ its own player: a key with *another* player's UserId in it is skipped there. Tha
 player could edit their own save with browser tools, so don't use saves for anything that
 must be cheat-proof. NeoStudio playtests save in the browser only, apart from the real game
 (Test ▸ Clear Saves resets them). The Examples menu has "Save coins" and "Visit counter".
+
+**Paid items (MarketplaceService)** — a game's creator can sell **game passes** (bought once,
+kept forever: VIP, a special tool) and **developer products** (bought again and again: 100
+coins, a revive) for tokens. In NeoStudio: publish the game while logged in, then **Test ▸ 🛒
+Paid Items** to make items (name, description, price 1–10,000 tokens, picture), copy their
+ids, take them off sale, and see sales and earnings; "Add a script for it" inserts a ready-made
+script with the id filled in. Scripts use the Roblox API:
+
+```js
+const MarketplaceService = game.GetService("MarketplaceService");
+if (await MarketplaceService.UserOwnsGamePassAsync(player.UserId, 12)) { /* give the perk */ }
+MarketplaceService.PromptGamePassPurchase(player, 12);   // or PromptProductPurchase
+MarketplaceService.PromptGamePassPurchaseFinished.Connect((player, id, bought) => { … });
+MarketplaceService.ProcessReceipt = (receipt) => {        // every developer product purchase
+  // …give it…
+  return Enum.ProductPurchaseDecision.PurchaseGranted;      // anything else: delivered again next visit
+};
+```
+
+Buying always happens in Neoblox's own buy window, which scripts can open but never press
+(its Buy button only works after a short moment, so a window popping up under a click isn't
+bought by accident). The server (`market.js`, saved in `data/market.json`) sets the prices,
+takes the tokens and keeps track of what each player owns; if the creator changed the price
+since the window opened, nothing is charged. The creator earns **70%** of each sale — the
+other 30% just disappears, which slows down farming tokens with extra accounts. Creators get
+their own items free, and `UNLIMITED_TOKENS` accounts buy for free but earn the creator
+nothing (otherwise they could print real tokens). Items nobody has bought can be deleted;
+after that they can only go off sale, and buyers keep them. A player can have at most 5
+developer product purchases a game hasn't handed out yet. A game's passes also show on its
+page on Home. Playtest purchases in NeoStudio are pretend (nothing charged or kept). As with
+saves, scripts run on the player's own device, so a player could unlock a perk for themselves
+with browser tools — but nobody can spend someone else's tokens or get items without paying.
 
 How it runs: scripts run on each player's own device while they're in a game (or in a
 NeoStudio playtest). They never run in the page itself — `public/rbx/neoscript.js` runs
@@ -265,7 +301,8 @@ Without it, nobody can become admin. Change it any time you think it may have le
 Everything the server keeps lives in `data/` (created automatically): published worlds
 (`worlds.json`), accounts with tokens, quests and Avatar Shop items (`users.json`),
 uploaded avatars (`avatars/`), uploaded pictures (`images/` + `images.json`), players' game
-saves (`saves/`) and game stats — visits and thumbs up/down (`gamestats.json`). Put `data/`
+saves (`saves/`), paid items with who owns what (`market.json`) and game stats — visits and
+thumbs up/down (`gamestats.json`). Put `data/`
 on a persistent volume (a Railway Volume) or it resets on every redeploy.
 
 ## Files
@@ -278,10 +315,11 @@ on a persistent volume (a Railway Volume) or it resets on every redeploy.
 - `public/battle-assets/` — 3D model assets used by Thunder Battle.
 - `public/rbx/` — the home page (`home.js/css`), the in-game UI + camera (`hud.js/css`),
   NeoStudio's editor (`studio.js/css`), its script editor (`codeeditor.js/css`) and the
-  scripting runtime (`neoscript.js` + `neoscript-runtime.js`) and the picture picker
-  (`pictures.js/css`).
+  scripting runtime (`neoscript.js` + `neoscript-runtime.js`), the picture picker
+  (`pictures.js/css`) and paid items — the buy window and 🛒 Paid Items (`market.js/css`).
 - `public/vendor/quickjs/` — the QuickJS engine (WebAssembly) that runs scripts.
 - `accounts.js` — accounts, tokens, quests and the Avatar Shop catalog.
+- `market.js` — paid items in games (game passes, developer products, receipts, earnings).
 - `test/api.test.js` — server checks (`npm test`).
 
 ## Credits

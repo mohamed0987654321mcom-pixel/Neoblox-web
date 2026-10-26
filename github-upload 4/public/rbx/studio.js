@@ -396,6 +396,16 @@
     insertScript('world');
   };
   UI.openScript = openScript;
+  // a ServerScriptService script with this code, opened in the editor (🛒 Paid Items → "Add a script for it")
+  UI.insertWorldScript = function(name, code){
+    if(App.studio.testing){ showToast('Stop the playtest to add scripts'); return null; }
+    const ref = addWorldScript(name, code);
+    if(!ref) return null;
+    open.add('sss');
+    UI.log('Inserted ' + name + ' into ServerScriptService', 'ok');
+    openScript('world', ref);
+    return ref;
+  };
   function renderScriptProps(el, sel){
     if(!hasScript(sel.where, sel.ref)){ App.studio.selected = null; renderStudioProperties(); return; }
     const isWorld = sel.where==='world';

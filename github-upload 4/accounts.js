@@ -152,6 +152,26 @@ function buyItem(u, itemId){
   markDirty(); saveNow();
   return { user:u, item };
 }
+// Paying for a game pass / developer product another player made (see market.js): the buyer
+// pays `price` tokens and the game's creator earns CREATOR_SHARE of it (the rest just
+// disappears, which slows down farming tokens with extra accounts). Free — and no earnings —
+// when the creator buys their own item, or for UNLIMITED_TOKENS accounts (whose tokens aren't
+// real, so they must never turn into real tokens for someone else).
+const CREATOR_SHARE = 0.7;
+function payForGameItem(buyer, creatorId, price){
+  if(!buyer) return { error:'Log in to buy this.' };
+  price = Math.max(0, Math.floor(Number(price) || 0));
+  const own = creatorId && buyer.id === creatorId;
+  const unlimited = hasUnlimitedTokens(buyer);
+  const charged = own || unlimited ? 0 : price;
+  if((buyer.tokens || 0) < charged) return { error:'Not enough tokens — you need ' + (charged - (buyer.tokens || 0)) + ' more. Finish quests to earn some!' };
+  buyer.tokens = (buyer.tokens || 0) - charged;
+  let earned = 0;
+  const creator = !own && !unlimited && creatorId ? byId.get(creatorId) : null;
+  if(creator){ earned = Math.floor(charged * CREATOR_SHARE); creator.tokens = (creator.tokens || 0) + earned; }
+  markDirty(); saveNow();
+  return { charged, earned };
+}
 // What a player may actually show on their avatar: only items their account owns.
 function ownedCosmetics(u, wanted){
   const inv = new Set(u && Array.isArray(u.inventory) ? u.inventory : []);
@@ -271,4 +291,5 @@ module.exports = {
   noteLogin, noteChat, noteWorldVisit, noteMove, notePartyJoin, noteGVoiceJoin, noteAvatarUpload,
   claimQuest, saveNow, markDirty,
   SHOP_ITEMS, buyItem, ownedCosmetics, noteWorldPublish,
+  payForGameItem, hasUnlimitedTokens, CREATOR_SHARE,
 };

@@ -107,9 +107,11 @@
     // games that save (DataStoreService) get this player's saved data loaded first, so their
     // scripts can read it straight away
     const wantsSaves = scripts.list.some(s=> /DataStore/.test(s.code));
-    Promise.all([loadEngine(), wantsSaves ? openSave(kind, world) : null]).then(([eng, sv])=>{
+    // …and games that sell things (MarketplaceService) get their items and what this player owns
+    const wantsMarket = scripts.list.some(s=> /Marketplace/.test(s.code));
+    Promise.all([loadEngine(), wantsSaves ? openSave(kind, world) : null, wantsMarket ? openMarket(kind) : null]).then(([eng, sv, mk])=>{
       if(!S || S.id !== id) return;
-      S.save = sv;
+      S.save = sv; S.market = mk;
       if(sv) saveNotice(sv, kind);
       boot(eng, scripts);
     }).catch((e)=>{
@@ -241,6 +243,8 @@
     if(!S) return;
     S.ready = true;
     S.strikes = 0;
+    // developer products bought earlier that the game never handed out: give them another go
+    if(S.market) S.market.receipts.forEach(r=> queue({ t:'receipt', r }));
     if(studio) out2('ok', 'Scripts running');
   }
 
@@ -326,6 +330,26 @@
     App.gravMul = 1;
     const c = document.getElementById('gamecanvas'); if(c && c.style.cursor==='pointer') c.style.cursor = '';
   };
+
+  // ------------------------------------------------------------------ paid items (MarketplaceService)
+  // A game's game passes / developer products (made by its creator in NeoStudio → 🛒 Paid Items),
+  // what this player already owns, and purchases the game still has to hand out. In a NeoStudio
+  // playtest purchases are only pretend: nothing is charged and nothing is kept.
+  let mkTestSeq = 0;
+  function openMarket(kind){
+    const wid = kind === 'studio' ? App.studio.worldId : App.currentWorldId;
+    const world = wid !== null && wid !== undefined && /^\d{1,12}$/.test(String(wid)) ? String(wid) : null;
+    const mk = { test: kind === 'studio', world, token: Session.token || null, items:new Map(), owned:new Set(), receipts:[], creator:false, open:false, promptAt:[] };
+    if(!world || !window.NeoMarket) return Promise.resolve(mk);
+    const within = (p)=> Promise.race([p.catch(()=> null), new Promise(r=> setTimeout(()=> r(null), 8000))]);
+    return Promise.all([within(NeoMarket.items(world, true)), !mk.test && mk.token ? within(NeoMarket.mine(world)) : null]).then(([list, mine])=>{
+      ((list && list.items) || []).forEach(i=> mk.items.set(String(i.id), i));
+      mk.creator = !!(list && list.creator);
+      if(mine){ (mine.passes || []).forEach(id=> mk.owned.add(String(id))); mk.receipts = (mine.receipts || []).slice(0, 20); }
+      if(!list) out2('warn', 'Couldn\'t load this game\'s paid items — buying is off for now');
+      return mk;
+    });
+  }
 
   // ------------------------------------------------------------------ game saves (DataStoreService)
   // A player's saved data for one game: { "<DataStore name>": { "<key>": value } }. Logged in, it
@@ -824,6 +848,46 @@
       if(sky !== S.sky){ S.sky = sky; applySky(sky); }
     },
     gravity(d){ App.gravMul = lim(d.g, 0, 1000, 196.2) / 196.2; },
+    // MarketplaceService: what an item is, whether you own a pass, and Neoblox's own buy window
+    'mk.info'(d){
+      const i = S.market && S.market.items.get(String(d.id));
+      return i ? { id:i.id, kind:i.kind, name:i.name, desc:i.desc, price:i.price, image:i.image, onSale:i.onSale } : undefined;
+    },
+    'mk.owns'(d){ return { v: !!(S.market && S.market.owned.has(String(d.id))) }; },
+    'mk.prompt'(d){
+      const mk = S.market;
+      if(!mk || S.leaving || !window.NeoMarket) return;
+      if(mk.open || NeoMarket.isOpen()) return; // one at a time
+      const now = performance.now();
+      mk.promptAt = mk.promptAt.filter(t=> now - t < 10000);
+      if(mk.promptAt.length >= 3){ out('warn', 'A script is opening the buy window too often — it was skipped'); return; }
+      mk.promptAt.push(now);
+      const id = String(d.id), kind = d.kind === 'product' ? 'product' : 'pass';
+      const found = mk.items.get(id), item = found && found.kind === kind ? found : null;
+      if(!item) out('warn', 'This game has no ' + (kind === 'pass' ? 'game pass' : 'developer product') + ' with id ' + id + (mk.test ? ' — make one in 🛒 Paid Items (publish your game first)' : ''));
+      mk.open = true;
+      const s = S;
+      setTimeout(()=>{
+        NeoMarket.prompt({ item, kind, test: mk.test, creator: mk.creator, owned: kind === 'pass' && mk.owned.has(id), onDone: (bought, res)=>{
+          mk.open = false;
+          if(S !== s || !s.ready) return; // the game ended meanwhile (a purchase is still kept for next time)
+          if(bought && kind === 'pass') mk.owned.add(id);
+          queue({ t:'mkdone', kind, id, bought: !!bought });
+          if(bought && kind === 'product'){
+            const r = res && res.receipt ? res.receipt : { id: 'test' + (++mkTestSeq), item: id, price: 0 };
+            mk.receipts.push(r);
+            queue({ t:'receipt', r });
+          }
+        } });
+      }, 0);
+    },
+    'mk.granted'(d){
+      const mk = S.market, rid = String(d.rid || '');
+      if(!mk) return;
+      mk.receipts = mk.receipts.filter(r=> r.id !== rid);
+      if(mk.test || !mk.token || !/^[a-f0-9]{16}$/.test(rid)) return;
+      fetch(netHttpBase() + '/api/market/receipts/' + rid + '/granted', { method:'POST', headers:{ Authorization: 'Bearer ' + mk.token }, keepalive:true }).catch(()=>{});
+    },
     // DataStoreService: the runtime has already checked keys and values; sizes are checked here
     'ds.get'(d){
       const sv = saveFor(), st = sv.data[String(d.s)], k = String(d.k);

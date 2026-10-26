@@ -366,6 +366,9 @@
     HumanoidStateType: makeEnum('HumanoidStateType', ['Running','Jumping','Freefall','Dead','Landed','None']),
     SortOrder: makeEnum('SortOrder', ['LayoutOrder','Name']),
     NormalId: makeEnum('NormalId', ['Front','Back','Left','Right','Top','Bottom']),
+    ProductPurchaseDecision: makeEnum('ProductPurchaseDecision', ['NotProcessedYet','PurchaseGranted']),
+    InfoType: makeEnum('InfoType', ['Asset','Product','GamePass','Subscription','Bundle']),
+    CurrencyType: makeEnum('CurrencyType', ['Default','Robux','Tix','Tokens']),
   });
   // Pictures are Neoblox uploads, referenced by id. "rbxassetid://…"-style prefixes are accepted
   // so Roblox-looking code works; anything else is kept as text but shows nothing.
@@ -1159,7 +1162,7 @@
     SetCoreGuiEnabled(){ }
     GetCoreGuiEnabled(){ return true; }
   }
-  const SIMPLE_SERVICES = ['ReplicatedStorage','ServerScriptService','ServerStorage','StarterPlayer','StarterPack','Teams','Chat','HttpService','MarketplaceService','CollectionService','PathfindingService','PhysicsService','ContextActionService','TextChatService','BadgeService','Selection','GuiService','ContentProvider','LocalizationService','InsertService','TeleportService','ReplicatedFirst','SoundGroup'];
+  const SIMPLE_SERVICES = ['ReplicatedStorage','ServerScriptService','ServerStorage','StarterPlayer','StarterPack','Teams','Chat','HttpService','CollectionService','PathfindingService','PhysicsService','ContextActionService','TextChatService','BadgeService','Selection','GuiService','ContentProvider','LocalizationService','InsertService','TeleportService','ReplicatedFirst','SoundGroup'];
 
   // ------------------------------------------------------------------ DataStoreService: game saves
   // Each player's progress — coins, levels, items — saved to their Neoblox account (or to this
@@ -1266,6 +1269,70 @@
   }
   DataStoreService.prototype.getDataStore = DataStoreService.prototype.GetDataStore;
 
+  // ------------------------------------------------------------------ MarketplaceService: paid items
+  // Game passes (bought once, kept forever) and developer products (bought again and again),
+  // paid for with tokens. The creator makes them in NeoStudio (🛒 Paid Items) and gets their ids.
+  //   if (await MarketplaceService.UserOwnsGamePassAsync(player.UserId, 12)) { … }
+  //   MarketplaceService.PromptGamePassPurchase(player, 12)    // opens Neoblox's own buy window
+  //   MarketplaceService.ProcessReceipt = (receipt) => { …give it…; return Enum.ProductPurchaseDecision.PurchaseGranted; }
+  // Scripts never take tokens themselves: the buy window is Neoblox's, outside the game, and only
+  // the player can press Buy. Like everything else, each device handles its own player.
+  const RECEIPTS = [];
+  function marketId(v, what){
+    const n = typeof v === 'string' && /^\s*\d+\s*$/.test(v) ? Number(v) : v;
+    if(typeof n !== 'number' || !Number.isInteger(n) || n < 0) throw new TypeError(what + ' ids are numbers — copy them from 🛒 Paid Items in NeoStudio');
+    if(n === 0) throw new Error('Put your ' + what.toLowerCase() + ' id in here — copy it from 🛒 Paid Items in NeoStudio');
+    return String(n);
+  }
+  const isLocal = (player) => !!LOCAL_PLAYER && (player === LOCAL_PLAYER || (typeof player === 'number' && player === LOCAL_PLAYER.UserId));
+  function deliverReceipts(){
+    const mps = SERVICES.MarketplaceService._t, fn = mps._receipt;
+    if(typeof fn !== 'function' || !RECEIPTS.length) return;
+    RECEIPTS.splice(0).forEach(r => {
+      const info = Object.freeze({ PlayerId: LOCAL_PLAYER ? LOCAL_PLAYER.UserId : 0, ProductId: Number(r.item), PurchaseId: String(r.id), CurrencySpent: r.price || 0, CurrencyType: Enum.CurrencyType.Tokens, PlaceIdWherePurchased: 0 });
+      // PurchaseGranted: it's been handed out. Anything else: it's delivered again next time they join.
+      const done = (res) => { if(res === Enum.ProductPurchaseDecision.PurchaseGranted) host('mk.granted', { rid: r.id }); };
+      try{ const res = fn(info); if(res && typeof res.then === 'function') res.then(done, reportError); else done(res); }
+      catch(e){ reportError(e); }
+    });
+  }
+  class MarketplaceService extends Service {
+    constructor(){
+      super('MarketplaceService'); this._receipt = null;
+      this.PromptGamePassPurchaseFinished = new RBXScriptSignal('PromptGamePassPurchaseFinished');
+      this.PromptProductPurchaseFinished = new RBXScriptSignal('PromptProductPurchaseFinished');
+      this.PromptPurchaseFinished = new RBXScriptSignal('PromptPurchaseFinished');
+    }
+    // set it to a function: (receiptInfo) => Enum.ProductPurchaseDecision.PurchaseGranted
+    get ProcessReceipt(){ return this._t._receipt; }
+    set ProcessReceipt(fn){
+      if(fn !== null && fn !== undefined && typeof fn !== 'function') throw new TypeError('ProcessReceipt must be a function');
+      this._t._receipt = fn || null;
+      deliverReceipts();
+    }
+    // other players are checked on their own devices, so here it's only ever true for the local player
+    async UserOwnsGamePassAsync(userId, passId){
+      const id = marketId(passId, 'Game pass');
+      if(!LOCAL_PLAYER || Number(userId) !== LOCAL_PLAYER.UserId) return false;
+      return !!(host('mk.owns', { id }) || {}).v;
+    }
+    PlayerOwnsAsset(){ return false; }
+    PromptGamePassPurchase(player, passId){ const id = marketId(passId, 'Game pass'); if(isLocal(player)) host('mk.prompt', { id, kind:'pass' }); }
+    PromptProductPurchase(player, productId){ const id = marketId(productId, 'Developer product'); if(isLocal(player)) host('mk.prompt', { id, kind:'product' }); }
+    PromptPurchase(){ throw new Error('PromptPurchase (avatar items) isn\'t in Neoblox — sell game passes or developer products instead'); }
+    // name, description, price… of one of this game's items
+    async GetProductInfo(id, infoType){
+      const kid = marketId(id, 'Item');
+      const i = host('mk.info', { id: kid });
+      if(!i) throw new Error('This game has no game pass or developer product with id ' + kid);
+      const pass = i.kind === 'pass';
+      if(infoType === Enum.InfoType.GamePass && !pass) throw new Error(kid + ' is a developer product, not a game pass');
+      if(infoType === Enum.InfoType.Product && pass) throw new Error(kid + ' is a game pass, not a developer product');
+      return Object.freeze({ Name: i.name, Description: i.desc || '', PriceInRobux: i.price, PriceInTokens: i.price, IconImageAssetId: i.image || '', IsForSale: !!i.onSale,
+        ProductId: Number(kid), TargetId: Number(kid), ProductType: pass ? 'Game Pass' : 'Developer Product' });
+    }
+  }
+
   // ------------------------------------------------------------------ Instance.new
   const CREATORS = {
     Part: () => wrap(new BasePart('Part')),
@@ -1314,6 +1381,7 @@
   addService(wrap(new UserInputService()));
   STARTERGUI = addService(wrap(new StarterGui()));
   addService(wrap(new DataStoreService()));
+  addService(wrap(new MarketplaceService()));
   SIMPLE_SERVICES.forEach(n => addService(wrap(new Service(n))));
   WORKSPACE._t._live = true;
   // game.Workspace, game.Players… are reached by name through the Proxy like any child.
@@ -1463,6 +1531,14 @@
           return;
         }
         case 'chat': if(LOCAL_PLAYER) LOCAL_PLAYER._t.Chatted._fire(String(e.text || '')); return;
+        // Neoblox's buy window closed (bought or not), and purchases to hand out
+        case 'mkdone': {
+          const mps = SERVICES.MarketplaceService._t;
+          if(e.kind === 'pass') mps.PromptGamePassPurchaseFinished._fire(LOCAL_PLAYER, Number(e.id), !!e.bought);
+          else mps.PromptProductPurchaseFinished._fire(LOCAL_PLAYER ? LOCAL_PLAYER.UserId : 0, Number(e.id), !!e.bought);
+          return;
+        }
+        case 'receipt': if(e.r && e.r.id){ RECEIPTS.push(e.r); deliverReceipts(); } return;
         // the player is leaving (back to the menu, closing the tab, Stop in a playtest): last
         // chance to save — PlayerRemoving for them, then every game.BindToClose function
         case 'leave': {

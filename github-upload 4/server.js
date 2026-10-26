@@ -378,6 +378,13 @@ app.put('/api/saves/:worldId', requireAuth, (req, res) => {
   job.then(r => res.status(r.status).json(r.body), (e) => { console.error('failed to write a save', e); res.status(500).json({ error:'Couldn\'t save — try again.' }); });
 });
 
+// ---- paid items in games (game passes + developer products, bought with tokens) — market.js ----
+require('./market')(app, {
+  accounts, requireAuth, optionalUser, DATA_DIR,
+  worldById: (id) => worlds.find(w => w.id === id) || null,
+  imageExists: (id) => isImageId(id) && imageById.has(id),
+});
+
 app.get('/healthz', (req, res) => res.json({ ok: true, players: players.size, parties: parties.size }));
 
 const server = http.createServer(app);

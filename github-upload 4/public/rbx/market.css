@@ -1,0 +1,87 @@
+/* rbx/market.css — paid items (rbx/market.js): Neoblox's buy window, NeoStudio's 🛒 Paid Items
+   window, and the "Passes" section on a game's page. */
+.nm-back{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+.nm-back[hidden]{ display:none; }
+.nm-mgback{ z-index:110; }            /* under the picture picker (120) */
+.nm-buyback{ z-index:125; }           /* over the game, HUD and studio */
+.nm-nopic{ display:flex; align-items:center; justify-content:center; background:#232323; font-size:34px; }
+.nm-b{ border:1px solid #4a4a4a; background:#3a3a3a; color:#e8e8e8; border-radius:8px; padding:8px 14px; font:inherit; font-size:13px; font-weight:800; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.nm-b:disabled{ opacity:.45; cursor:default; }
+.nm-b.green{ background:#00b06f; border-color:#00b06f; color:#fff; }
+.nm-b.danger{ border-color:#7a2a2a; color:#ff9b9b; background:transparent; }
+.nm-b .nh-coin, .nm-buy-price .nh-coin{ width:18px; height:18px; font-size:10px; }
+
+/* the buy window */
+.nm-buy{ width:min(360px, 100%); background:#2b2b2b; color:#e8e8e8; border:1px solid #474747; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.6);
+  font-family:'Nunito Sans', system-ui, sans-serif; overflow:hidden; text-align:center; }
+.nm-buy-brand{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#9a9a9a; padding:10px 14px; border-bottom:1px solid #3a3a3a; text-align:left; font-weight:800; }
+.nm-buy-body{ padding:16px 18px 18px; }
+.nm-buy-pic{ width:110px; height:110px; border-radius:14px; object-fit:cover; margin:0 auto 10px; display:block; background:#232323; }
+.nm-buy-kind{ font-size:11.5px; color:#9ad1ff; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.nm-buy h3{ margin:4px 0 6px; font-size:19px; font-weight:900; overflow-wrap:anywhere; }
+.nm-buy-desc{ margin:0 0 10px; color:#bdbdbd; font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
+.nm-buy-price{ display:inline-flex; align-items:center; gap:6px; font-size:20px; font-weight:900; margin:4px 0 6px; }
+.nm-buy-note{ margin:4px 0 12px; color:#a8a8a8; font-size:12.5px; line-height:1.4; display:flex; align-items:center; justify-content:center; gap:4px; flex-wrap:wrap; }
+.nm-buy-note .nh-coin{ width:15px; height:15px; font-size:9px; }
+.nm-buy-err{ color:#ff8a8a; font-size:12.5px; margin:0 0 10px; }
+.nm-buy-done{ color:#3ddc84; font-size:18px; font-weight:900; margin:8px 0 10px; }
+.nm-buy-btns{ display:flex; gap:10px; margin-top:6px; }
+.nm-buy-btns .nm-b{ flex:1; padding:10px 12px; font-size:14px; }
+
+/* NeoStudio: 🛒 Paid Items */
+.nm-mg{ width:min(720px, 100%); max-height:min(680px, calc(100vh - 32px)); display:flex; flex-direction:column; background:#2b2b2b; color:#e8e8e8; border:1px solid #474747;
+  border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.6); font-family:'Nunito Sans', system-ui, sans-serif; overflow:hidden; }
+.nm-mg-head{ display:flex; align-items:center; padding:14px 16px 6px; }
+.nm-mg-head h3{ margin:0; font-size:18px; font-weight:800; flex:1; }
+.nm-x{ border:none; background:#3a3a3a; color:#e8e8e8; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:14px; }
+.nm-mg-body{ overflow-y:auto; padding:4px 16px 16px; }
+.nm-mg-sub{ color:#a8a8a8; font-size:13px; margin:8px 0 10px; line-height:1.45; }
+.nm-mg-sub code, .nm-row-id code{ font-family:Menlo,Consolas,monospace; color:#9cdcfe; font-size:12px; }
+.nm-mg-empty{ color:#bdbdbd; text-align:center; padding:28px 10px; line-height:1.8; font-size:14px; }
+.nm-mg-empty.small{ padding:14px 10px; font-size:13px; color:#8a8a8a; }
+.nm-mg-empty .nm-b{ margin-top:8px; }
+.nm-mg-earn{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; background:#232323; border:1px solid #3a3a3a; border-radius:10px; padding:10px 12px; font-size:13.5px; }
+.nm-mg-earn span:last-child{ color:#8a8a8a; }
+.nm-tabs{ display:flex; gap:6px; margin-top:12px; }
+.nm-tab{ border:1px solid #3c3c3c; background:#232323; color:#cfcfcf; border-radius:8px; padding:7px 12px; font:inherit; font-size:13px; font-weight:800; cursor:pointer; }
+.nm-tab.on{ background:#1f6fd1; border-color:#1f6fd1; color:#fff; }
+.nm-new{ margin:2px 0 10px; }
+.nm-list{ display:flex; flex-direction:column; gap:8px; }
+.nm-row{ display:flex; gap:12px; align-items:center; background:#232323; border:1px solid #3a3a3a; border-radius:10px; padding:10px; }
+.nm-row.off{ opacity:.7; }
+.nm-row-pic{ width:56px; height:56px; border-radius:8px; object-fit:cover; flex:none; font-size:26px; }
+.nm-row-main{ flex:1; min-width:0; }
+.nm-row-nm{ font-weight:800; font-size:14px; overflow-wrap:anywhere; }
+.nm-off{ font-size:11px; font-weight:800; color:#ffb86b; border:1px solid #6b4a20; border-radius:4px; padding:0 5px; margin-left:4px; }
+.nm-row-meta{ display:flex; align-items:center; gap:4px; color:#a8a8a8; font-size:12.5px; margin-top:2px; flex-wrap:wrap; }
+.nm-row-meta .nh-coin{ width:14px; height:14px; font-size:8px; }
+.nm-row-id{ color:#8a8a8a; font-size:12px; margin-top:3px; }
+.nm-id{ user-select:all; -webkit-user-select:all; }
+.nm-link{ border:none; background:none; color:#6db3ff; font:inherit; font-size:12px; padding:0; cursor:pointer; text-decoration:underline; }
+.nm-row-btns{ display:flex; flex-direction:column; gap:6px; flex:none; }
+.nm-row-btns .nm-b{ padding:5px 10px; font-size:12px; }
+.nm-form{ display:flex; gap:14px; background:#232323; border:1px solid #1f6fd1; border-radius:10px; padding:12px; margin-bottom:10px; }
+.nm-form-pic{ display:flex; flex-direction:column; align-items:center; gap:8px; flex:none; }
+.nm-form-pic img, .nm-form-pic .nm-nopic{ width:96px; height:96px; border-radius:10px; object-fit:cover; border:1px solid #3a3a3a; }
+.nm-form-pic .nm-b{ padding:5px 10px; font-size:12px; }
+.nm-form-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.nm-form label{ display:flex; flex-direction:column; gap:3px; font-size:12px; color:#a8a8a8; font-weight:700; }
+.nm-form input, .nm-form textarea{ background:#1b1b1b; border:1px solid #4a4a4a; color:#e8e8e8; border-radius:6px; padding:7px 9px; font:inherit; font-size:13.5px; resize:vertical; }
+.nm-form input:focus, .nm-form textarea:focus{ outline:none; border-color:#1f6fd1; }
+.nm-form-btns{ display:flex; gap:8px; }
+.nm-form-err{ color:#ff8a8a; font-size:12.5px; min-height:1em; }
+.nm-mg-msg{ color:#3ddc84; font-size:12.5px; min-height:1em; margin-top:10px; }
+@media (max-width:560px){
+  .nm-row{ flex-wrap:wrap; }
+  .nm-row-btns{ flex-direction:row; flex-wrap:wrap; width:100%; }
+  .nm-form{ flex-direction:column; }
+}
+
+/* Home: a game's "Passes" */
+.nm-store{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; margin-bottom:8px; }
+.nm-card{ background:#232527; border:1px solid #393b3d; border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+.nm-card-pic{ width:100%; aspect-ratio:1 / 1; border-radius:8px; object-fit:cover; font-size:40px; }
+.nm-card-nm{ font-weight:800; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nm-card-own{ color:#3ddc84; font-weight:800; font-size:13px; text-align:center; padding:8px 0; }
+.nm-card .nm-b{ width:100%; }
