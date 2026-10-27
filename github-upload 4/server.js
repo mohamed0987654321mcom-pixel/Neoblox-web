@@ -424,6 +424,42 @@ function broadcastAll(msg, exceptId){
     if(p.id !== exceptId) send(p.ws, msg);
   }
 }
+// What an 'anim' message may carry: up to 8 tracks, each an animation of up to 200 keyframes moving
+// known joints by bounded angles. Anything else is dropped. Returns null if it's not a list at all.
+const ANIM_JOINTS = new Set(['h','t','b','la','ra','ll','rl']);
+function sanitizeAnimTracks(list){
+  if(!Array.isArray(list)) return null;
+  if(JSON.stringify(list).length > 24000) return null;
+  const n = (v, lo, hi, d) => { const x = Number(v); return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : d; };
+  const out = [];
+  for(const tr of list.slice(0, 8)){
+    if(!tr || typeof tr !== 'object' || !Number.isInteger(tr.id) || tr.id < 0 || tr.id > 1e9) continue;
+    const d = tr.d;
+    if(!d || !Array.isArray(d.k) || !d.k.length || d.k.length > 200) continue;
+    let last = 0, ok = true;
+    const k = [];
+    for(const kf of d.k){
+      const t = Number(kf && kf.t);
+      if(!Number.isFinite(t) || t < last || t > 60){ ok = false; break; }
+      last = t;
+      const o = { t: Math.round(t * 1000) / 1000, e: Number.isInteger(kf.e) && kf.e >= 0 && kf.e < 33 ? kf.e : 2, j: {} };
+      if(kf.j && typeof kf.j === 'object'){
+        for(const j of Object.keys(kf.j)){
+          const v = kf.j[j];
+          if(!ANIM_JOINTS.has(j) || !Array.isArray(v) || v.length !== 3){ ok = false; break; }
+          o.j[j] = v.map(x => Math.round(n(x, -1440, 1440, 0) * 100) / 100);
+        }
+      }
+      if(!ok) break;
+      if(kf.l !== undefined && kf.l !== null) o.l = Math.round(n(kf.l, -10, 10, 0) * 1000) / 1000;
+      k.push(o);
+    }
+    if(!ok) continue;
+    out.push({ id: tr.id, d: { len: last, k }, loop: !!tr.loop, speed: n(tr.speed, 0, 10, 1), w: n(tr.w, 0, 1, 1),
+      prio: Number.isInteger(tr.prio) ? Math.min(6, Math.max(0, tr.prio)) : 3, pos: n(tr.pos, 0, last, 0) });
+  }
+  return out;
+}
 function broadcastWorld(world, msg, exceptId){
   for(const p of players.values()){
     if(p.world === world && p.id !== exceptId) send(p.ws, msg);
@@ -667,11 +703,13 @@ wss.on('connection', (ws) => {
             const u = accounts.getUser(player.userId);
             if(u) accounts.noteWorldVisit(u, player.world);
           }
+          player.animState = null; // a new game: animations from the last one are over
           broadcastWorld(prevWorld, { t:'player_leave_world', id, world: prevWorld }, id);
           broadcastWorld(player.world, { t:'player_join_world', id, name:player.name, avatar:player.avatar, world:player.world, isAdmin:player.isAdmin, pstate:player.pstate || null }, id);
           // and the newcomer gets everyone-already-here's leaderboard stats / knocked-out state
           for(const other of players.values()){
             if(other.id !== id && other.world === player.world && other.pstate) send(ws, { t:'pstate', id:other.id, dead:other.pstate.dead, stats:other.pstate.stats });
+            if(other.id !== id && other.world === player.world && other.animState) send(ws, { t:'anim', id:other.id, tracks:other.animState });
           }
           if(player.world === BATTLE_WORLD) battleEnter(player);
           const gk = gameKeyForWorld(player.world);
@@ -728,6 +766,21 @@ wss.on('connection', (ws) => {
       }
       case 'emote': {
         broadcastWorld(player.world, { t:'emote', id, kind: msg.kind }, id);
+        break;
+      }
+      case 'anim': {
+        // Animations a game's scripts are playing on this player's own character, for everyone
+        // else in the same game to see (and anyone who joins later). Cosmetic, like presence —
+        // checked, size-capped and rate-limited here, and checked again by every receiver.
+        const now = Date.now();
+        player.animBucket = Math.min(10, (player.animBucket === undefined ? 10 : player.animBucket) + (now - (player.animAt || now)) / 200);
+        player.animAt = now;
+        if(player.animBucket < 1) break;
+        player.animBucket -= 1;
+        const tracks = sanitizeAnimTracks(msg.tracks);
+        if(!tracks) break;
+        player.animState = tracks.length ? tracks : null;
+        broadcastWorld(player.world, { t:'anim', id, tracks }, id);
         break;
       }
       case 'chat': {

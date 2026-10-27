@@ -34,9 +34,11 @@
   delete a picture; so can an admin (`DELETE /api/images/<id>` with an `X-Admin-Password`
   header) if something inappropriate gets uploaded.
 
-- **Game saves and paid items** — games can save each player's progress to their account
-  (`DataStoreService`), and creators can sell game passes and developer products for tokens,
-  earning 70% of each sale (`MarketplaceService`, NeoStudio ▸ Test ▸ 🛒 Paid Items). See below.
+- **Game saves, paid items and avatar animations** — games can save each player's progress to
+  their account (`DataStoreService`), creators can sell game passes and developer products for
+  tokens, earning 70% of each sale (`MarketplaceService`, NeoStudio ▸ Test ▸ 🛒 Paid Items), and
+  scripts can animate avatars with ready-made or their own keyframe animations that everyone
+  sees (`Animator.LoadAnimation`). See below.
 
 Run the server checks with `npm test`.
 
@@ -130,6 +132,37 @@ developer product purchases a game hasn't handed out yet. A game's passes also s
 page on Home. Playtest purchases in NeoStudio are pretend (nothing charged or kept). As with
 saves, scripts run on the player's own device, so a player could unlock a perk for themselves
 with browser tools — but nobody can spend someone else's tokens or get items without paying.
+
+**Avatar animations (Animation / Animator / AnimationTrack)** — games can animate the
+player's character, Roblox-style:
+
+```js
+const anim = Instance.new("Animation");
+anim.AnimationId = "wave";                       // a ready-made one…
+const track = character.Humanoid.Animator.LoadAnimation(anim);
+track.Play();                                    // Play(fadeTime, weight, speed), Stop(fadeTime)
+
+anim.Keyframes = [                               // …or your own (a Neoblox extra)
+  { Time: 0 },
+  { Time: 0.4, RightArm: new Vector3(170, 0, 20), Lift: 0.5, EasingStyle: Enum.EasingStyle.Sine },
+  { Time: 0.8, Body: new Vector3(0, 360, 0), Name: "Spun" },
+];
+```
+
+Ready-made: wave, point, cheer, clap, dance, dance2, dance3, sit, bow, salute, nod, shake,
+shrug, laugh, kick, punch, spin, flip, jumpingjacks, zombie. Own animations move `Head`,
+`Torso` (bends at the hips), `Body` (the whole character), `LeftArm`, `RightArm`, `LeftLeg`,
+`RightLeg` by angles in degrees — arms/legs: X swings forward (90 = straight ahead, 180 = up), Z
+out to the side; Head/Torso/Body: X forward, Y turns left, Z tilts right — plus `Lift` in studs,
+up to 200 keyframes and 60 seconds. Tracks have `Looped`, `Priority` (Core/Idle give way while
+walking; Movement and Action play over it — arms-only animations like "zombie" keep the legs
+walking), `Speed`/`AdjustSpeed`, `AdjustWeight`, `TimePosition`, `Length`, `IsPlaying`, and
+`Stopped`, `Ended`, `DidLoop`, `KeyframeReached` and `GetMarkerReachedSignal(name)` for named
+keyframes. Each device animates its own player and sends it (`anim` over the WebSocket — checked,
+size-capped and rate-limited by the server, and again by every receiver), so everyone in the
+game sees it, including people who join later. The pose is drawn by `public/rbx/animate.js` on
+top of walking and emotes, on the classic avatar and on glTF skins (skins can't bend at the
+hips, so `Torso` doesn't show on them).
 
 How it runs: scripts run on each player's own device while they're in a game (or in a
 NeoStudio playtest). They never run in the page itself — `public/rbx/neoscript.js` runs
@@ -316,7 +349,8 @@ on a persistent volume (a Railway Volume) or it resets on every redeploy.
 - `public/rbx/` — the home page (`home.js/css`), the in-game UI + camera (`hud.js/css`),
   NeoStudio's editor (`studio.js/css`), its script editor (`codeeditor.js/css`) and the
   scripting runtime (`neoscript.js` + `neoscript-runtime.js`), the picture picker
-  (`pictures.js/css`) and paid items — the buy window and 🛒 Paid Items (`market.js/css`).
+  (`pictures.js/css`), paid items — the buy window and 🛒 Paid Items (`market.js/css`) — and
+  the avatar animation player (`animate.js`).
 - `public/vendor/quickjs/` — the QuickJS engine (WebAssembly) that runs scripts.
 - `accounts.js` — accounts, tokens, quests and the Avatar Shop catalog.
 - `market.js` — paid items in games (game passes, developer products, receipts, earnings).

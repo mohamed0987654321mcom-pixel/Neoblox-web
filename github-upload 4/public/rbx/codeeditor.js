@@ -279,6 +279,57 @@ game.GetService("UserInputService").InputBegan.Connect((input, typing) => {
   }
 });
 ` },
+    { name:'Play an animation', where:'world', code:
+`// Press 1, 2 or 3 to wave, dance or sit. Everyone in the game sees it.
+// Ready-made animations: wave, point, cheer, clap, dance, dance2, dance3, sit, bow, salute,
+// nod, shake, shrug, laugh, kick, punch, spin, flip, jumpingjacks, zombie
+const UserInputService = game.GetService("UserInputService");
+const tracks = {};
+
+function load(name) {
+  const humanoid = game.Players.LocalPlayer.Character.Humanoid;
+  const anim = Instance.new("Animation");
+  anim.AnimationId = name;
+  return humanoid.Animator.LoadAnimation(anim);
+}
+
+game.Players.LocalPlayer.CharacterAdded.Connect(() => {
+  tracks.wave = load("wave");
+  tracks.dance = load("dance");   // dance loops until you stop it
+  tracks.sit = load("sit");
+});
+
+UserInputService.InputBegan.Connect((input, typing) => {
+  if (typing || !tracks.wave) return;
+  if (input.KeyCode === Enum.KeyCode.One) tracks.wave.Play();
+  if (input.KeyCode === Enum.KeyCode.Two) { if (tracks.dance.IsPlaying) tracks.dance.Stop(); else tracks.dance.Play(); }
+  if (input.KeyCode === Enum.KeyCode.Three) { if (tracks.sit.IsPlaying) tracks.sit.Stop(); else tracks.sit.Play(); }
+});
+` },
+    { name:'Make your own animation', where:'world', code:
+`// Your own animation, made of keyframes. Angles are in degrees:
+//   arms and legs: X swings forward (90 = straight ahead, 180 = straight up), Z swings out to the side
+//   Head, Torso (bends at the hips) and Body (the whole character): X forward, Y turns left, Z tilts right
+//   Lift: move the whole character up (or down) in studs
+const anim = Instance.new("Animation");
+anim.Keyframes = [
+  { Time: 0 },
+  { Time: 0.3, RightArm: new Vector3(170, 0, 20), LeftArm: new Vector3(170, 0, 20), Lift: 0.5, EasingStyle: Enum.EasingStyle.Sine },
+  { Time: 0.6, RightArm: new Vector3(0, 0, 80), LeftArm: new Vector3(0, 0, 80), Body: new Vector3(0, 180, 0), Lift: 0, Name: "Land" },
+  { Time: 1.0, RightArm: new Vector3(0, 0, 0), LeftArm: new Vector3(0, 0, 0), Body: new Vector3(0, 360, 0) },
+];
+
+game.Players.LocalPlayer.CharacterAdded.Connect(async (character) => {
+  const track = character.Humanoid.Animator.LoadAnimation(anim);
+  // keyframes with a Name fire an event when the animation reaches them
+  track.GetMarkerReachedSignal("Land").Connect(() => game.SoundService.PlayLocalSound("land"));
+  while (character.Parent) {
+    track.Play();
+    await track.Ended.Wait();
+    await wait(2);
+  }
+});
+` },
     { name:'Day / night cycle', where:'world', code:
 `// Time of day keeps moving: day, sunset, night, sunrise…
 const Lighting = game.GetService("Lighting");
@@ -358,6 +409,21 @@ button.MouseButton1Click.Connect(() => {
   MarketplaceService.PromptGamePassPurchase(game.Players.LocalPlayer, PASS_ID);
 });
 ` },
+    { name:'Button: emote', where:'gui', code:
+`// Clicking this button does a little dance (click again to stop)
+const button = script.Parent;
+let track = null;
+
+button.MouseButton1Click.Connect(() => {
+  if (!track) {
+    const anim = Instance.new("Animation");
+    anim.AnimationId = "dance2";
+    track = game.Players.LocalPlayer.Character.Humanoid.Animator.LoadAnimation(anim);
+  }
+  if (track.IsPlaying) { track.Stop(); button.Text = "Dance"; }
+  else { track.Play(); button.Text = "Stop"; }
+});
+` },
   ];
 
   const HELP = `
@@ -392,6 +458,7 @@ button.MouseButton1Click.Connect(() => {
 <li><code>Vector3 Color3 CFrame UDim2 TweenInfo BrickColor Enum</code></li>
 <li><code>player.leaderstats</code> — a Folder named "leaderstats" with IntValues shows on the leaderboard</li>
 <li>Saving — <code>const store = game.GetService("DataStoreService").GetDataStore("PlayerData")</code>, then <code>await store.GetAsync(key)</code>, <code>store.SetAsync(key, value)</code>, <code>UpdateAsync IncrementAsync RemoveAsync</code>. Use keys like <code>"Player_" + player.UserId</code>. Saves follow the player's account to every device (up to 50 KB per game); in a playtest they stay on this computer (Test ▸ Clear Saves).</li>
+<li>Animating — <code>const anim = Instance.new("Animation"); anim.AnimationId = "wave";</code> (or dance, sit, cheer, point, clap, bow, salute, nod, shake, shrug, laugh, kick, punch, spin, flip, jumpingjacks, zombie…), then <code>const track = humanoid.Animator.LoadAnimation(anim); track.Play();</code> — <code>Stop() Looped Priority AdjustSpeed AdjustWeight TimePosition IsPlaying Ended GetMarkerReachedSignal(name)</code>. Your own: <code>anim.Keyframes = [{ Time: 0.5, RightArm: new Vector3(90, 0, 0), Lift: 1 }, …]</code> moving <code>Head Torso Body LeftArm RightArm LeftLeg RightLeg</code> (degrees). Everyone in the game sees your character's animations.</li>
 <li>Selling — make game passes and developer products in <b>🛒 Paid Items</b> (Test tab), then use their ids: <code>await MarketplaceService.UserOwnsGamePassAsync(player.UserId, id)</code>, <code>PromptGamePassPurchase(player, id)</code>, <code>PromptProductPurchase(player, id)</code>, <code>PromptGamePassPurchaseFinished</code>, <code>MarketplaceService.ProcessReceipt = (receipt) =&gt; Enum.ProductPurchaseDecision.PurchaseGranted</code>. Players pay tokens in Neoblox's own buy window; you earn 70%. Playtest purchases are pretend.</li>
 <li>Neoblox extras: <code>part.Gameplay = "KillBrick" | "Checkpoint" | "JumpPad"</code>, <code>player.GiveXP(10)</code></li>
 </ul>
@@ -411,7 +478,9 @@ button.MouseButton1Click.Connect(() => {
     'Decal Texture Face NormalId Front Back Left Right Top Bottom ImageLabel Image ' +
     'DataStoreService GetDataStore GetGlobalDataStore GetAsync SetAsync UpdateAsync IncrementAsync RemoveAsync BindToClose UserId DisplayName ' +
     'MarketplaceService UserOwnsGamePassAsync PromptGamePassPurchase PromptProductPurchase PromptGamePassPurchaseFinished PromptProductPurchaseFinished ProcessReceipt ' +
-    'GetProductInfo ProductPurchaseDecision PurchaseGranted NotProcessedYet ProductId PlayerId PurchaseId CurrencySpent GetPlayerByUserId InfoType GamePass Product').split(' ');
+    'GetProductInfo ProductPurchaseDecision PurchaseGranted NotProcessedYet ProductId PlayerId PurchaseId CurrencySpent GetPlayerByUserId InfoType GamePass Product ' +
+    'Animation AnimationId Keyframes Animator LoadAnimation AnimationTrack IsPlaying Looped Priority AnimationPriority AdjustSpeed AdjustWeight TimePosition Length ' +
+    'WeightCurrent Ended Stopped DidLoop KeyframeReached GetMarkerReachedSignal GetTimeOfKeyframe GetPlayingAnimationTracks Time Lift Torso Body RightArm LeftArm RightLeg LeftLeg Action Idle Movement').split(' ');
   const GLOBAL_WORDS = 'game workspace script Instance Vector3 Vector2 Color3 BrickColor CFrame UDim2 TweenInfo Enum RaycastParams wait task print warn math tick time spawn delay console const let function async await return if else for while true false null new break continue typeof'.split(' ');
 
   // ------------------------------------------------------------------ syntax highlighting

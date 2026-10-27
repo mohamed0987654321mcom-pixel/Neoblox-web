@@ -1531,6 +1531,13 @@ function netHandleMessage(msg){
       const p = Net.peers[msg.id] || (Net.peers[msg.id] = { x:0,y:1,z:0, ry:0, anim:'idle' });
       p.id = msg.id; p.name = msg.name; p.avatar = msg.avatar; p.world = msg.world; p.isAdmin = !!msg.isAdmin;
       if(msg.pstate) p.pstate = msg.pstate;
+      p.scriptAnims = null; // a new game: whatever they were playing before is over
+      break;
+    }
+    case 'anim': {
+      // the animations another player's game is playing on their character
+      const p = Net.peers[msg.id];
+      if(p && window.NeoAnimate) p.scriptAnims = NeoAnimate.fromNet(msg.tracks, p.scriptAnims);
       break;
     }
     case 'pstate': {
@@ -2220,6 +2227,14 @@ function trySetPersonalSkin(name){
   return { ok:true, message:'👤 Wearing the "'+name+'" skin' };
 }
 
+// Your own avatar: walking/idle/emotes, plus any animations the game's scripts are playing on it
+// (AnimationTrack — rbx/animate.js puts back last frame's script pose first, then adds this frame's).
+function animateLocalAvatar(p, moving){
+  if(window.NeoAnimate) NeoAnimate.unapply(p.rig);
+  animateAvatar(p.rig, App.clockT, { speedFactor: moving?1:0, jumping: !p.grounded, emote: App.emote });
+  const sa = window.NeoScript && NeoScript.anims ? NeoScript.anims() : null;
+  if(sa) NeoAnimate.apply(p.rig, sa, moving || !p.grounded);
+}
 function animateAvatar(rig, t, opts){
   opts = opts || {};
   const speed = opts.speedFactor || 0;   // 0..1 how fast moving
@@ -3678,13 +3693,18 @@ function syncRemotePeers(dt){
   Object.keys(App.remoteAvatars).forEach(id=>{
     if(!seen.has(id)){ App.scene.remove(App.remoteAvatars[id].rig.group); disposeObj(App.remoteAvatars[id].rig.group); delete App.remoteAvatars[id]; }
   });
-  Object.values(App.remoteAvatars).forEach(av=>{
+  Object.keys(App.remoteAvatars).forEach(id=>{
+    const av = App.remoteAvatars[id];
     av.rig.group.position.lerp(av.target, Math.min(1, dt*10));
     let ang = av.yaw - av.rig.group.rotation.y;
     ang = Math.atan2(Math.sin(ang), Math.cos(ang));
     av.rig.group.rotation.y += ang * Math.min(1, dt*10);
     const moving = av.rig.group.position.distanceTo(av.target) > 0.05;
+    // animations their game's scripts are playing on them (sent by their own device)
+    const pa = usingNet && Net.peers[id] ? Net.peers[id].scriptAnims : null;
+    if(window.NeoAnimate){ NeoAnimate.unapply(av.rig); if(pa) NeoAnimate.step(pa, dt); }
     animateAvatar(av.rig, App.clockT, { speedFactor: moving?0.8:0, jumping:false, emote: av.emote });
+    if(pa) NeoAnimate.apply(av.rig, pa, moving);
   });
   renderPlayerList();
   setOnlineCount(1 + App.bots.length + Object.keys(App.remoteAvatars).length);
@@ -4006,7 +4026,7 @@ function updateAvatarController(dt){
   if(humActive() && window.RbxCam){
     // Roblox-style: the character turns to face where it's walking (unless shift-lock is on)
     RbxCam.faceCharacter(dt, p, mv, moving);
-    animateAvatar(p.rig, App.clockT, { speedFactor: moving?1:0, jumping: !p.grounded, emote: App.emote });
+    animateLocalAvatar(p, moving);
     RbxCam.update(dt, p, false);
     sendPresence();
     humCheckTouches(p);
@@ -4015,7 +4035,7 @@ function updateAvatarController(dt){
     return;
   }
   p.rig.group.rotation.y = App.yaw;
-  animateAvatar(p.rig, App.clockT, { speedFactor: moving?1:0, jumping: !p.grounded, emote: App.emote });
+  animateLocalAvatar(p, moving);
 
   const camDir = camDirFromYawPitch(App.yaw, App.pitch);
   const headPos = new THREE.Vector3(p.pos.x, p.pos.y+1.55, p.pos.z);
@@ -6980,6 +7000,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 });
 </script>
 <script src="rbx/hud.js"></script>
+<script src="rbx/animate.js"></script>
 <script src="rbx/neoscript.js"></script>
 <script src="rbx/codeeditor.js"></script>
 <script src="rbx/pictures.js"></script>

@@ -216,6 +216,49 @@ const wait = (ms)=> new Promise(r=>setTimeout(r, ms));
       assert.equal(m.stats.Long.length, 16);     // trimmed value
       a.ws.close(); b.ws.close();
     });
+    await check('script animations reach others in the same game, checked and capped', async ()=>{
+      const a = await wsClient(), b = await wsClient(), far = await wsClient();
+      a.send({ t:'hello', name:'Dancer' }); b.send({ t:'hello', name:'Watcher' }); far.send({ t:'hello', name:'Elsewhere' });
+      a.send({ t:'presence', x:0,y:1,z:0, ry:0, world:'play:anim1' });
+      b.send({ t:'presence', x:0,y:1,z:0, ry:0, world:'play:anim1' });
+      far.send({ t:'presence', x:0,y:1,z:0, ry:0, world:'play:other' });
+      await wait(200);
+      const good = { id:3, d:{ len:1, k:[ { t:0, e:5, j:{ ra:[0,0,0] } }, { t:1, e:5, j:{ ra:[165,0,9999] }, l:50 } ] }, loop:true, speed:99, w:0.5, prio:3, pos:0.2 };
+      a.send({ t:'anim', tracks:[ good,
+        { id:4, d:{ len:1, k:[ { t:0, j:{ evil:[1,2,3] } } ] } },          // not a joint
+        { id:5, d:{ len:1, k:[ { t:1 }, { t:0 } ] } },                    // out of order
+        { id:'x', d:good.d }, ...Array(10).fill(good) ] });
+      await wait(200);
+      const m = b.inbox.find(x => x.t === 'anim');
+      assert.ok(m, 'watcher gets it');
+      assert.equal(m.tracks.length, 5);                                  // only the first 8 are looked at; 3 of those were bad
+      assert.equal(m.tracks[0].id, 3);
+      assert.deepEqual(m.tracks[0].d.k[1].j.ra, [165, 0, 1440]);          // angles capped
+      assert.equal(m.tracks[0].d.k[1].l, 10);                             // lift capped
+      assert.equal(m.tracks[0].speed, 10);                                // speed capped
+      assert.ok(!m.tracks.some(t => t.id === 4 || t.id === 5));          // bad ones dropped
+      assert.ok(!far.inbox.some(x => x.t === 'anim'), 'other games don\'t get it');
+      // someone joining later sees it too
+      const late = await wsClient();
+      late.send({ t:'hello', name:'Late' }); late.send({ t:'presence', x:0,y:1,z:0, ry:0, world:'play:anim1' });
+      await wait(200);
+      assert.ok(late.inbox.some(x => x.t === 'anim' && x.tracks.length && x.tracks[0].id === 3), 'late joiner gets the current animation');
+      // too big, or too often: dropped
+      b.inbox.length = 0;
+      a.send({ t:'anim', tracks:[ { id:9, d:{ len:1, k: Array(200).fill(0).map((_, i) => ({ t: i / 200, j:{ h:[123.45,123.45,123.45], t:[123.45,123.45,123.45], b:[123.45,123.45,123.45], la:[123.45,123.45,123.45], ra:[123.45,123.45,123.45], ll:[123.45,123.45,123.45], rl:[123.45,123.45,123.45] } })) } } ] });
+      for(let i = 0; i < 30; i++) a.send({ t:'anim', tracks:[] });
+      await wait(250);
+      assert.ok(!b.inbox.some(x => x.t === 'anim' && x.tracks.some(t => t.id === 9)), 'oversized message dropped');
+      assert.ok(b.inbox.filter(x => x.t === 'anim').length <= 11, 'flood is rate limited');
+      // leaving for another game clears it
+      a.send({ t:'presence', x:0,y:1,z:0, ry:0, world:'play:other' });
+      await wait(150);
+      const later = await wsClient();
+      later.send({ t:'hello', name:'Later' }); later.send({ t:'presence', x:0,y:1,z:0, ry:0, world:'play:other' });
+      await wait(200);
+      assert.ok(!later.inbox.some(x => x.t === 'anim' && x.tracks.length), 'a new game starts with no animation');
+      [a, b, far, late, later].forEach(c => c.ws.close());
+    });
     await check('game saves: each account keeps its own progress per game, with limits', async ()=>{
       const game = (await api('POST', '/api/worlds', { name:'Coins', blocks:[] }, token)).data.id;
       const game2 = (await api('POST', '/api/worlds', { name:'Other', blocks:[] })).data.id;

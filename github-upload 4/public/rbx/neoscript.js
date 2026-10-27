@@ -90,6 +90,8 @@
   // ------------------------------------------------------------------ sessions
   let S = null, seq = 0;
   NS.active = ()=> !!(S && S.ready);
+  // the animations scripts are playing on your character (for the avatar to draw)
+  NS.anims = ()=> S && S.anims && S.anims.tracks.size ? S.anims : null;
   NS.session = ()=> S;
 
   // kind: 'play' (a published/built-in world) or 'studio' (NeoStudio playtest)
@@ -102,7 +104,8 @@
     const id = ++seq;
     S = { id, kind, ready:false, queue:[], parts:new Map(), files:{}, nextRid:0, loose:new Set(), moved:new Set(), touching:new Map(), strikes:0,
           remotes:new Set(), lastPlayer:App.player, lastDead:false, lastHealth: App.hum ? App.hum.health : 100, logWin:0, logN:0, noteWin:0, noteN:0, chatWin:0, chatN:0,
-          sndWin:0, sndN:0, xp:0, made:0, lights:0, gui:new Map(), guiN:0, statKeys:[], statsDirty:false, statsAt:0, sky:null, t0: App.clockT, kick:null, remoteAt:0 };
+          sndWin:0, sndN:0, xp:0, made:0, lights:0, gui:new Map(), guiN:0, statKeys:[], statsDirty:false, statsAt:0, sky:null, t0: App.clockT, kick:null, remoteAt:0,
+          anims: window.NeoAnimate ? NeoAnimate.state() : null, animAt:0, animShared:false };
     if(kind==='studio' && window.NeoStudioUI) NeoStudioUI.log('Loading '+scripts.list.length+' script'+(scripts.list.length===1?'':'s')+'…');
     // games that save (DataStoreService) get this player's saved data loaded first, so their
     // scripts can read it straight away
@@ -302,7 +305,7 @@
     if(window.NeoQuickJS && NeoQuickJS.reset) NeoQuickJS.reset();
     enginePromise = null; checker = null;
     const s = S; S = null;
-    if(s){ s.rt = null; s.vm = null; if(s.save) flushSave(s.save, true); } // a crashed engine can't be cleaned up safely; let it go
+    if(s){ s.rt = null; s.vm = null; if(s.save) flushSave(s.save, true); if(s.animShared && Net.connected) netSend({ t:'anim', tracks:[] }); } // a crashed engine can't be cleaned up safely; let it go
   }
 
   // What the Output window needs to open the script an error came from, at that line.
@@ -325,6 +328,7 @@
     const s = S;
     if(!s.inGuest) farewell(s, quiet);
     S = null;
+    if(s.animShared && Net.connected) netSend({ t:'anim', tracks:[] }); // your animations stop for everyone
     if(s.inGuest){ if(s.save) flushSave(s.save, true); return; } // never free an engine mid-call; it's dropped instead
     teardownVm(s);
     App.gravMul = 1;
@@ -506,6 +510,14 @@
     if(!S) return;
     pump();
     if(!S) return;
+    if(S.anims){
+      NeoAnimate.step(S.anims, dt);
+      // others in the game see your animations (a few times a second at most, only when they change)
+      if(S.anims.dirty && S.kind === 'play' && Net.connected && App.clockT - S.animAt > 0.2){
+        S.anims.dirty = false; S.animAt = App.clockT; S.animShared = true;
+        netSend({ t:'anim', tracks: NeoAnimate.toNet(S.anims) });
+      }
+    }
     stepLoose(dt);
     if(S.hitDeadline){
       if(++S.strikes >= LIMITS.strikes){ out2('err', 'Scripts were stopped: a script kept running without ever waiting. Use "await wait()" inside loops.'); NS.stop(true); return; }
@@ -848,6 +860,10 @@
       if(sky !== S.sky){ S.sky = sky; applySky(sky); }
     },
     gravity(d){ App.gravMul = lim(d.g, 0, 1000, 196.2) / 196.2; },
+    // AnimationTrack on your own character (drawn by rbx/animate.js, and sent to others)
+    'anim.play'(d){ if(S.anims) NeoAnimate.play(S.anims, d); },
+    'anim.stop'(d){ if(S.anims) NeoAnimate.stop(S.anims, d.id, d.fade); },
+    'anim.set'(d){ if(S.anims) NeoAnimate.set(S.anims, d.id, d); },
     // MarketplaceService: what an item is, whether you own a pass, and Neoblox's own buy window
     'mk.info'(d){
       const i = S.market && S.market.items.get(String(d.id));

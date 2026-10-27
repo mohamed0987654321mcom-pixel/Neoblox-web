@@ -369,6 +369,8 @@
     ProductPurchaseDecision: makeEnum('ProductPurchaseDecision', ['NotProcessedYet','PurchaseGranted']),
     InfoType: makeEnum('InfoType', ['Asset','Product','GamePass','Subscription','Bundle']),
     CurrencyType: makeEnum('CurrencyType', ['Default','Robux','Tix','Tokens']),
+    // lowest first: a higher priority animation wins on the parts both move
+    AnimationPriority: makeEnum('AnimationPriority', ['Core','Idle','Movement','Action','Action2','Action3','Action4']),
   });
   // Pictures are Neoblox uploads, referenced by id. "rbxassetid://…"-style prefixes are accepted
   // so Roblox-looking code works; anything else is kept as text but shows nothing.
@@ -732,12 +734,220 @@
     get MoveDirection(){ return new Vector3(); }
     get Sit(){ return false; } set Sit(v){ }
     TakeDamage(n){ this._t._owner._setChar({ damage: Math.max(0, num(n, 'TakeDamage amount')) }); }
+    // older Roblox code loads animations on the Humanoid itself; it's the same as its Animator
+    LoadAnimation(anim){ return animatorOf(this).LoadAnimation(anim); }
+    GetPlayingAnimationTracks(){ return animatorOf(this).GetPlayingAnimationTracks(); }
     ChangeState(){ }
     GetState(){ return this.Health <= 0 ? Enum.HumanoidStateType.Dead : Enum.HumanoidStateType.Running; }
     MoveTo(){ }
     UnequipTools(){ }
     Clone(){ return null; }
   }
+
+  // ---------------- animations: Animation, Animator, AnimationTrack
+  // Like Roblox: const track = humanoid.Animator.LoadAnimation(anim); track.Play();
+  // An Animation is either one of Neoblox's ready-made ones (anim.AnimationId = "wave") or your
+  // own (anim.Keyframes = [...], see keyframeDef below). Only your own character's animations
+  // show (to you and everyone in the game) — each player's device animates its own player.
+  // The pose itself is drawn by the host (rbx/animate.js); here we keep time for the events.
+  const ANIM_JOINTS = { Head:'h', Torso:'t', UpperTorso:'t', Body:'b', LowerTorso:'b', HumanoidRootPart:'b',
+    RightArm:'ra', 'Right Arm':'ra', RightUpperArm:'ra', LeftArm:'la', 'Left Arm':'la', LeftUpperArm:'la',
+    RightLeg:'rl', 'Right Leg':'rl', RightUpperLeg:'rl', LeftLeg:'ll', 'Left Leg':'ll', LeftUpperLeg:'ll' };
+  const ANIM_KF_KEYS = new Set(['Time','Name','EasingStyle','EasingDirection','Lift','Pose']);
+  // Ready-made animations, written the same way as your own: angles in degrees.
+  //  arms/legs: X swings forward (90 = straight ahead, 180 = straight up), Z swings out to the side
+  //  Head/Torso/Body: X bends forward, Y turns left, Z tilts right · Lift: studs up
+  const V3 = (x, y, z) => new Vector3(x, y || 0, z || 0);
+  const BUILTIN_ANIMS = {
+    wave: { loop:false, k: [ { Time:0 }, { Time:0.25, RightArm:V3(165,0,25), Head:V3(0,0,-6), EasingStyle:'Sine' }, { Time:0.5, RightArm:V3(165,0,5) }, { Time:0.75, RightArm:V3(165,0,25) },
+      { Time:1, RightArm:V3(165,0,5) }, { Time:1.25, RightArm:V3(165,0,25), Head:V3(0,0,-6) }, { Time:1.6, RightArm:V3(0), Head:V3(0), EasingStyle:'Sine' } ] },
+    point: { loop:false, k: [ { Time:0 }, { Time:0.25, RightArm:V3(90), Head:V3(0,-8,0), EasingStyle:'Quad' }, { Time:1.4, RightArm:V3(90), Head:V3(0,-8,0) }, { Time:1.7, RightArm:V3(0), Head:V3(0) } ] },
+    cheer: { loop:false, k: [ { Time:0 }, { Time:0.2, RightArm:V3(170,0,20), LeftArm:V3(170,0,20), Lift:0.25, Head:V3(-12), EasingStyle:'Quad' }, { Time:0.4, RightArm:V3(160,0,30), LeftArm:V3(160,0,30), Lift:0 },
+      { Time:0.6, RightArm:V3(170,0,20), LeftArm:V3(170,0,20), Lift:0.25 }, { Time:0.8, Lift:0 }, { Time:1.2, RightArm:V3(170,0,20), LeftArm:V3(170,0,20), Head:V3(-12) }, { Time:1.5, RightArm:V3(0), LeftArm:V3(0), Head:V3(0) } ] },
+    clap: { loop:false, k: [ { Time:0 }, { Time:0.2, RightArm:V3(80,0,12), LeftArm:V3(80,0,12) }, { Time:0.35, RightArm:V3(80,0,-12), LeftArm:V3(80,0,-12), Name:'Clap' }, { Time:0.5, RightArm:V3(80,0,12), LeftArm:V3(80,0,12) },
+      { Time:0.65, RightArm:V3(80,0,-12), LeftArm:V3(80,0,-12), Name:'Clap' }, { Time:0.8, RightArm:V3(80,0,12), LeftArm:V3(80,0,12) }, { Time:0.95, RightArm:V3(80,0,-12), LeftArm:V3(80,0,-12), Name:'Clap' }, { Time:1.25, RightArm:V3(0), LeftArm:V3(0) } ] },
+    dance: { loop:true, k: [ { Time:0, Body:V3(0,-20,0), RightArm:V3(120,0,30), LeftArm:V3(-20,0,20), RightLeg:V3(0), LeftLeg:V3(25), Lift:0, EasingStyle:'Sine' },
+      { Time:0.25, Lift:0.12 }, { Time:0.5, Body:V3(0,20,0), RightArm:V3(-20,0,20), LeftArm:V3(120,0,30), RightLeg:V3(25), LeftLeg:V3(0), Lift:0, EasingStyle:'Sine' }, { Time:0.75, Lift:0.12 },
+      { Time:1, Body:V3(0,-20,0), RightArm:V3(120,0,30), LeftArm:V3(-20,0,20), RightLeg:V3(0), LeftLeg:V3(25), Lift:0 } ] },
+    dance2: { loop:true, k: [ { Time:0, RightArm:V3(-25,0,-30), LeftArm:V3(-25,0,30), Torso:V3(0,0,-12), Body:V3(0,0,0), EasingStyle:'Sine' }, { Time:0.4, RightArm:V3(25,0,30), LeftArm:V3(25,0,-30), Torso:V3(0,0,12), EasingStyle:'Sine' },
+      { Time:0.8, RightArm:V3(-25,0,-30), LeftArm:V3(-25,0,30), Torso:V3(0,0,-12) } ] },
+    dance3: { loop:true, k: [ { Time:0, RightArm:V3(170,0,40), LeftArm:V3(170,0,40), Body:V3(0,0,-10), Lift:0, EasingStyle:'Sine' }, { Time:0.3, RightArm:V3(170,0,10), LeftArm:V3(170,0,10), Lift:0.15 },
+      { Time:0.6, RightArm:V3(170,0,40), LeftArm:V3(170,0,40), Body:V3(0,0,10), Lift:0, EasingStyle:'Sine' }, { Time:0.9, RightArm:V3(170,0,10), LeftArm:V3(170,0,10), Lift:0.15 }, { Time:1.2, RightArm:V3(170,0,40), LeftArm:V3(170,0,40), Body:V3(0,0,-10), Lift:0 } ] },
+    sit: { loop:true, k: [ { Time:0, RightLeg:V3(90), LeftLeg:V3(90), RightArm:V3(25), LeftArm:V3(25), Lift:-0.75 }, { Time:1, RightLeg:V3(90), LeftLeg:V3(90), RightArm:V3(25), LeftArm:V3(25), Lift:-0.75 } ] },
+    bow: { loop:false, k: [ { Time:0 }, { Time:0.4, Torso:V3(50), Head:V3(10), RightArm:V3(20,0,-10), LeftArm:V3(20,0,-10), EasingStyle:'Sine' }, { Time:1, Torso:V3(50), Head:V3(10), RightArm:V3(20,0,-10), LeftArm:V3(20,0,-10) },
+      { Time:1.4, Torso:V3(0), Head:V3(0), RightArm:V3(0), LeftArm:V3(0), EasingStyle:'Sine' } ] },
+    salute: { loop:false, k: [ { Time:0 }, { Time:0.25, RightArm:V3(150,0,-55), Head:V3(-5), EasingStyle:'Quad' }, { Time:1.3, RightArm:V3(150,0,-55), Head:V3(-5) }, { Time:1.6, RightArm:V3(0), Head:V3(0) } ] },
+    nod: { loop:false, k: [ { Time:0, Head:V3(0), EasingStyle:'Sine' }, { Time:0.2, Head:V3(22) }, { Time:0.4, Head:V3(-4) }, { Time:0.6, Head:V3(22) }, { Time:0.85, Head:V3(0) } ] },
+    shake: { loop:false, k: [ { Time:0, Head:V3(0), EasingStyle:'Sine' }, { Time:0.15, Head:V3(0,28,0) }, { Time:0.35, Head:V3(0,-28,0) }, { Time:0.55, Head:V3(0,28,0) }, { Time:0.75, Head:V3(0,-28,0) }, { Time:0.9, Head:V3(0) } ] },
+    shrug: { loop:false, k: [ { Time:0 }, { Time:0.25, RightArm:V3(30,0,35), LeftArm:V3(30,0,35), Head:V3(0,0,12), Lift:0.05, EasingStyle:'Quad' }, { Time:0.9, RightArm:V3(30,0,35), LeftArm:V3(30,0,35), Head:V3(0,0,12), Lift:0.05 },
+      { Time:1.2, RightArm:V3(0), LeftArm:V3(0), Head:V3(0), Lift:0 } ] },
+    laugh: { loop:false, k: [ { Time:0 }, { Time:0.2, Torso:V3(-15), Head:V3(-20), RightArm:V3(10,0,15), LeftArm:V3(10,0,15) }, { Time:0.35, Torso:V3(-8), Lift:0.05 }, { Time:0.5, Torso:V3(-15), Lift:0 },
+      { Time:0.65, Torso:V3(-8), Lift:0.05 }, { Time:0.8, Torso:V3(-15), Lift:0 }, { Time:0.95, Torso:V3(-8), Lift:0.05 }, { Time:1.3, Torso:V3(0), Head:V3(0), RightArm:V3(0), LeftArm:V3(0), Lift:0 } ] },
+    kick: { loop:false, k: [ { Time:0 }, { Time:0.12, RightLeg:V3(-30), LeftArm:V3(30), EasingStyle:'Quad', EasingDirection:'Out' }, { Time:0.25, RightLeg:V3(100), RightArm:V3(-30), LeftArm:V3(40), Torso:V3(-10), Name:'Hit' },
+      { Time:0.6, RightLeg:V3(0), RightArm:V3(0), LeftArm:V3(0), Torso:V3(0) } ] },
+    punch: { loop:false, k: [ { Time:0 }, { Time:0.1, RightArm:V3(40,0,10), Torso:V3(0,15,0), EasingStyle:'Quad' }, { Time:0.2, RightArm:V3(95), LeftArm:V3(30), Torso:V3(0,-20,0), Name:'Hit' }, { Time:0.5, RightArm:V3(0), LeftArm:V3(0), Torso:V3(0) } ] },
+    spin: { loop:false, k: [ { Time:0, Body:V3(0), RightArm:V3(0,0,0), LeftArm:V3(0,0,0) }, { Time:0.15, RightArm:V3(0,0,70), LeftArm:V3(0,0,70) }, { Time:0.45, Body:V3(0,180,0) }, { Time:0.75, Body:V3(0,360,0), RightArm:V3(0,0,70), LeftArm:V3(0,0,70) },
+      { Time:0.9, RightArm:V3(0), LeftArm:V3(0) } ] },
+    flip: { loop:false, k: [ { Time:0, Body:V3(0), Lift:0, RightLeg:V3(0), LeftLeg:V3(0), EasingStyle:'Quad', EasingDirection:'Out' }, { Time:0.3, Body:V3(-180), Lift:1.6, RightLeg:V3(60), LeftLeg:V3(60), RightArm:V3(150), LeftArm:V3(150), EasingStyle:'Quad', EasingDirection:'In' },
+      { Time:0.6, Body:V3(-360), Lift:0, RightLeg:V3(0), LeftLeg:V3(0), RightArm:V3(0), LeftArm:V3(0), Name:'Land' } ] },
+    jumpingjacks: { loop:true, k: [ { Time:0, RightArm:V3(0,0,5), LeftArm:V3(0,0,5), RightLeg:V3(0), LeftLeg:V3(0), Lift:0, EasingStyle:'Sine' }, { Time:0.2, Lift:0.25 },
+      { Time:0.4, RightArm:V3(0,0,165), LeftArm:V3(0,0,165), RightLeg:V3(0,0,20), LeftLeg:V3(0,0,20), Lift:0, EasingStyle:'Sine' }, { Time:0.6, Lift:0.25 }, { Time:0.8, RightArm:V3(0,0,5), LeftArm:V3(0,0,5), RightLeg:V3(0), LeftLeg:V3(0), Lift:0 } ] },
+    // arms only: your legs keep walking underneath
+    zombie: { loop:true, k: [ { Time:0, RightArm:V3(90,0,-5), LeftArm:V3(90,0,-5), Head:V3(10,0,8), EasingStyle:'Sine' }, { Time:1, RightArm:V3(85,0,-8), LeftArm:V3(95,0,-2), Head:V3(10,0,-8), EasingStyle:'Sine' },
+      { Time:2, RightArm:V3(90,0,-5), LeftArm:V3(90,0,-5), Head:V3(10,0,8) } ] },
+  };
+  const BUILTIN_NAMES = Object.keys(BUILTIN_ANIMS);
+  const easeCode = (style, dir) => {
+    const st = style instanceof EnumItem ? style : (typeof style === 'string' && Enum.EasingStyle[style]) || Enum.EasingStyle.Linear;
+    const di = dir instanceof EnumItem ? dir : (typeof dir === 'string' && Enum.EasingDirection[dir]) || Enum.EasingDirection.InOut;
+    return st.Value * 3 + di.Value;
+  };
+  function degTriple(v, where){
+    if(typeof v === 'number') v = new Vector3(v, 0, 0);
+    if(v && !(v instanceof Vector3) && typeof v === 'object' && ('X' in v || 'Y' in v || 'Z' in v)) v = new Vector3(+v.X || 0, +v.Y || 0, +v.Z || 0);
+    if(!(v instanceof Vector3)) throw new TypeError(where + ' must be a Vector3 of angles in degrees, like new Vector3(90, 0, 0)');
+    const c = (n) => Number.isFinite(n) ? Math.max(-1440, Math.min(1440, Math.round(n * 100) / 100)) : 0;
+    return [c(v.X), c(v.Y), c(v.Z)];
+  }
+  // [{ Time, Head/Torso/Body/LeftArm/RightArm/LeftLeg/RightLeg: Vector3, Lift, Name, EasingStyle, EasingDirection }, …]
+  //  -> { len, k:[{ t, e, j:{ h:[x,y,z], … }, l }], marks:[{ t, n }] }
+  function keyframeDef(list){
+    if(!Array.isArray(list) || !list.length) throw new TypeError('Keyframes must be a list, like [{ Time: 0, RightArm: new Vector3(0, 0, 0) }, { Time: 0.5, RightArm: new Vector3(90, 0, 0) }]');
+    if(list.length > 200) throw new Error('An animation can have up to 200 keyframes');
+    const k = [], marks = [];
+    let last = 0;
+    list.forEach((kf, i) => {
+      const where = 'Keyframe ' + (i + 1);
+      if(!kf || typeof kf !== 'object') throw new TypeError(where + ' must be a table like { Time: 0.5, RightArm: new Vector3(90, 0, 0) }');
+      const t = kf.Time === undefined ? (i === 0 ? 0 : NaN) : Number(kf.Time);
+      if(!Number.isFinite(t) || t < 0 || t > 60) throw new Error(where + ' needs a Time in seconds (0 to 60)');
+      if(t < last) throw new Error(where + ': keyframes must be in order of Time');
+      last = t;
+      const out = { t: Math.round(t * 1000) / 1000, e: easeCode(kf.EasingStyle, kf.EasingDirection), j: {} };
+      const pose = Object.assign({}, kf.Pose && typeof kf.Pose === 'object' ? kf.Pose : {}, kf);
+      Object.keys(pose).forEach(name => {
+        if(ANIM_KF_KEYS.has(name)) return;
+        const j = ANIM_JOINTS[name];
+        if(!j) throw new Error(where + ': "' + name + '" isn\'t something Neoblox can animate — use Head, Torso, Body, LeftArm, RightArm, LeftLeg, RightLeg or Lift');
+        out.j[j] = degTriple(pose[name], where + ' ' + name);
+      });
+      if(kf.Lift !== undefined){ const l = Number(kf.Lift); if(!Number.isFinite(l)) throw new TypeError(where + ': Lift must be a number of studs'); out.l = Math.max(-10, Math.min(10, Math.round(l * 1000) / 1000)); }
+      if(kf.Name !== undefined && kf.Name !== null && kf.Name !== ''){ const n = fmt(kf.Name).slice(0, 40); marks.push({ t: out.t, n }); }
+      k.push(out);
+    });
+    return { len: last, k, marks };
+  }
+  class Animation extends Instance {
+    constructor(){ super('Animation'); this._id = ''; this._kf = null; this._def = null; }
+    get AnimationId(){ return this._t._id; }
+    set AnimationId(v){ const t = this._t; t._id = v === undefined || v === null ? '' : fmt(v).slice(0, 100); t._def = null; }
+    // Neoblox extra: your own animation, as keyframes (see keyframeDef)
+    get Keyframes(){ return this._t._kf; }
+    set Keyframes(v){ const t = this._t; if(v === null || v === undefined){ t._kf = null; t._def = null; return; } t._def = keyframeDef(v); t._kf = v; }
+    _resolve(){
+      const t = this._t;
+      if(t._def) return { def: t._def, loop: false };
+      const name = String(t._id).replace(/^(neoblox|rbxassetid):\/\//i, '').trim().toLowerCase();
+      if(!name) throw new Error('Give the Animation an AnimationId (like "wave") or your own Keyframes');
+      const b = BUILTIN_ANIMS[name];
+      if(!b) throw new Error('No animation called "' + t._id + '" — Neoblox has ' + BUILTIN_NAMES.join(', ') + ', or make your own with anim.Keyframes');
+      if(!b._def) b._def = keyframeDef(b.k);
+      return { def: b._def, loop: b.loop };
+    }
+    Clone(){ const c = wrap(new Animation()); c._t._name = this._t._name; c._t._id = this._t._id; c._t._kf = this._t._kf; c._t._def = this._t._def; return c; }
+  }
+  let animSeq = 0;
+  const PLAYING_TRACKS = new Set();
+  class AnimationTrack {
+    constructor(animator, anim, res){
+      this._animator = animator; this._def = res.def; this._id = ++animSeq; this._sent = false;
+      this._looped = res.loop; this._prio = Enum.AnimationPriority.Action; this._speed = 1; this._weight = 1; this._pos = 0; this._playing = false;
+      this.Animation = anim; this.Name = anim.Name;
+      this.Stopped = new RBXScriptSignal('Stopped'); this.Ended = new RBXScriptSignal('Ended'); this.DidLoop = new RBXScriptSignal('DidLoop');
+      this.KeyframeReached = new RBXScriptSignal('KeyframeReached');
+      this._marks = new Map();
+    }
+    get _local(){ const o = this._animator._t._owner; return !!(o && o._local); }
+    _host(op, data){ if(this._local) host(op, Object.assign({ id: this._id }, data)); }
+    get Length(){ return this._def.len; }
+    get IsPlaying(){ return this._playing; }
+    get Looped(){ return this._looped; }
+    set Looped(v){ this._looped = !!v; if(this._playing) this._host('anim.set', { loop: this._looped }); }
+    get Priority(){ return this._prio; }
+    set Priority(v){
+      const p = v instanceof EnumItem && v.EnumType === 'AnimationPriority' ? v : Enum.AnimationPriority[v];
+      if(!p) throw new TypeError('Priority must be an Enum.AnimationPriority, like Enum.AnimationPriority.Action');
+      this._prio = p; if(this._playing) this._host('anim.set', { prio: p.Value });
+    }
+    get Speed(){ return this._speed; }
+    get WeightTarget(){ return this._weight; }
+    get WeightCurrent(){ return this._playing ? this._weight : 0; }
+    get TimePosition(){ return this._pos; }
+    set TimePosition(v){ this._pos = Math.max(0, Math.min(this._def.len, num(v, 'TimePosition'))); if(this._playing) this._host('anim.set', { pos: this._pos }); }
+    Play(fadeTime, weight, speed){
+      const fade = fadeTime === undefined ? 0.1 : Math.max(0, Math.min(10, num(fadeTime, 'fadeTime')));
+      this._weight = weight === undefined ? 1 : Math.max(0, Math.min(1, num(weight, 'weight')));
+      if(speed !== undefined) this._speed = Math.max(0, Math.min(10, num(speed, 'speed')));
+      if(!this._playing){ this._pos = 0; this._fresh = true; this._playing = true; PLAYING_TRACKS.add(this); }
+      const msg = { loop: this._looped, speed: this._speed, w: this._weight, prio: this._prio.Value, fade, pos: this._pos };
+      if(!this._sent && this._local){ msg.def = { len: this._def.len, k: this._def.k }; this._sent = true; }
+      this._host('anim.play', msg);
+    }
+    Stop(fadeTime){
+      if(!this._playing) return;
+      const fade = fadeTime === undefined ? 0.1 : Math.max(0, Math.min(10, num(fadeTime, 'fadeTime')));
+      this._end(fade, true);
+    }
+    _end(fade, tell){
+      this._playing = false; PLAYING_TRACKS.delete(this);
+      if(tell) this._host('anim.stop', { fade });
+      this.Stopped._fire();
+      if(fade > 0) addTimer(fade, () => this.Ended._fire()); else this.Ended._fire();
+    }
+    AdjustSpeed(s){ this._speed = s === undefined ? 1 : Math.max(0, Math.min(10, num(s, 'speed'))); if(this._playing) this._host('anim.set', { speed: this._speed }); }
+    AdjustWeight(w, fadeTime){ this._weight = w === undefined ? 1 : Math.max(0, Math.min(1, num(w, 'weight'))); if(this._playing) this._host('anim.set', { w: this._weight, fade: fadeTime === undefined ? 0.1 : Math.max(0, +fadeTime || 0) }); }
+    // track.GetMarkerReachedSignal("Hit").Connect(…) — fires at keyframes with that Name
+    GetMarkerReachedSignal(name){ name = fmt(name); let s = this._marks.get(name); if(!s){ s = new RBXScriptSignal('MarkerReached'); this._marks.set(name, s); } return s; }
+    GetTimeOfKeyframe(name){ const m = this._def.marks.find(x => x.n === fmt(name)); if(!m) throw new Error('No keyframe named "' + name + '"'); return m.t; }
+    // named keyframes between two times (from itself included when `withFrom`)
+    _fireMarks(from, to, withFrom){
+      this._def.marks.forEach(m => {
+        if(m.t > from && m.t <= to || (withFrom && m.t === from)){ this.KeyframeReached._fire(m.n); const s = this._marks.get(m.n); if(s) s._fire(m.n); }
+      });
+    }
+    // advanced every frame by the host's clock, so it stays in step with what's drawn
+    _step(dt){
+      const len = this._def.len, from = this._pos, fresh = this._fresh;
+      this._fresh = false;
+      let to = from + dt * this._speed;
+      this._fireMarks(from, Math.min(to, len), fresh);
+      if(!this._playing) return;
+      if(to < len){ this._pos = to; return; }
+      if(!this._looped){ this._pos = len; this._end(0.15, false); return; }
+      if(len <= 0){ this._pos = 0; return; } // a looped one-keyframe animation holds its pose
+      let n = 0;
+      while(to >= len && n++ < 20){ to -= len; this.DidLoop._fire(); if(!this._playing) return; this._fireMarks(0, Math.min(to, len), true); }
+      this._pos = Math.min(to, len);
+    }
+    toString(){ return this.Name; }
+  }
+  ['Play','Stop','AdjustSpeed','AdjustWeight'].forEach(m => { AnimationTrack.prototype[m[0].toLowerCase() + m.slice(1)] = AnimationTrack.prototype[m]; });
+  class Animator extends Instance {
+    constructor(owner){ super('Animator'); this._owner = owner; this._tracks = []; }
+    LoadAnimation(anim){
+      if(!(anim instanceof Animation)) throw new TypeError('LoadAnimation needs an Animation — Instance.new("Animation")');
+      const t = this._t;
+      if(t._tracks.length >= 100) throw new Error('Too many animations loaded on this Animator (100 max) — load each one once and Play it again');
+      const tr = new AnimationTrack(this._self, anim, anim._resolve());
+      t._tracks.push(tr);
+      return tr;
+    }
+    GetPlayingAnimationTracks(){ return this._t._tracks.filter(x => x._playing); }
+    _stopAll(){ this._t._tracks.forEach(x => { if(x._playing) x._end(0, true); }); }
+    Clone(){ return null; }
+  }
+  defClass('Animation', 'Instance'); defClass('Animator', 'Instance');
+  function animatorOf(hum){ let a = hum._t._childNamed('Animator'); if(!(a instanceof Animator)){ a = wrap(new Animator(hum._t._owner)); a.Parent = hum._self; } return a; }
 
   // ---------------- players
   class Player extends Instance {
@@ -789,12 +999,14 @@
     const hum = wrap(new Humanoid(t));
     ['HumanoidRootPart','Head','Torso','Left Arm','Right Arm','Left Leg','Right Leg'].forEach(n => { const p = wrap(new CharacterPart(n, t)); p.Parent = ch; });
     hum.Parent = ch;
+    const animator = wrap(new Animator(t)); animator.Parent = hum;
     ch._t._primary = ch._t._childNamed('HumanoidRootPart');
     return ch;
   }
+  function stopCharAnims(ch){ const h = ch && ch._t._childNamed('Humanoid'); const a = h && h._t._childNamed('Animator'); if(a instanceof Animator) a._stopAll(); }
   function spawnCharacter(player){
     const t = player._t;
-    if(t._char){ t.CharacterRemoving._fire(t._char); const old = t._char; t._char = null; try{ old.Destroy(); }catch(e){} }
+    if(t._char){ t.CharacterRemoving._fire(t._char); const old = t._char; t._char = null; stopCharAnims(old); try{ old.Destroy(); }catch(e){} }
     const ch = buildCharacter(player);
     ch.Parent = WORKSPACE;
     t._char = ch;
@@ -1352,6 +1564,7 @@
     TextButton: () => wrap(new GuiObject('TextButton')),
     ImageLabel: () => wrap(new GuiObject('ImageLabel')),
     Decal: () => wrap(new Decal()),
+    Animation: () => wrap(new Animation()),
     ScreenGui: () => wrap(new ScreenGui()),
     Script: () => wrap(new BaseScript('Script')),
     LocalScript: () => wrap(new BaseScript('LocalScript')),
@@ -1479,6 +1692,7 @@
         due.sort((a, b) => a.at - b.at || a.id - b.id).forEach(t => { try{ t.fn(); }catch(e){ reportError(e); } });
       }
       if(TWEENS.size) Array.from(TWEENS).forEach(t => t._step(dt));
+      if(PLAYING_TRACKS.size) Array.from(PLAYING_TRACKS).forEach(t => { try{ t._step(dt); }catch(e){ reportError(e); } });
       const rs = SERVICES.RunService._t;
       if(rs.Stepped._conns.length) rs.Stepped._fire(now, dt);
       if(rs.Heartbeat._conns.length) rs.Heartbeat._fire(dt);
