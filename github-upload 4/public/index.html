@@ -3947,6 +3947,7 @@ function canEnterColumn(x,z,feetY){
   return (top - feetY) <= STEP;
 }
 
+const vrOn = ()=> !!(window.NeoVR && NeoVR.active());
 function updateAvatarController(dt){
   const p = App.player; if(!p) return;
   if(humActive()){
@@ -3954,6 +3955,7 @@ function updateAvatarController(dt){
     if(App.hum && App.hum.dead){
       // knocked out: the camera keeps watching the pieces until the respawn timer runs out
       if(App.clockT - App.hum.diedAt >= RESPAWN_SECONDS) humRespawn();
+      else if(vrOn()) NeoVR.follow(dt, p, true);
       else if(window.RbxCam) RbxCam.update(dt, p, true);
       return;
     }
@@ -3970,8 +3972,12 @@ function updateAvatarController(dt){
   if(App.input.back) mv.sub(forward);
   if(App.input.right) mv.add(right);
   if(App.input.left) mv.sub(right);
+  // a thumbstick (VR): how far it's pushed is how fast you walk
+  const an = App.inputAnalog;
+  if(an && (an.x || an.y)){ mv.addScaledVector(forward, an.y); mv.addScaledVector(right, an.x); }
   let moving = false;
-  if(mv.lengthSq() > 0){ mv.normalize(); moving = true; }
+  if(mv.lengthSq() > 1) mv.normalize();
+  if(mv.lengthSq() > 0.0004) moving = true; else mv.set(0, 0, 0);
 
   // scripts can change these: Humanoid.WalkSpeed / JumpPower, workspace.Gravity, a velocity push,
   // and a moving part you're standing on carries you along with it
@@ -4024,14 +4030,23 @@ function updateAvatarController(dt){
 
   p.rig.group.position.copy(p.pos);
   if(humActive() && window.RbxCam){
-    // Roblox-style: the character turns to face where it's walking (unless shift-lock is on)
-    RbxCam.faceCharacter(dt, p, mv, moving);
+    // Roblox-style: the character turns to face where it's walking (unless shift-lock is on);
+    // in VR the headset is the camera (rbx/vr.js)
+    if(vrOn()) NeoVR.face(dt, p, mv, moving); else RbxCam.faceCharacter(dt, p, mv, moving);
     animateLocalAvatar(p, moving);
-    RbxCam.update(dt, p, false);
+    if(vrOn()) NeoVR.follow(dt, p, false); else RbxCam.update(dt, p, false);
     sendPresence();
     humCheckTouches(p);
     if(App.mode==='play') checkGoal(p.pos);
     if(window.NeoScript) NeoScript.touches(p);
+    return;
+  }
+  if(vrOn()){
+    NeoVR.face(dt, p, mv, moving);
+    animateLocalAvatar(p, moving);
+    NeoVR.follow(dt, p, false);
+    sendPresence();
+    if(App.mode==='lobby') checkPortals(p.pos); else if(App.mode==='play') checkGoal(p.pos);
     return;
   }
   p.rig.group.rotation.y = App.yaw;
@@ -4483,6 +4498,7 @@ function animate(){
   // manual requestAnimationFrame loop.
   const dt = Math.min(App.clock.getDelta(), 0.05);
   App.clockT += dt;
+  if(vrOn()) NeoVR.tick(dt); // headset + controllers: where you look, thumbsticks, buttons, pointing
 
   if(App.mode==='lobby'){
     if(App.lobbyBus){ App.lobbyBus.position.y = 13 + Math.sin(App.clockT*0.6)*0.6; App.lobbyBus.rotation.y += dt*0.05; }
@@ -7001,6 +7017,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 <script src="rbx/hud.js"></script>
 <script src="rbx/animate.js"></script>
+<script src="rbx/vr.js"></script>
 <script src="rbx/neoscript.js"></script>
 <script src="rbx/codeeditor.js"></script>
 <script src="rbx/pictures.js"></script>

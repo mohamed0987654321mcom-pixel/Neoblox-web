@@ -39,6 +39,8 @@
   tokens, earning 70% of each sale (`MarketplaceService`, NeoStudio ▸ Test ▸ 🛒 Paid Items), and
   scripts can animate avatars with ready-made or their own keyframe animations that everyone
   sees (`Animator.LoadAnimation`). See below.
+- **VR** — play games and walk the lobby in VR in the Meta Quest browser (🥽 VR button): thumbstick
+  walking, snap turning, first or third person, laser pointers, a wrist menu. See below.
 
 Run the server checks with `npm test`.
 
@@ -163,6 +165,23 @@ size-capped and rate-limited by the server, and again by every receiver), so eve
 game sees it, including people who join later. The pose is drawn by `public/rbx/animate.js` on
 top of walking and emotes, on the classic avatar and on glTF skins (skins can't bend at the
 hips, so `Torso` doesn't show on them).
+
+**VR (Meta Quest browser)** — on a headset whose browser supports WebXR (the Meta Quest browser
+does), games and the lobby show a **🥽 VR** button; tap it and the headset becomes the camera
+(`public/rbx/vr.js`). Left thumbstick walks (where you look is forward; half-way is slower),
+right thumbstick turns (30° snap turns, or smooth turning from the wrist menu), **A** jumps,
+**B** switches between first person (you see through your avatar's eyes, blocky hands follow your
+controllers, walking around your room moves your avatar but walls stop it) and third person (the
+view floats behind your avatar), **X** shows/hides the wrist menu on your left hand (health,
+leaderboard, view, turning, Recenter, Leave game, Exit VR). Your eye height is measured when VR
+starts (and on Recenter) so the avatar's eyes are where yours are, standing or sitting. Anything
+a game shows on the screen floats in a panel in front of you — its labels, buttons and pictures,
+notifications, and Neoblox's buy window — and the triggers are laser pointers for those buttons
+and for ClickDetector parts. Scripts get `UserInputService.VREnabled` and the controller buttons
+as `Enum.KeyCode.ButtonA/B/X/Y`, `ButtonL1/R1` (grips), `ButtonL2/R2` (triggers). In VR there are
+no shadows and the edges are drawn with less detail (foveation) to keep the frame rate up. Thunder
+Battle, NeoStudio and the menus stay on the screen (VR ends if you go there); typing chat needs
+the headset off.
 
 How it runs: scripts run on each player's own device while they're in a game (or in a
 NeoStudio playtest). They never run in the page itself — `public/rbx/neoscript.js` runs
@@ -350,7 +369,7 @@ on a persistent volume (a Railway Volume) or it resets on every redeploy.
   NeoStudio's editor (`studio.js/css`), its script editor (`codeeditor.js/css`) and the
   scripting runtime (`neoscript.js` + `neoscript-runtime.js`), the picture picker
   (`pictures.js/css`), paid items — the buy window and 🛒 Paid Items (`market.js/css`) — and
-  the avatar animation player (`animate.js`).
+  the avatar animation player (`animate.js`) and VR for the Meta Quest browser (`vr.js`).
 - `public/vendor/quickjs/` — the QuickJS engine (WebAssembly) that runs scripts.
 - `accounts.js` — accounts, tokens, quests and the Avatar Shop catalog.
 - `market.js` — paid items in games (game passes, developer products, receipts, earnings).

@@ -557,6 +557,23 @@
     S.touching = now;
   };
   NS.guiClick = (id)=> queue({ t:'gui', id });
+  // VR: a laser from a controller. Returns the clickable part it points at (and clicks it when
+  // `click`), or null. Same reach rules as clicking with the mouse.
+  const RAY = new THREE.Raycaster();
+  NS.rayPick = function(origin, dir, click){
+    if(!S || !S.ready || !App.blockGroup || !App.player) return null;
+    let any = false; S.parts.forEach(r=>{ if(r.click && !r.removed) any = true; });
+    if(!any) return null;
+    RAY.set(origin, dir); RAY.far = 60;
+    const hit = RAY.intersectObjects(App.blockGroup.children.filter(m=> m.visible), false)[0];
+    if(!hit) return null;
+    const rec = S.parts.get(hit.object.userData.rid);
+    if(!rec || !rec.click || App.player.pos.distanceTo(hit.point) > rec.click + 1.5) return null;
+    if(click) queue({ t:'click', id: rec.rid });
+    return { point: hit.point, distance: hit.distance };
+  };
+  // VR controller buttons for scripts: Enum.KeyCode.ButtonA/B/X/Y, ButtonL1/R1 (grips), ButtonL2/R2 (triggers)
+  NS.vrButton = (key, down)=> queue({ t:'input', key, down: !!down, kind:'Gamepad1' });
   NS.onChat = (text)=> queue({ t:'chat', text: String(text||'').slice(0, 200) });
 
   // Unanchored parts fall and land on whatever is under them.
@@ -860,6 +877,7 @@
       if(sky !== S.sky){ S.sky = sky; applySky(sky); }
     },
     gravity(d){ App.gravMul = lim(d.g, 0, 1000, 196.2) / 196.2; },
+    'uis.vr'(){ return { v: !!(window.NeoVR && NeoVR.active()) }; },
     // AnimationTrack on your own character (drawn by rbx/animate.js, and sent to others)
     'anim.play'(d){ if(S.anims) NeoAnimate.play(S.anims, d); },
     'anim.stop'(d){ if(S.anims) NeoAnimate.stop(S.anims, d.id, d.fade); },

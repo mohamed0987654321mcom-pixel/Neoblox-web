@@ -353,12 +353,12 @@
     return Object.freeze(e);
   }
   const MATERIALS = ['Plastic','SmoothPlastic','Neon','Wood','WoodPlanks','Slate','Concrete','Granite','Marble','Pebble','Cobblestone','Brick','Grass','LeafyGrass','Sand','Ice','Glacier','Glass','ForceField','Metal','DiamondPlate','CorrodedMetal','Foil','Fabric','Rock','Basalt'];
-  const KEYS = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z Zero One Two Three Four Five Six Seven Eight Nine Space Return Tab Backspace LeftShift RightShift LeftControl RightControl LeftAlt RightAlt Up Down Left Right F1 F2 F3 F4 Unknown'.split(' ');
+  const KEYS = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z Zero One Two Three Four Five Six Seven Eight Nine Space Return Tab Backspace LeftShift RightShift LeftControl RightControl LeftAlt RightAlt Up Down Left Right F1 F2 F3 F4 ButtonA ButtonB ButtonX ButtonY ButtonL1 ButtonR1 ButtonL2 ButtonR2 Unknown'.split(' ');
   const Enum = Object.freeze({
     Material: makeEnum('Material', MATERIALS),
     PartType: makeEnum('PartType', ['Block','Ball','Cylinder','Wedge']),
     KeyCode: makeEnum('KeyCode', KEYS),
-    UserInputType: makeEnum('UserInputType', ['Keyboard','MouseButton1','MouseButton2','Touch','MouseMovement','None']),
+    UserInputType: makeEnum('UserInputType', ['Keyboard','MouseButton1','MouseButton2','Touch','MouseMovement','Gamepad1','None']),
     UserInputState: makeEnum('UserInputState', ['Begin','Change','End','Cancel','None']),
     EasingStyle: makeEnum('EasingStyle', ['Linear','Sine','Quad','Cubic','Quart','Quint','Exponential','Circular','Back','Bounce','Elastic']),
     EasingDirection: makeEnum('EasingDirection', ['In','Out','InOut']),
@@ -1358,7 +1358,9 @@
   const KEY_STATE = {};
   class UserInputService extends Service {
     constructor(){ super('UserInputService'); this.InputBegan = new RBXScriptSignal('InputBegan'); this.InputEnded = new RBXScriptSignal('InputEnded'); this.InputChanged = new RBXScriptSignal('InputChanged'); this.JumpRequest = new RBXScriptSignal('JumpRequest'); this.TouchTap = new RBXScriptSignal('TouchTap'); }
-    get TouchEnabled(){ return !!HOSTINFO.touch; } get KeyboardEnabled(){ return !HOSTINFO.touch; } get MouseEnabled(){ return !HOSTINFO.touch; } get GamepadEnabled(){ return false; }
+    get TouchEnabled(){ return !!HOSTINFO.touch; } get KeyboardEnabled(){ return !HOSTINFO.touch; } get MouseEnabled(){ return !HOSTINFO.touch; }
+    // in VR on a Meta Quest: the controllers' buttons arrive as Enum.KeyCode.ButtonA/B/X/Y/L1/R1/L2/R2
+    get VREnabled(){ return !!(host('uis.vr') || {}).v; } get GamepadEnabled(){ return this.VREnabled; }
     IsKeyDown(k){ const n = k instanceof EnumItem ? k.Name : String(k); return !!KEY_STATE[n]; }
     GetFocusedTextBox(){ return null; }
   }

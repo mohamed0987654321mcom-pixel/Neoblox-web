@@ -66,28 +66,44 @@
     dlg.querySelector('.nm-buy-body').innerHTML = html;
     if(had){ const b = dlg.querySelector('[data-nm="cancel"], [data-nm="ok"]'); if(b) b.focus({ preventScroll:true }); }
   }
-  function render(){
+  // What the buy window says and offers right now — drawn as HTML here, and inside the headset
+  // by rbx/vr.js (NeoMarket.vrModel), so both always agree.
+  //   note: text, or { have, need } / { have, after } (token amounts)
+  //   buy: { label, enabled, price? } · cancel: 'Cancel' | 'OK' · login: show "Log in"
+  function model(){
     const o = cur, i = o.item, u = Session.user;
-    const head = i ? `${picHtml(i, 'nm-buy-pic')}<div class="nm-buy-kind">${KIND[i.kind]}</div><h3 id="nmBuyTitle">${esc(i.name)}</h3>${i.desc ? `<p class="nm-buy-desc">${esc(i.desc)}</p>` : ''}` : '';
-    const btns = (buy, cancel)=> `<div class="nm-buy-btns">${buy || ''}${cancel === false ? '' : `<button type="button" class="nm-b" data-nm="cancel">${cancel || 'Cancel'}</button>`}</div>`;
-    if(!i){ body(`<div class="nm-nopic nm-buy-pic">🚫</div><h3 id="nmBuyTitle">Not available</h3><p class="nm-buy-desc">This ${o.kind === 'product' ? 'item' : 'pass'} isn't for sale in this game.</p>${btns('', 'OK')}`); return; }
-    if(o.bought){
-      body(`${head}<div class="nm-buy-done">✓ ${o.test ? 'Test purchase done' : 'Purchase complete'}</div>${o.test ? '<p class="nm-buy-note">Playtest — nothing was charged.</p>' : ''}${btns('', 'OK')}`);
-      return;
-    }
-    if(o.owned){ body(`${head}<div class="nm-buy-price">✓ You already own this</div>${btns('', 'OK')}`); return; }
-    if(!i.onSale){ body(`${head}<p class="nm-buy-note">This isn't for sale right now.</p>${btns('', 'OK')}`); return; }
-    const price = `<div class="nm-buy-price">${COIN} ${fmt(i.price)}</div>`;
-    const err = o.error ? `<p class="nm-buy-err" role="alert">${esc(o.error)}</p>` : '';
-    const buyBtn = (label, enabled)=> `<button type="button" class="nm-b green" data-nm="buy"${enabled && !o.busy ? '' : ' disabled'}>${o.busy ? 'Buying…' : label}</button>`;
-    if(o.test){ body(`${head}${price}<p class="nm-buy-note">🧪 Playtest — a pretend purchase. Nothing is charged.</p>${err}${btns(buyBtn('Buy (test)', o.armed))}`); return; }
-    if(!u){ body(`${head}${price}<p class="nm-buy-note">Log in to buy things with tokens.</p>${btns('<button type="button" class="nm-b green" data-nm="login">Log in</button>')}`); return; }
-    if(o.creator){ body(`${head}${price}<p class="nm-buy-note">You made this, so it's free for you.</p>${err}${btns(buyBtn('Get it free', o.armed))}`); return; }
-    if(u.unlimited){ body(`${head}${price}<p class="nm-buy-note">Free for you — unlimited tokens ∞</p>${err}${btns(buyBtn('Get it free', o.armed))}`); return; }
+    const m = { item: i || null, kind: i ? KIND[i.kind] : null, title: i ? i.name : 'Not available', desc: i ? (i.desc || '') : 'This ' + (o.kind === 'product' ? 'item' : 'pass') + ' isn\'t for sale in this game.',
+      price: null, done: null, owned: false, note: null, err: '', buy: null, cancel: 'Cancel', login: false };
+    const buy = (label, enabled, price)=> ({ label: o.busy ? 'Buying…' : label, enabled: !!enabled && !o.busy, price: o.busy ? undefined : price });
+    if(!i){ m.cancel = 'OK'; return m; }
+    if(o.bought){ m.done = '✓ ' + (o.test ? 'Test purchase done' : 'Purchase complete'); if(o.test) m.note = 'Playtest — nothing was charged.'; m.cancel = 'OK'; return m; }
+    if(o.owned){ m.owned = true; m.cancel = 'OK'; return m; }
+    if(!i.onSale){ m.note = 'This isn\'t for sale right now.'; m.cancel = 'OK'; return m; }
+    m.price = i.price; m.err = o.error || '';
+    if(o.test){ m.note = '🧪 Playtest — a pretend purchase. Nothing is charged.'; m.buy = buy('Buy (test)', o.armed); return m; }
+    if(!u){ m.note = 'Log in to buy things with tokens.'; m.login = true; m.err = ''; return m; }
+    if(o.creator){ m.note = 'You made this, so it\'s free for you.'; m.buy = buy('Get it free', o.armed); return m; }
+    if(u.unlimited){ m.note = 'Free for you — unlimited tokens ∞'; m.buy = buy('Get it free', o.armed); return m; }
     const have = u.tokens || 0;
-    if(have < i.price){ body(`${head}${price}<p class="nm-buy-note">You have ${COIN} ${fmt(have)} — you need ${fmt(i.price - have)} more. Finish quests to earn tokens!</p>${btns(buyBtn('Buy', false))}`); return; }
-    body(`${head}${price}<p class="nm-buy-note">You have ${COIN} ${fmt(have)} · after this: ${COIN} ${fmt(have - i.price)}</p>${err}${btns(buyBtn('Buy for ' + COIN + ' ' + fmt(i.price), o.armed))}`);
+    if(have < i.price){ m.note = { have, need: i.price - have }; m.err = ''; m.buy = buy('Buy', false); return m; }
+    m.note = { have, after: have - i.price };
+    m.buy = buy('Buy for', o.armed, i.price);
+    return m;
   }
+  function render(){
+    const m = model(), i = m.item;
+    const head = i ? `${picHtml(i, 'nm-buy-pic')}<div class="nm-buy-kind">${m.kind}</div><h3 id="nmBuyTitle">${esc(m.title)}</h3>${m.desc ? `<p class="nm-buy-desc">${esc(m.desc)}</p>` : ''}`
+      : `<div class="nm-nopic nm-buy-pic">🚫</div><h3 id="nmBuyTitle">${esc(m.title)}</h3><p class="nm-buy-desc">${esc(m.desc)}</p>`;
+    const note = !m.note ? '' : typeof m.note === 'string' ? `<p class="nm-buy-note">${esc(m.note)}</p>`
+      : m.note.need !== undefined ? `<p class="nm-buy-note">You have ${COIN} ${fmt(m.note.have)} — you need ${fmt(m.note.need)} more. Finish quests to earn tokens!</p>`
+      : `<p class="nm-buy-note">You have ${COIN} ${fmt(m.note.have)} · after this: ${COIN} ${fmt(m.note.after)}</p>`;
+    const buy = m.login ? '<button type="button" class="nm-b green" data-nm="login">Log in</button>'
+      : m.buy ? `<button type="button" class="nm-b green" data-nm="buy"${m.buy.enabled ? '' : ' disabled'}>${esc(m.buy.label)}${m.buy.price !== undefined ? ' ' + COIN + ' ' + fmt(m.buy.price) : ''}</button>` : '';
+    body(`${head}${m.done ? `<div class="nm-buy-done">${esc(m.done)}</div>` : ''}${m.owned ? '<div class="nm-buy-price">✓ You already own this</div>' : ''}${m.price !== null ? `<div class="nm-buy-price">${COIN} ${fmt(m.price)}</div>` : ''}${note}${m.err ? `<p class="nm-buy-err" role="alert">${esc(m.err)}</p>` : ''}<div class="nm-buy-btns">${buy}<button type="button" class="nm-b" data-nm="cancel">${m.cancel}</button></div>`);
+  }
+  NM.vrModel = ()=> cur ? model() : null;
+  // a button pressed in the headset's buy window: 'buy' | 'cancel'
+  NM.vrPress = function(a){ if(!cur) return; if(a === 'buy') doBuy(); else finish(cur.bought, cur.result); };
   async function doBuy(){
     const o = cur; if(!o || o.busy || !o.armed) return;
     if(o.test){ o.bought = true; o.result = { test:true }; render(); setTimeout(()=>{ if(cur === o) finish(true, o.result); }, 1200); return; }
