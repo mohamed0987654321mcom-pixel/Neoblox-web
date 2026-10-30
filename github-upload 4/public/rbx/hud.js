@@ -129,9 +129,10 @@
     b.textContent = S.unread > 9 ? '9+' : String(S.unread);
     b.classList.toggle('on', S.unread > 0 && !S.chatOpen);
   }
+  let chatSeq = 0; // counts every message ever added (VR's chat panel watches it)
   function addMsg(m){
     if(!root) build();
-    chatMsgs.push(m);
+    chatMsgs.push(m); chatSeq++;
     if(chatMsgs.length > 80) chatMsgs.shift();
     const log = root.querySelector('#rbxChatLog');
     const row = document.createElement('div');
@@ -146,6 +147,11 @@
     if(!S.chatOpen && !m.sys){ S.unread++; updateBadge(); }
   }
   H.addSystemMessage = (text)=> addMsg({ sys:true, text });
+  // for VR's chat panel (rbx/vr.js): read the chat, send like the chat box does
+  H.chatLog = (n)=> chatMsgs.slice(-(n || 10)).map(m=> Object.assign({}, m));
+  H.chatSeq = ()=> chatSeq;
+  H.sendChat = (text)=> sendChat(text);
+  H.nameColor = (name)=> nameColor(name);
   function sendChat(raw){
     const text = String(raw||'').trim();
     if(!text) return;
@@ -166,18 +172,18 @@
     if(Net.connected){
       netSend({ t:'chat', scope:'game', text }); // the server echoes it back to everyone here, us included
     } else {
-      addMsg({ name: myName(), text });
+      addMsg({ name: myName(), text, mine:true });
       if(App.player && App.player.rig) bubble(App.player.rig, text);
     }
   }
   netOn('chat', (msg)=>{
     if(!kind || !msg || typeof msg.text!=='string') return;
     if(msg.scope==='game'){
-      addMsg({ name: msg.name || 'Player', text: msg.text });
+      addMsg({ name: msg.name || 'Player', text: msg.text, from: msg.from });
       const rig = msg.from===Net.id ? (App.player && App.player.rig) : (App.remoteAvatars[msg.from] && App.remoteAvatars[msg.from].rig);
       if(rig) bubble(rig, msg.text);
     } else if(msg.scope==='party'){
-      addMsg({ tag:'(Party) ', name: msg.name || 'Player', text: msg.text });
+      addMsg({ tag:'(Party) ', name: msg.name || 'Player', text: msg.text, from: msg.from });
     }
   });
 

@@ -40,7 +40,9 @@
   scripts can animate avatars with ready-made or their own keyframe animations that everyone
   sees (`Animator.LoadAnimation`). See below.
 - **VR** — play games and walk the lobby in VR in the Meta Quest browser (🥽 VR button): thumbstick
-  walking, snap turning, first or third person, laser pointers, a wrist menu. See below.
+  walking, snap turning, first or third person, laser pointers, a wrist menu, chat with a floating
+  keyboard and quick messages, hand tracking (pinch, teleport, palm menu) and real Quest
+  controllers in Neoblox's colours while you use a menu. See below.
 
 Run the server checks with `npm test`.
 
@@ -173,15 +175,28 @@ right thumbstick turns (30° snap turns, or smooth turning from the wrist menu),
 **B** switches between first person (you see through your avatar's eyes, blocky hands follow your
 controllers, walking around your room moves your avatar but walls stop it) and third person (the
 view floats behind your avatar), **X** shows/hides the wrist menu on your left hand (health,
-leaderboard, view, turning, Recenter, Leave game, Exit VR). Your eye height is measured when VR
+leaderboard, jump/turn buttons, 💬 Chat, view, turning, Recenter, Leave game, Exit VR). Your eye height is measured when VR
 starts (and on Recenter) so the avatar's eyes are where yours are, standing or sitting. Anything
 a game shows on the screen floats in a panel in front of you — its labels, buttons and pictures,
 notifications, and Neoblox's buy window — and the triggers are laser pointers for those buttons
 and for ClickDetector parts. Scripts get `UserInputService.VREnabled` and the controller buttons
 as `Enum.KeyCode.ButtonA/B/X/Y`, `ButtonL1/R1` (grips), `ButtonL2/R2` (triggers). In VR there are
 no shadows and the edges are drawn with less detail (foveation) to keep the frame rate up. Thunder
-Battle, NeoStudio and the menus stay on the screen (VR ends if you go there); typing chat needs
-the headset off.
+Battle, NeoStudio and the menus stay on the screen (VR ends if you go there).
+
+*Chat in VR:* 💬 Chat opens a panel just below your eyes with the latest messages, what you're
+typing, quick messages (Hi! · GG · Follow me! · Yes · No · Thanks! — one press sends) and a
+keyboard you point and click at or poke with a finger. It sends like the chat box (game scripts
+hear it as `player.Chatted`; in the lobby it goes to Everyone, or your party). While it's closed,
+new messages float up in front of you. *Hand tracking:* put the controllers down and your hands
+show up as blocky hands with fingers. Pinch (thumb + pointer finger) clicks whatever you point at;
+point at the floor, hold the pinch and let go to teleport there (a cyan ring shows where — red
+means you can't stand there); poke buttons and keys with a finger; turn your left palm toward your
+face for the hand menu (jump, turn, chat and the wrist menu's buttons). *Controllers* look like
+blocky hands, and turn into real Quest controllers — Quest 3/3S, Quest Pro or Quest 2, painted in
+the logo's cyan/purple with lime buttons, and their buttons and sticks move — while you point at a
+menu or have the chat or the buy window open (models: `public/vendor/xr-controllers`, from the
+MIT-licensed WebXR Input Profiles, textures removed).
 
 How it runs: scripts run on each player's own device while they're in a game (or in a
 NeoStudio playtest). They never run in the page itself — `public/rbx/neoscript.js` runs
@@ -371,6 +386,7 @@ on a persistent volume (a Railway Volume) or it resets on every redeploy.
   (`pictures.js/css`), paid items — the buy window and 🛒 Paid Items (`market.js/css`) — and
   the avatar animation player (`animate.js`) and VR for the Meta Quest browser (`vr.js`).
 - `public/vendor/quickjs/` — the QuickJS engine (WebAssembly) that runs scripts.
+- `public/vendor/xr-controllers/` — the Meta Quest controller models VR shows while you use a menu.
 - `accounts.js` — accounts, tokens, quests and the Avatar Shop catalog.
 - `market.js` — paid items in games (game passes, developer products, receipts, earnings).
 - `test/api.test.js` — server checks (`npm test`).
@@ -383,3 +399,5 @@ on a persistent volume (a Railway Volume) or it resets on every redeploy.
   (assets by Quaternius), CC0-licensed (public domain), sourced via the three.js
   project's example assets (github.com/mrdoob/three.js). Used as Thunder Battle's
   player character model.
+- `public/vendor/xr-controllers/` are the Meta Quest controller models from the WebXR Input
+  Profiles assets (© Amazon, MIT-licensed — see its `LICENSE.md`), with their textures removed.
