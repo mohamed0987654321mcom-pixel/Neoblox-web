@@ -329,6 +329,7 @@
     if(!s.inGuest) farewell(s, quiet);
     S = null;
     if(s.animShared && Net.connected) netSend({ t:'anim', tracks:[] }); // your animations stop for everyone
+    if(s.market && s.market.open && window.NeoMarket && NeoMarket.close) NeoMarket.close(); // its buy window goes too
     if(s.inGuest){ if(s.save) flushSave(s.save, true); return; } // never free an engine mid-call; it's dropped instead
     teardownVm(s);
     App.gravMul = 1;

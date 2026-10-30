@@ -115,6 +115,7 @@
     session = null;
     const r = App.renderer;
     if(saved){ r.shadowMap.enabled = saved.shadows; saved = null; }
+    if(App.sunLight && App.sunLight.userData.vrCast !== undefined){ App.sunLight.castShadow = App.sunLight.userData.vrCast; delete App.sunLight.userData.vrCast; }
     r.xr.enabled = false;
     restoreScene();
     if(dolly && dolly.parent) dolly.parent.remove(dolly);
@@ -142,6 +143,8 @@
     buildHands(); buildPanels();
     hands.forEach(h=>{ dolly.add(h.ray); dolly.add(h.grip); });
     dolly.add(hud.mesh);
+    // no sun shadows in VR: they'd be drawn twice a frame (and a frozen old one would linger)
+    if(App.sunLight && App.sunLight.userData.vrCast === undefined){ App.sunLight.userData.vrCast = App.sunLight.castShadow; App.sunLight.castShadow = false; }
     // a flat sky picture would stick to your eyes in VR — use its colour instead (the sky dome is fine)
     const sc = App.scene;
     if(sc.background && sc.background.isTexture && !App.skyDome){
@@ -499,9 +502,9 @@
         x.fillStyle = u.tc || '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, cx, cy + 1, tw - 16);
       }
     });
-    // notifications along the bottom
+    // notifications along the bottom (not while the buy window is up — it gets the panel to itself)
     let ny = H - 70;
-    notes.concat(bannerText ? [{ text: bannerText }] : []).slice().reverse().forEach(n=>{
+    if(!buy) notes.concat(bannerText ? [{ text: bannerText }] : []).slice().reverse().forEach(n=>{
       x.font = '800 36px "Nunito Sans", system-ui, sans-serif';
       const tw = Math.min(W * 0.9, x.measureText(n.text).width + 40);
       rr(x, W / 2 - tw / 2, ny - 30, tw, 60, 14); x.fillStyle = 'rgba(18,20,24,0.85)'; x.fill();
@@ -514,28 +517,48 @@
   // Neoblox's buy window, inside the headset (the same window as on the page — rbx/market.js)
   function drawBuy(m){
     const x = hud.x, W = hud.c.width, H = hud.c.height;
-    const bw = 560, bh = 600, bx = W / 2 - bw / 2, by = H / 2 - bh / 2;
-    rr(x, bx, by, bw, bh, 24); x.fillStyle = 'rgba(43,43,43,0.97)'; x.fill();
-    x.strokeStyle = '#474747'; x.lineWidth = 3; x.stroke();
-    x.fillStyle = '#9a9a9a'; x.font = '800 20px "Nunito Sans", system-ui, sans-serif'; x.textAlign = 'left'; x.textBaseline = 'top';
-    x.fillText('NEOBLOX · BUY', bx + 24, by + 18);
-    let y = by + 56;
-    const pic = m.item && m.item.image ? picture(m.item.image) : null;
-    if(pic){ x.drawImage(pic, W / 2 - 60, y, 120, 120); }
-    else { rr(x, W / 2 - 60, y, 120, 120, 16); x.fillStyle = '#232323'; x.fill(); x.font = '64px system-ui'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.fillText(m.item ? (m.item.kind === 'product' ? '🪙' : '🎟️') : '🚫', W / 2, y + 62); }
-    y += 132;
-    x.textAlign = 'center'; x.textBaseline = 'top';
-    if(m.kind){ x.fillStyle = '#9ad1ff'; x.font = '800 20px "Nunito Sans", system-ui, sans-serif'; x.fillText(m.kind.toUpperCase(), W / 2, y); y += 28; }
-    x.fillStyle = '#fff'; x.font = '900 36px "Nunito Sans", system-ui, sans-serif'; x.fillText(m.title, W / 2, y, bw - 40); y += 46;
-    if(m.desc){ x.fillStyle = '#bdbdbd'; x.font = '600 22px "Nunito Sans", system-ui, sans-serif'; x.fillText(m.desc, W / 2, y, bw - 40); y += 34; }
-    if(m.done){ x.fillStyle = '#3ddc84'; x.font = '900 32px "Nunito Sans", system-ui, sans-serif'; x.fillText(m.done, W / 2, y); y += 44; }
-    if(m.owned){ x.fillStyle = '#fff'; x.font = '900 30px "Nunito Sans", system-ui, sans-serif'; x.fillText('✓ You already own this', W / 2, y); y += 44; }
-    if(m.price !== null){ coin(x, W / 2 - 46, y + 20, 18); x.fillStyle = '#fff'; x.font = '900 36px "Nunito Sans", system-ui, sans-serif'; x.textAlign = 'left'; x.fillText(Number(m.price).toLocaleString(), W / 2 - 20, y + 2); x.textAlign = 'center'; y += 52; }
     const note = !m.note ? '' : typeof m.note === 'string' ? (m.login ? 'Log in on the Neoblox page to buy things (take the headset off)' : m.note)
       : m.note.need !== undefined ? 'You have ' + m.note.have + ' tokens — you need ' + m.note.need + ' more' : 'You have ' + m.note.have + ' tokens · after this: ' + m.note.after;
-    if(note){ x.fillStyle = '#a8a8a8'; x.font = '600 22px "Nunito Sans", system-ui, sans-serif'; x.fillText(note, W / 2, y, bw - 40); y += 34; }
-    if(m.err){ x.fillStyle = '#ff8a8a'; x.font = '700 22px "Nunito Sans", system-ui, sans-serif'; x.fillText(m.err, W / 2, y, bw - 40); y += 32; }
-    const by2 = by + bh - 90, gap = 16;
+    // what goes in the window, top to bottom (so it's only as tall as it needs to be)
+    const rows = [['brand', 44], ['pic', 132]];
+    if(m.kind) rows.push(['kind', 30]);
+    rows.push(['title', 50]);
+    if(m.desc) rows.push(['desc', 36]);
+    if(m.done) rows.push(['done', 48]);
+    if(m.owned) rows.push(['owned', 48]);
+    if(m.price !== null) rows.push(['price', 56]);
+    if(note) rows.push(['note', 36]);
+    if(m.err) rows.push(['err', 34]);
+    const bw = 560, bh = rows.reduce((n, r)=> n + r[1], 0) + 24 + 66 + 24;
+    const bx = W / 2 - bw / 2, by = Math.max(4, H / 2 - bh / 2);
+    rr(x, bx, by, bw, bh, 24); x.fillStyle = '#2b2b2b'; x.fill();
+    x.strokeStyle = '#474747'; x.lineWidth = 3; x.stroke();
+    let y = by;
+    const text = (t, font, color, align)=>{ x.font = font; x.fillStyle = color; x.textAlign = align || 'center'; x.textBaseline = 'middle'; };
+    rows.forEach(([k, h])=>{
+      const cy = y + h / 2;
+      if(k === 'brand'){ text('', '800 20px "Nunito Sans", system-ui, sans-serif', '#9a9a9a', 'left'); x.fillText('NEOBLOX · BUY', bx + 24, y + 26); }
+      else if(k === 'pic'){
+        const pic = m.item && m.item.image ? picture(m.item.image) : null;
+        if(pic) x.drawImage(pic, W / 2 - 60, y + 4, 120, 120);
+        else { rr(x, W / 2 - 60, y + 4, 120, 120, 16); x.fillStyle = '#232323'; x.fill(); text('', '64px system-ui', '#fff'); x.fillText(m.item ? (m.item.kind === 'product' ? '🪙' : '🎟️') : '🚫', W / 2, y + 66); }
+      }
+      else if(k === 'kind'){ text('', '800 20px "Nunito Sans", system-ui, sans-serif', '#9ad1ff'); x.fillText(m.kind.toUpperCase(), W / 2, cy); }
+      else if(k === 'title'){ text('', '900 36px "Nunito Sans", system-ui, sans-serif', '#fff'); x.fillText(m.title, W / 2, cy, bw - 40); }
+      else if(k === 'desc'){ text('', '600 22px "Nunito Sans", system-ui, sans-serif', '#bdbdbd'); x.fillText(m.desc, W / 2, cy, bw - 40); }
+      else if(k === 'done'){ text('', '900 32px "Nunito Sans", system-ui, sans-serif', '#3ddc84'); x.fillText(m.done, W / 2, cy); }
+      else if(k === 'owned'){ text('', '900 30px "Nunito Sans", system-ui, sans-serif', '#fff'); x.fillText('✓ You already own this', W / 2, cy); }
+      else if(k === 'price'){
+        text('', '900 36px "Nunito Sans", system-ui, sans-serif', '#fff', 'left');
+        const label = Number(m.price).toLocaleString(), tw = x.measureText(label).width, start = W / 2 - (40 + tw) / 2;
+        coin(x, start + 18, cy, 18);
+        text('', '900 36px "Nunito Sans", system-ui, sans-serif', '#fff', 'left'); x.fillText(label, start + 40, cy + 1);
+      }
+      else if(k === 'note'){ text('', '600 22px "Nunito Sans", system-ui, sans-serif', '#a8a8a8'); x.fillText(note, W / 2, cy, bw - 40); }
+      else if(k === 'err'){ text('', '700 22px "Nunito Sans", system-ui, sans-serif', '#ff8a8a'); x.fillText(m.err, W / 2, cy, bw - 40); }
+      y += h;
+    });
+    const by2 = y + 24, gap = 16;
     const hasBuy = !!m.buy && !m.login;
     const w2 = hasBuy ? (bw - 48 - gap) / 2 : bw - 48;
     if(hasBuy) button(hud, bx + 24, by2, w2, 66, m.buy.label + (m.buy.price !== undefined ? ' ' + Number(m.buy.price).toLocaleString() + ' tokens' : ''), ()=> NeoMarket.vrPress('buy'), { enabled: m.buy.enabled, color: '#00b06f', size: 26 });

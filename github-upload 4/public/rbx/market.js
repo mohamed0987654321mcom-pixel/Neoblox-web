@@ -146,6 +146,8 @@
     return true;
   };
   NM.isOpen = ()=> !!cur;
+  // the game that asked is over (left it, or VR ended it): close the window, nothing bought
+  NM.close = function(){ if(cur && !cur.busy) finish(false); };
 
   // ------------------------------------------------------------------ Home: a game's "Passes"
   NM.renderStore = async function(box, world){
