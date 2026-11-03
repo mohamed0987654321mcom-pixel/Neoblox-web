@@ -44,6 +44,11 @@
   keyboard and quick messages, hand tracking (pinch, teleport, palm menu) and real Quest
   controllers in Neoblox's colours while you use a menu. See below.
 
+- **UAE Flag Day** — every November 3 (UAE time) Home wears the flag's colours with a waving flag
+  banner, and goes back to normal by itself the next day. Players can **Keep it after today** or go
+  **Back to normal** any time (the banner, or the 🇦🇪 switch in the sidebar) — remembered on
+  their device (`public/rbx/flagday.js/css`). The lobby and games aren't changed.
+
 Run the server checks with `npm test`.
 
 ## Scripting
