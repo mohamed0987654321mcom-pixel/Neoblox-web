@@ -457,6 +457,14 @@
   }
   NH.playGame = playGame;
   NH.openGame = openGame;
+  // for the VR Home room (rbx/vr.js): the games you can play in VR (not Thunder Battle — it's
+  // screen-only), most popular first, and their pictures
+  NH.vrGames = function(){
+    const pop = (g)=> st(g.key).playing*1000 + st(g.key).visits + (g.builtin ? 0.5 : 0);
+    return allGames().filter(g=> g.key !== 'battle').sort((a,b)=> pop(b) - pop(a))
+      .map(g=> ({ key:g.key, name:g.name, creator:g.creator, playing:st(g.key).playing, builtin:!!g.builtin }));
+  };
+  NH.thumbUrl = function(key, w, h){ const g = gameByKey(key); return g ? renderThumb(g, w, h) : ''; };
 
   // ------------------------------------------------------------------ avatar editor
   function renderAvatar(){

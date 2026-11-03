@@ -41,8 +41,9 @@
   sees (`Animator.LoadAnimation`). See below.
 - **VR** — play games and walk the lobby in VR in the Meta Quest browser (🥽 VR button): thumbstick
   walking, snap turning, first or third person, laser pointers, a wrist menu, chat with a floating
-  keyboard and quick messages, hand tracking (pinch, teleport, palm menu) and real Quest
-  controllers in Neoblox's colours while you use a menu. See below.
+  keyboard and quick messages, hand tracking (pinch, teleport, palm menu), real Quest
+  controllers in Neoblox's colours while you use a menu, a blocky VR Home room with the games all
+  around you, and a tunnel-of-blocks portal when you join a game. See below.
 
 - **UAE Flag Day** — every November 3 (UAE time) Home wears the flag's colours with a waving flag
   banner, and goes back to normal by itself the next day. Players can **Keep it after today** or go
@@ -188,6 +189,17 @@ and for ClickDetector parts. Scripts get `UserInputService.VREnabled` and the co
 as `Enum.KeyCode.ButtonA/B/X/Y`, `ButtonL1/R1` (grips), `ButtonL2/R2` (triggers). In VR there are
 no shadows and the edges are drawn with less detail (foveation) to keep the frame rate up. Thunder
 Battle, NeoStudio and the menus stay on the screen (VR ends if you go there).
+
+*VR Home room:* Home has a 🥽 VR button too. In the headset, Home is a place: you stand on a
+floating island of grass blocks in the sky with block clouds and colourful blocks drifting around,
+and the games float all the way around you in a circle — each on a big screen framed with blocks,
+showing its picture, name and creator (9 at a time, plus a "More games ▶" screen). Point at one
+(it lights up and comes closer) and click — trigger, pinch or poke. *Portal:* joining a game in VR
+(from the Home room, or walking into a lobby portal) builds a tunnel of blocks in the logo's
+colours around you, with the game's picture and name ahead; you zoom through while the game
+loads behind it, then the blocks break apart and you're in. **Leave game** in VR goes back to the
+Home room through a portal — you stay in the headset (✖ Exit VR leaves VR). The flat screen
+loads games like before.
 
 *Chat in VR:* 💬 Chat opens a panel just below your eyes with the latest messages, what you're
 typing, quick messages (Hi! · GG · Follow me! · Yes · No · Thanks! — one press sends) and a

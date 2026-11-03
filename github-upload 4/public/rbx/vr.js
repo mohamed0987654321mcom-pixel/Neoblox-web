@@ -72,7 +72,9 @@
     const st = document.createElement('style');
     st.textContent = `#nbVrBtn{ position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:60; height:44px; padding:0 16px; border:none; border-radius:12px;
       background:rgba(18,20,24,0.78); color:#fff; font:800 15px 'Nunito Sans', system-ui, sans-serif; display:flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.35); }
-      #nbVrBtn:hover{ background:rgba(40,44,52,0.9); } #nbVrBtn[hidden]{ display:none; } #nbVrBtn .ic{ font-size:20px; }`;
+      #nbVrBtn:hover{ background:rgba(40,44,52,0.9); } #nbVrBtn[hidden]{ display:none; } #nbVrBtn .ic{ font-size:20px; }
+      #nbVrBtn.home{ top:auto; left:auto; bottom:24px; right:92px; transform:none; background:#00b06f; }
+      #nbVrBtn.home:hover{ background:#00c27b; }`;
     document.head.appendChild(st);
     btn = document.createElement('button');
     btn.id = 'nbVrBtn'; btn.type = 'button'; btn.hidden = true;
@@ -81,12 +83,16 @@
     btn.addEventListener('click', ()=> VR.enter());
     document.body.appendChild(btn);
   }
-  // offered in games and the lobby, when this browser can do VR (the Meta Quest browser can)
-  const canHere = ()=> (App.mode === 'play' || App.mode === 'lobby') && !!App.player && !(App.mode === 'play' && App.studio && App.studio.testing);
+  // offered on Home (→ the VR Home room), in games and in the lobby, when this browser can do VR
+  // (the Meta Quest browser can)
+  const onHome = ()=> App.mode === 'boot' && !!window.NeoHome && !!document.getElementById('screen-boot') && !document.getElementById('screen-boot').hidden;
+  const canHere = ()=> onHome() || ((App.mode === 'play' || App.mode === 'lobby') && !!App.player && !(App.mode === 'play' && App.studio && App.studio.testing));
   function showButton(){
     if(!document.body) return;
     buildButton();
     btn.hidden = !(supported && !session && !starting && canHere());
+    btn.classList.toggle('home', App.mode === 'boot');
+    btn.title = App.mode === 'boot' ? 'Pick and play games in VR on your headset' : 'Play in VR on your headset';
   }
 
   // ------------------------------------------------------------------ start / stop
@@ -129,7 +135,8 @@
     chat.open = false; chat.text = ''; chat.caps = false; chat.seen = null;
     watchNotes(true);
     document.body.classList.add('nb-vr');
-    addNote('🥽 Left stick: walk · Right stick: turn · A: jump · B: view · X: menu');
+    addNote(App.mode === 'boot' ? '🥽 Point at a game and pull the trigger (or pinch) to play · Right stick: turn'
+      : '🥽 Left stick: walk · Right stick: turn · A: jump · B: view · X: menu');
   }
   function onEnd(){
     session = null;
@@ -139,7 +146,9 @@
     r.xr.enabled = false;
     restoreScene();
     if(tele && tele.g.parent) tele.g.parent.remove(tele.g);
+    endPortal();
     if(dolly && dolly.parent) dolly.parent.remove(dolly);
+    if(home.scene && App.scene === home.scene){ App.scene = null; App.camera = null; } // the flat screen is showing Home
     if(cam && cam.parent === dolly){ dolly.remove(cam); cam.position.set(0, 2, 5); cam.rotation.set(0, 0, 0); cam.scale.set(1, 1, 1); }
     dolly = null; cam = null;
     chat.open = false; if(chat.panel) chat.panel.mesh.visible = false;
@@ -209,8 +218,9 @@
   VR.tick = function(dt){
     showButton();
     if(!session) return;
-    // VR is for games and the lobby: anywhere else (Thunder Battle, NeoStudio, the menu) ends it
-    if(App.mode !== 'play' && App.mode !== 'lobby'){
+    // VR is for games, the lobby and the VR Home room (the menu): Thunder Battle and NeoStudio end it
+    if(App.mode === 'boot') enterHome();
+    else if(App.mode !== 'play' && App.mode !== 'lobby'){
       if(App.mode === 'battle' || App.mode === 'studio') showToast('🥽 VR is for games and the lobby — this one is on the screen for now');
       VR.exit(); return;
     }
@@ -222,10 +232,14 @@
     const hy = headYaw();
     App.yaw = hy.yaw; App.pitch = hy.pitch;
     readControllers(dt);
+    if(portal.on) App.inputAnalog = { x: 0, y: 0 }; // stand still while going through a portal
     handsTick();
-    pointers();
-    if(session && cam) pokes();
+    tickPortal(dt);
+    if(!dolly || !cam) return;
+    if(!portal.on){ pointers(); if(session && cam) pokes(); }
+    else hands.forEach(h=>{ h.laser.visible = false; h.dot.visible = false; });
     if(!session || !cam) return; // a menu button just ended VR
+    if(App.mode === 'boot') tickHome(dt);
     drawWrist();
     drawHud(hy);
     drawChat();
@@ -539,6 +553,7 @@
   }
   // where a hand's ray meets something you could stand on (and whether you can go there)
   function floorHit(origin, dir){
+    if(App.mode === 'boot') return null; // the VR Home room: nowhere to go but into a game
     const t = T();
     let best = null;
     if(App.mode === 'play' && App.blockGroup){
@@ -603,7 +618,7 @@
   }
   // is it really on screen (it and everything it hangs from is shown, all the way up to the scene)?
   function shown(o){ for(let n = o; n; n = n.parent){ if(!n.visible) return false; if(n === App.scene) return true; } return false; }
-  function livePanels(){ return [wrist, hud, chat.panel].filter(p=> p && shown(p.mesh)); }
+  function livePanels(){ return [wrist, hud, chat.panel].concat(inHomeRoom() ? home.screens.map(s=> s.pn) : []).filter(p=> p && shown(p.mesh)); }
   function panelHit(origin, dir, skipWrist, pans){
     const t = T();
     const list = (pans || livePanels()).filter(p=> !(skipWrist && p === wrist));
@@ -670,8 +685,9 @@
       wrist.mesh.visible = wristOn;
       if(!wristOn) return;
     } else { if(wrist.mesh.parent) wrist.mesh.parent.remove(wrist.mesh); return; }
-    const h = App.hum, ls = App.leaderstats || {};
-    const title = App.mode === 'lobby' ? 'Lobby' : ((App.currentWorldData && App.currentWorldData.name) || 'Game');
+    const atHome = App.mode === 'boot';
+    const h = atHome ? null : App.hum, ls = atHome ? {} : (App.leaderstats || {});
+    const title = atHome ? 'Neoblox Home' : App.mode === 'lobby' ? 'Lobby' : ((App.currentWorldData && App.currentWorldData.name) || 'Game');
     const key = [title, h ? Math.round(h.health) + '/' + h.maxHealth : '', JSON.stringify(ls), set.view, set.turn, chat.open, lit(wrist)].join('|');
     if(key === wrist.key) return;
     wrist.key = key; wrist.buttons = [];
@@ -680,6 +696,20 @@
     rr(x, 4, 4, W - 8, H - 8, 26); x.fillStyle = 'rgba(22,24,28,0.92)'; x.fill();
     x.fillStyle = '#fff'; x.font = '900 34px ' + FONT; x.textAlign = 'left'; x.textBaseline = 'top';
     x.fillText('🥽 ' + title, 26, 22, W - 52);
+    if(atHome){
+      // the Home room: pick a game by pointing at it; here you can only turn, recenter or leave VR
+      x.font = '700 24px ' + FONT; x.fillStyle = '#cfd6e4';
+      x.fillText('Point at a game to play it', 26, 74, W - 52);
+      const bh = 64, gap = 12, tw = (W - 52 - 2 * 10) / 3;
+      let y = H - 16 - 2 * (bh + gap) + gap;
+      button(wrist, 26, y, tw, bh, '↺', ()=> VR.turn(-1), { size: 32 });
+      button(wrist, 26 + tw + 10, y, tw, bh, '↻', ()=> VR.turn(1), { size: 32 });
+      button(wrist, 26 + 2 * (tw + 10), y, tw, bh, '⊙', ()=> VR.recenter(), { size: 32 });
+      y += bh + gap;
+      button(wrist, 26, y, W - 52, bh, '✖ Exit VR', ()=> VR.exit(), { size: 26, color: 'rgba(31,111,209,0.95)' });
+      wrist.tex.needsUpdate = true;
+      return;
+    }
     let y = 74;
     if(h){
       const f = Math.max(0, Math.min(1, h.health / (h.maxHealth || 100)));
@@ -704,7 +734,7 @@
     button(wrist, 26 + bw + 12, y, bw, bh, set.turn === 'snap' ? '↻ Snap turn' : '↻ Smooth turn', ()=> VR.setTurn(set.turn === 'snap' ? 'smooth' : 'snap'), { size: 24 });
     y += bh + gap;
     button(wrist, 26, y, bw, bh, '⊙ Recenter', ()=> VR.recenter(), { size: 24 });
-    button(wrist, 26 + bw + 12, y, bw, bh, '🚪 Leave game', ()=>{ VR.exit(); setTimeout(()=>{ if(typeof backToMenu === 'function') backToMenu(); }, 0); }, { size: 24, color: 'rgba(120,40,40,0.95)' });
+    button(wrist, 26 + bw + 12, y, bw, bh, '🚪 Leave game', ()=> VR.leaveGame(), { size: 24, color: 'rgba(120,40,40,0.95)' });
     y += bh + gap;
     button(wrist, 26, y, W - 52, bh, '✖ Exit VR', ()=> VR.exit(), { size: 26, color: 'rgba(31,111,209,0.95)' });
     wrist.tex.needsUpdate = true;
@@ -1082,8 +1112,391 @@
     });
   }
 
+  // ------------------------------------------------------------------ the VR Home room
+  // In VR, Home is a place: you stand on a floating island of grass blocks in the sky, and the
+  // games float all around you in a full circle, each on a big screen framed with blocks. Point at
+  // one (it lights up and the controllers turn into the real ones) and click — trigger, pinch or
+  // poke — to play it. Leaving a game in VR brings you back here instead of out of the headset.
+  const HOME_R = 3.6;     // how far the game screens are from you
+  const SLOTS = 10;       // screens around the circle (the last one is "More games" when there are more)
+  const PALETTE = [0xc8ff4d, 0x4de3ff, 0xb06bff, 0xff5c72, 0xffb84d, 0x3ddc84, 0xff4de3, 0x1f9cff];
+  const home = { scene: null, cam: null, screens: [], games: [], page: 0, floaters: [], clouds: null, sign: null, thumbs: new Map(), thumbQueue: [], listKey: '', checkAt: 0, t: 0 };
+  const inHomeRoom = ()=> !!session && App.mode === 'boot' && !!home.scene && App.scene === home.scene;
+  VR.inHome = inHomeRoom;
+  function keepAll(root){ root.traverse(o=>{ if(o.geometry) o.geometry.userData.keep = true; (Array.isArray(o.material) ? o.material : [o.material]).forEach(m=>{ if(m) m.userData.keep = true; }); }); }
+  // the room's blocks: Neoblox's own block textures, on simple (cheap) lighting so the headset
+  // keeps its frame rate — the room is a lot of blocks right in front of you
+  const homeMats = new Map();
+  function pmat(type, color){
+    const k = type + '|' + (color || '');
+    if(homeMats.has(k)) return homeMats.get(k);
+    let base = 0x88aa66;
+    try{ base = color ? new THREE.Color(color).getHex() : BLOCK_TYPE_BY_ID[type].color; }catch(e){}
+    const tex = (kind)=>{ try{ return surfaceTexture(kind); }catch(e){ return null; } };
+    const mk = (kind, extra)=> new THREE.MeshLambertMaterial(Object.assign({ color: base, map: kind ? tex(kind) : null }, extra || {}));
+    let side, top, bottom;
+    if(type === 'plastic'){ side = mk('smooth'); top = mk('studs'); bottom = mk('inlets'); }
+    else if(type === 'neon'){ side = top = bottom = new THREE.MeshBasicMaterial({ color: base }); }
+    else side = top = bottom = mk(type);
+    const box = [side, side, top, bottom, side, side];
+    homeMats.set(k, box);
+    return box;
+  }
+  function buildHome(){
+    if(home.scene) return;
+    const sc = new THREE.Scene();
+    sc.background = new THREE.Color(0x9fcfff);
+    sc.fog = new THREE.Fog(0xa9d3ff, 45, 160);
+    try{
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.MeshBasicMaterial({ map: makeSkyDomeTexture('day'), side: THREE.BackSide, fog: false, depthWrite: false }));
+      dome.renderOrder = -10; sc.add(dome);
+    }catch(e){}
+    sc.add(new THREE.HemisphereLight(0xe4f2ff, 0x5c6e48, 0.78));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.7); sun.position.set(30, 60, 20); sc.add(sun);
+    // the island: grass on top, stone underneath, narrowing like a floating rock
+    const layers = [{ y: -0.5, r: 5.6, type: 'grass' }, { y: -1.5, r: 4.7, type: 'stone' }, { y: -2.5, r: 3.6, type: 'stone' }, { y: -3.5, r: 2.3, type: 'stone' }, { y: -4.5, r: 1.2, type: 'stone' }];
+    const box = typeof BOX_GEO !== 'undefined' ? BOX_GEO : new THREE.BoxGeometry(1, 1, 1);
+    const m4 = new THREE.Matrix4();
+    layers.forEach(L=>{
+      const cells = [];
+      for(let x = -6; x <= 6; x++) for(let z = -6; z <= 6; z++) if(Math.hypot(x, z) <= L.r) cells.push([x, z]);
+      const im = new THREE.InstancedMesh(box, pmat(L.type), cells.length);
+      cells.forEach((c, i)=>{ m4.makeTranslation(c[0], L.y, c[1]); im.setMatrixAt(i, m4); });
+      im.name = 'vr-home-island'; sc.add(im);
+    });
+    // a few blocky trees and flowers on the edge of the island
+    // (in the gaps between the screens, behind them)
+    [2, 5, 7].forEach((k, i)=>{
+      const a = Math.PI + (k + 0.5) / SLOTS * Math.PI * 2;
+      const tx = Math.round(Math.sin(a) * 5.1), tz = Math.round(Math.cos(a) * 5.1);
+      for(let y = 0; y < 3; y++){ const t = new THREE.Mesh(box, pmat('wood')); t.position.set(tx, y + 0.5, tz); sc.add(t); }
+      const leaves = new THREE.Mesh(box, pmat('plastic', i === 1 ? '#3ddc84' : '#2fbf5b')); leaves.scale.set(2.4, 1.8, 2.4); leaves.position.set(tx, 3.7, tz); sc.add(leaves);
+    });
+    for(let i = 0; i < 9; i++){
+      const a = i * 0.7 + 0.2, r = 5 + (i % 2) * 0.4;
+      const f = new THREE.Mesh(box, pmat('neon', '#' + PALETTE[i % PALETTE.length].toString(16).padStart(6, '0')));
+      f.scale.setScalar(0.3); f.position.set(Math.sin(a) * r, 0.15, Math.cos(a) * r); sc.add(f);
+    }
+    // colourful blocks drifting around you (one instanced mesh: cheap to draw), and block clouds
+    const FLOAT = 46, fl = new THREE.InstancedMesh(box, pmat('plastic', '#ffffff'), FLOAT);
+    fl.name = 'vr-home-floaters'; fl.frustumCulled = false;
+    const fc = new THREE.Color();
+    for(let i = 0; i < FLOAT; i++){
+      const a = Math.random() * Math.PI * 2, r = 9 + Math.random() * 26;
+      home.floaters.push({ p: new THREE.Vector3(Math.sin(a) * r, -7 + Math.random() * 22, Math.cos(a) * r), s: 0.5 + Math.random() * 1.3,
+        rot: new THREE.Euler(Math.random() * 3, Math.random() * 3, 0), ph: Math.random() * 6, sp: 0.3 + Math.random() * 0.5, rs: (Math.random() - 0.5) * 0.6 });
+      fl.setColorAt(i, fc.setHex(PALETTE[i % PALETTE.length]));
+    }
+    home.floatMesh = fl; sc.add(fl);
+    const clouds = new THREE.Group(); clouds.name = 'vr-home-clouds';
+    const puffs = [];
+    for(let i = 0; i < 10; i++){
+      const a = i / 10 * Math.PI * 2, r = 45 + Math.random() * 30, cy = 16 + Math.random() * 14;
+      for(let k = 0; k < 5; k++) puffs.push([Math.sin(a) * r + (k - 2) * 2.4 * Math.cos(a), cy + Math.random() * 1.2, Math.cos(a) * r - (k - 2) * 2.4 * Math.sin(a), 3 + Math.random() * 4, 1.5 + Math.random(), 3 + Math.random() * 3]);
+    }
+    const cl = new THREE.InstancedMesh(box, pmat('plastic', '#f6f9ff'), puffs.length); // (its own material: the floaters' one has per-block colours)
+    puffs.forEach((q, i)=>{ m4.compose(new THREE.Vector3(q[0], q[1], q[2]), new THREE.Quaternion(), new THREE.Vector3(q[3], q[4], q[5])); cl.setMatrixAt(i, m4); });
+    clouds.add(cl);
+    home.clouds = clouds; sc.add(clouds);
+    // the sign above the screen in front of you
+    const sg = document.createElement('canvas'); sg.width = 1024; sg.height = 256;
+    const x = sg.getContext('2d');
+    const gr = x.createLinearGradient(220, 0, 800, 0); gr.addColorStop(0, '#c8ff4d'); gr.addColorStop(0.55, '#4de3ff'); gr.addColorStop(1, '#b06bff');
+    x.font = '900 128px "Nunito Sans", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.lineWidth = 14; x.strokeStyle = 'rgba(10,13,24,0.85)'; x.strokeText('NEOBLOX', 512, 104); x.fillStyle = gr; x.fillText('NEOBLOX', 512, 104);
+    x.font = '800 34px "Nunito Sans", system-ui, sans-serif'; x.lineWidth = 8; x.strokeText('Point at a game · trigger, pinch or poke to play', 512, 210);
+    x.fillStyle = '#ffffff'; x.fillText('Point at a game · trigger, pinch or poke to play', 512, 210);
+    const st = new THREE.CanvasTexture(sg); st.minFilter = THREE.LinearFilter;
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.85), new THREE.MeshBasicMaterial({ map: st, transparent: true, fog: false, depthWrite: false }));
+    sign.position.set(0, 3.25, -HOME_R - 0.2); sign.name = 'vr-home-sign';
+    home.sign = sign; sc.add(sign);
+    // the game screens, all the way around
+    for(let i = 0; i < SLOTS; i++){
+      const a = Math.PI + i / SLOTS * Math.PI * 2; // slot 0 is straight ahead
+      const g = new THREE.Group(); g.name = 'vr-home-screen';
+      g.position.set(Math.sin(a) * HOME_R, 1.72, Math.cos(a) * HOME_R);
+      g.rotation.y = a + Math.PI; // facing you, in the middle
+      const pn = makePanel(1.6, 1.3, 400); pn.name = 'game' + i;
+      g.add(pn.mesh);
+      // the frame: little blocks all around the edge, in this screen's colour
+      const per = [], W = 1.6 / 2 + 0.11, H = 1.3 / 2 + 0.11, sz = 0.13;
+      for(let k = 0; k <= 14; k++){ const u = -W + k * (2 * W / 14); per.push([u, H], [u, -H]); }
+      for(let k = 1; k < 11; k++){ const v = -H + k * (2 * H / 11); per.push([-W, v], [W, v]); }
+      const fm = new THREE.InstancedMesh(box, new THREE.MeshLambertMaterial({ color: 0xffffff }), per.length);
+      const col = new THREE.Color(PALETTE[i % PALETTE.length]), white = new THREE.Color(0xffffff);
+      per.forEach((p, k)=>{ m4.compose(new THREE.Vector3(p[0], p[1], -0.03), new THREE.Quaternion(), new THREE.Vector3(sz, sz, sz)); fm.setMatrixAt(k, m4); fm.setColorAt(k, k % 3 === 0 ? white : col); });
+      g.add(fm);
+      home.screens.push({ g, pn, frame: fm, slot: i, item: null, s: 1 });
+      sc.add(g);
+    }
+    keepAll(sc);
+    home.scene = sc;
+    home.cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 900);
+  }
+  function enterHome(){
+    buildHome();
+    if(App.scene !== home.scene){
+      App.scene = home.scene; App.camera = home.cam;
+      chat.open = false;
+      refreshHome(true);
+    }
+  }
+  // what goes on the screens: the games, 9 at a time with a "More games" screen when there are more
+  function refreshHome(force){
+    const list = window.NeoHome && NeoHome.vrGames ? NeoHome.vrGames() : [];
+    const k = list.map(g=> g.key + ':' + g.name + ':' + g.playing).join('|');
+    if(!force && k === home.listKey) return;
+    home.listKey = k; home.games = list;
+    const per = list.length > SLOTS ? SLOTS - 1 : SLOTS, pages = Math.max(1, Math.ceil(list.length / per));
+    if(home.page >= pages) home.page = 0;
+    const shown = list.slice(home.page * per, home.page * per + per);
+    home.screens.forEach((sc, i)=>{
+      sc.item = i < shown.length ? { game: shown[i] } : (pages > 1 && i === SLOTS - 1) ? { more: true, page: home.page, pages } : null;
+      sc.g.visible = !!sc.item;
+      sc.pn.key = '';
+      if(sc.item && sc.item.game && !home.thumbs.has(sc.item.game.key)) home.thumbQueue.push(sc.item.game.key);
+    });
+  }
+  // the pictures are drawn one per frame, so opening the room doesn't stutter
+  function nextThumb(){
+    const key = home.thumbQueue.shift(); if(!key || home.thumbs.has(key)) return;
+    let url = ''; try{ url = NeoHome.thumbUrl(key, 608, 380); }catch(e){}
+    const img = new Image(); home.thumbs.set(key, img);
+    img.onload = ()=> home.screens.forEach(sc=>{ if(sc.item && sc.item.game && sc.item.game.key === key) sc.pn.key = ''; });
+    if(url) img.src = url;
+  }
+  VR.homeThumb = (key)=>{ const im = home.thumbs.get(key); return im && im.complete && im.naturalWidth ? im : null; };
+  function drawScreen(sc){
+    const pn = sc.pn, it = sc.item; if(!it) return;
+    const img = it.game ? VR.homeThumb(it.game.key) : null;
+    const key = JSON.stringify([it, !!img, lit(pn)]);
+    if(key === pn.key) return;
+    pn.key = key; pn.buttons = [];
+    const x = pn.x, W = pn.c.width, H = pn.c.height;
+    x.clearRect(0, 0, W, H);
+    rr(x, 0, 0, W, H, 22); x.fillStyle = '#16181d'; x.fill();
+    const glow = pn.hover === 0 || (pn.flash === 0 && performance.now() < pn.flashUntil);
+    if(it.more){
+      const gr = x.createLinearGradient(0, 0, W, H); gr.addColorStop(0, '#1f6fd1'); gr.addColorStop(1, '#b06bff');
+      rr(x, 16, 16, W - 32, H - 32, 18); x.fillStyle = gr; x.fill();
+      x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.font = '900 64px ' + FONT; x.fillText('More games ▶', W / 2, H / 2 - 20, W - 60);
+      x.font = '800 32px ' + FONT; x.fillText('Page ' + (it.page + 1) + ' of ' + it.pages, W / 2, H / 2 + 50);
+      pn.buttons.push({ x: 0, y: 0, w: W, h: H, enabled: true, label: 'More games', act: ()=>{ home.page = (home.page + 1) % it.pages; refreshHome(true); } });
+    } else {
+      const g = it.game;
+      x.save(); rr(x, 16, 16, W - 32, 380, 16); x.clip();
+      if(img){ const r = Math.max((W - 32) / img.naturalWidth, 380 / img.naturalHeight), w = img.naturalWidth * r, h = img.naturalHeight * r; x.drawImage(img, 16 + (W - 32 - w) / 2, 16 + (380 - h) / 2, w, h); }
+      else { const gr = x.createLinearGradient(0, 16, 0, 396); gr.addColorStop(0, '#2a3350'); gr.addColorStop(1, '#141720'); x.fillStyle = gr; x.fillRect(16, 16, W - 32, 380); x.fillStyle = '#9aa3b2'; x.font = '800 30px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Loading…', W / 2, 206); }
+      x.restore();
+      x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.font = '900 40px ' + FONT;
+      x.fillText(fit(x, g.name, W - 200), 24, 432);
+      x.fillStyle = '#a8abb3'; x.font = '700 26px ' + FONT;
+      x.fillText(fit(x, 'by ' + g.creator + (g.playing ? ' · 👤 ' + g.playing + ' playing' : ''), W - 200), 24, 478);
+      rr(x, W - 168, 420, 144, 70, 16); x.fillStyle = '#00b06f'; x.fill();
+      x.fillStyle = '#fff'; x.font = '900 30px ' + FONT; x.textAlign = 'center'; x.fillText('▶ Play', W - 96, 456);
+      pn.buttons.push({ x: 0, y: 0, w: W, h: H, enabled: true, label: g.name, act: ()=> VR.join(g) });
+    }
+    if(glow){ rr(x, 3, 3, W - 6, H - 6, 20); x.strokeStyle = '#4de3ff'; x.lineWidth = 6; x.stroke(); }
+    pn.tex.needsUpdate = true;
+  }
+  function tickHome(dt){
+    home.t += dt;
+    if(!placed && calibrated){ // (once the headset has told us where your head is)
+      // stand in the middle of the island, facing the first game and the sign
+      dolly.rotation.y += Math.PI - headYaw().yaw;
+      const off = headOffset(T().v);
+      dolly.position.set(-off.x, floor ? 0 : EYE, -off.z);
+      placed = true;
+      dolly.updateMatrixWorld(true);
+    }
+    if(performance.now() > home.checkAt){ home.checkAt = performance.now() + 4000; refreshHome(false); }
+    nextThumb();
+    home.screens.forEach(sc=>{
+      if(!sc.item) return;
+      drawScreen(sc);
+      const want = sc.pn.hover === 0 ? 1.07 : 1; // the one you point at comes closer
+      sc.s += (want - sc.s) * Math.min(1, dt * 10); sc.g.scale.setScalar(sc.s);
+    });
+    if(home.floatMesh){
+      const fm = home.floatMesh, q = new THREE.Quaternion(), p = new THREE.Vector3(), sv = new THREE.Vector3(), m = new THREE.Matrix4();
+      home.floaters.forEach((f, i)=>{
+        f.rot.y += f.rs * dt; f.rot.x += f.rs * 0.5 * dt;
+        p.copy(f.p); p.y += Math.sin(home.t * f.sp + f.ph) * 0.6;
+        fm.setMatrixAt(i, m.compose(p, q.setFromEuler(f.rot), sv.set(f.s, f.s, f.s)));
+      });
+      fm.instanceMatrix.needsUpdate = true;
+    }
+    if(home.clouds) home.clouds.rotation.y += dt * 0.01;
+    if(home.sign) home.sign.position.y = 3.25 + Math.sin(home.t * 1.2) * 0.04;
+  }
+  // play a game from the Home room: through a portal
+  VR.join = function(g){
+    if(!g || portal.on) return;
+    try{ if(typeof SFX !== 'undefined' && SFX.portal) SFX.portal(); }catch(e){}
+    VR.portal({ name: g.name, sub: g.creator ? 'by ' + g.creator : '', key: g.key }, ()=>{ if(window.NeoHome && NeoHome.playGame) NeoHome.playGame(g.key); });
+  };
+  // leaving a game in VR: back to the Home room, through a portal (you stay in the headset)
+  VR.leaveGame = function(){
+    if(portal.on) return;
+    VR.portal({ name: 'Neoblox Home', sub: 'All the games', home: true }, ()=>{ if(typeof backToMenu === 'function') backToMenu(); });
+  };
+
+  // ------------------------------------------------------------------ the portal: a tunnel of blocks
+  // Joining a game in VR: blocks fly in from everywhere and build a glowing tunnel around you, the
+  // game's picture and name float at the end, you zoom through while the game loads behind it, and
+  // the blocks break apart — you're in. (VR only; the flat screen keeps its normal loading.)
+  const RINGS = 18, PER = 14, GAP = 0.8, TUN_R = 1.5, BLOCK = 0.42, T_BUILD = 0.9, T_BREAK = 0.7;
+  const portal = { on: false, group: null, t: 0 };
+  VR.portalBusy = ()=> portal.on;
+  function blockFace(){
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, 64, 64);
+    x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 0, 64, 6); x.fillRect(0, 58, 64, 6); x.fillRect(0, 0, 6, 64); x.fillRect(58, 0, 6, 64);
+    x.fillStyle = 'rgba(255,255,255,0.6)'; x.fillRect(10, 10, 20, 6); x.fillRect(10, 10, 6, 20);
+    const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; return t;
+  }
+  function buildPortal(){
+    if(portal.group) return;
+    const g = new THREE.Group(); g.name = 'vr-portal';
+    // the inside of the portal hides the world around you (drawn over it, see makePanel)
+    const bc = document.createElement('canvas'); bc.width = 4; bc.height = 256;
+    const bx = bc.getContext('2d'), gr = bx.createLinearGradient(0, 0, 0, 256);
+    gr.addColorStop(0, '#05060c'); gr.addColorStop(0.42, '#1b1446'); gr.addColorStop(0.5, '#2a1f6b'); gr.addColorStop(0.58, '#1b1446'); gr.addColorStop(1, '#05060c');
+    bx.fillStyle = gr; bx.fillRect(0, 0, 4, 256);
+    const back = new THREE.Mesh(new THREE.SphereGeometry(40, 24, 16), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), side: THREE.BackSide, transparent: true, opacity: 0, depthFunc: THREE.AlwaysDepth, fog: false }));
+    back.renderOrder = 50; back.frustumCulled = false;
+    g.add(back);
+    // the tunnel
+    const blocks = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ map: blockFace(), transparent: true, fog: false }), RINGS * PER);
+    blocks.renderOrder = 51; blocks.frustumCulled = false;
+    const c = new THREE.Color();
+    // the Neoblox logo's lime, cyan and purple, ring by ring, with white blocks mixed in
+    for(let i = 0; i < RINGS * PER; i++){ c.setHex(i % 4 === 0 ? 0xffffff : PALETTE[Math.floor(i / PER) % 3]); blocks.setColorAt(i, c); }
+    g.add(blocks);
+    // light at the end of the tunnel, and the game's card
+    const lc = document.createElement('canvas'); lc.width = lc.height = 128;
+    const lx = lc.getContext('2d'), lg = lx.createRadialGradient(64, 64, 4, 64, 64, 64);
+    lg.addColorStop(0, 'rgba(255,255,255,1)'); lg.addColorStop(0.3, 'rgba(160,230,255,0.75)'); lg.addColorStop(1, 'rgba(120,80,255,0)');
+    lx.fillStyle = lg; lx.fillRect(0, 0, 128, 128);
+    const light = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(lc), transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
+    light.renderOrder = 52; light.position.z = -RINGS * GAP - 1;
+    g.add(light);
+    const card = makePanel(1.6, 1.15, 560); card.name = 'portal';
+    card.mesh.material.depthFunc = THREE.LessEqualDepth; card.mesh.renderOrder = 53;
+    g.add(card.mesh);
+    portal.group = g; portal.back = back; portal.blocks = blocks; portal.light = light; portal.card = card;
+    portal.from = []; portal.spin = [];
+  }
+  function drawCard(info, dots){
+    const pn = portal.card, x = pn.x, W = pn.c.width, H = pn.c.height;
+    x.clearRect(0, 0, W, H);
+    rr(x, 0, 0, W, H, 26); x.fillStyle = 'rgba(14,16,24,0.92)'; x.fill();
+    rr(x, 3, 3, W - 6, H - 6, 24); x.strokeStyle = '#4de3ff'; x.lineWidth = 6; x.stroke();
+    const img = info.key ? VR.homeThumb(info.key) || portalThumb(info.key) : null;
+    x.save(); rr(x, 22, 22, W - 44, 420, 18); x.clip();
+    if(img){ const r = Math.max((W - 44) / img.naturalWidth, 420 / img.naturalHeight), w = img.naturalWidth * r, h = img.naturalHeight * r; x.drawImage(img, 22 + (W - 44 - w) / 2, 22 + (420 - h) / 2, w, h); }
+    else { const gr = x.createLinearGradient(0, 22, W, 442); gr.addColorStop(0, '#c8ff4d'); gr.addColorStop(0.5, '#4de3ff'); gr.addColorStop(1, '#b06bff'); x.fillStyle = gr; x.fillRect(22, 22, W - 44, 420);
+      x.fillStyle = '#111216'; x.font = '900 150px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(info.home ? '🏠' : 'N', W / 2, 232); }
+    x.restore();
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.font = '900 54px ' + FONT;
+    x.fillText(fit(x, info.name, W - 60), W / 2, 500);
+    x.fillStyle = '#9ad1ff'; x.font = '800 30px ' + FONT;
+    x.fillText((info.home ? 'Going home' : 'Joining') + '.'.repeat(1 + dots % 3) + (info.sub ? '  ·  ' + info.sub : ''), W / 2, 566, W - 60);
+    pn.tex.needsUpdate = true;
+  }
+  const portalThumbs = new Map();
+  function portalThumb(key){
+    if(!portalThumbs.has(key)){ const im = new Image(); portalThumbs.set(key, im); try{ const u = window.NeoHome && NeoHome.thumbUrl ? NeoHome.thumbUrl(key, 608, 380) : ''; if(u) im.src = u; }catch(e){} }
+    const im = portalThumbs.get(key); return im.complete && im.naturalWidth ? im : null;
+  }
+  // go through a portal: `go` is called once the tunnel is built (it changes the world)
+  VR.portal = function(info, go){
+    if(!session || !dolly || !cam || portal.on){ if(!portal.on) go(); return; }
+    buildPortal();
+    portal.on = true; portal.t = 0; portal.go = go; portal.info = info; portal.launched = false; portal.readyAt = 0; portal.frames = 0; portal.dots = -1;
+    portal.scene0 = App.scene;
+    const g = portal.group;
+    g.position.copy(cam.position); g.rotation.set(0, headYaw().local + Math.PI, 0); // the tunnel runs the way you're looking
+    dolly.add(g);
+    for(let i = 0; i < RINGS * PER; i++){
+      const d = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(8 + Math.random() * 10);
+      portal.from[i] = d; portal.spin[i] = new THREE.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+    }
+    portal.back.material.opacity = 0; portal.card.mesh.material.opacity = 0; portal.light.material.opacity = 0;
+    portal.card.mesh.position.set(0, 0, -7); portal.card.mesh.scale.setScalar(0.6);
+    portal.off = 0; portal.twist = 0;
+    drawCard(info, 0);
+    placeBlocks(0);
+  };
+  const ease = (k)=> 1 - Math.pow(1 - Math.max(0, Math.min(1, k)), 3);
+  const PM = new THREE.Matrix4(), PQ = new THREE.Quaternion(), PE = new THREE.Euler(), PP = new THREE.Vector3(), PS = new THREE.Vector3(), PT = new THREE.Vector3();
+  function tunnelPos(i, out){
+    const r = Math.floor(i / PER), k = i % PER;
+    const a = k / PER * Math.PI * 2 + r * 0.22 + portal.twist;
+    let z = -(0.6 + r * GAP) + portal.off;
+    const L = RINGS * GAP; while(z > 0.6) z -= L;
+    return out.set(Math.cos(a) * TUN_R, Math.sin(a) * TUN_R, z);
+  }
+  function placeBlocks(){
+    const t = portal.t, br = portal.readyAt ? Math.max(0, t - portal.readyAt) / T_BREAK : 0;
+    for(let i = 0; i < RINGS * PER; i++){
+      tunnelPos(i, PT);
+      let s = BLOCK;
+      if(t < T_BUILD){
+        const r = Math.floor(i / PER), k = ease((t - r * 0.018 - (i % 5) * 0.03) / 0.55);
+        PP.copy(portal.from[i]).lerp(PT, k);
+        PE.set(portal.spin[i].x * (1 - k), portal.spin[i].y * (1 - k), portal.spin[i].z * (1 - k));
+        s = BLOCK * (0.3 + 0.7 * k);
+      } else if(br > 0){
+        PP.copy(PT); PP.z *= 1; PS.set(PT.x, PT.y, 0).normalize();
+        PP.addScaledVector(PS, br * br * 7).z += br * 2;
+        PE.set(portal.spin[i].x * br, portal.spin[i].y * br, 0);
+        s = BLOCK * Math.max(0, 1 - br);
+      } else { PP.copy(PT); PE.set(0, 0, Math.atan2(PT.y, PT.x)); }
+      PQ.setFromEuler(PE); PM.compose(PP, PQ, PS.set(s, s, s));
+      portal.blocks.setMatrixAt(i, PM);
+    }
+    portal.blocks.instanceMatrix.needsUpdate = true;
+  }
+  VR._portalSpeed = 1; // (slow motion, for the preview pictures)
+  function tickPortal(dt){
+    if(!portal.on) return;
+    dt *= VR._portalSpeed;
+    portal.t += dt;
+    const t = portal.t;
+    if(!portal.launched && t >= T_BUILD){
+      portal.launched = true; portal.launchedAt = t;
+      try{ portal.go(); }catch(e){ console.error(e); }
+      // a new world: move the play space (with the portal in it) there before this frame is drawn
+      if(session && App.scene && App.camera) ensureDolly();
+    }
+    if(!session || !dolly) return;
+    if(portal.launched && !portal.readyAt){
+      if(App.scene && App.scene !== portal.scene0 && dolly.parent === App.scene) portal.frames++;
+      if(portal.frames > 3 || t - portal.launchedAt > 8) portal.readyAt = Math.max(t, portal.launchedAt + 1.1);
+    }
+    // zooming through: the tunnel streams past faster and faster, and twists
+    if(t >= T_BUILD){ portal.off += dt * Math.min(14, 2 + (t - T_BUILD) * 7); portal.twist += dt * 0.7; }
+    const br = portal.readyAt ? Math.max(0, t - portal.readyAt) : 0;
+    portal.back.material.opacity = br ? Math.max(0, 1 - br / (T_BREAK * 0.8)) : Math.min(1, t / 0.45);
+    const cm = portal.card.mesh;
+    cm.material.opacity = br ? Math.max(0, 1 - br / 0.35) : Math.min(1, t / 0.5);
+    const near = t < T_BUILD ? 0 : Math.min(1, (t - T_BUILD) / 1.4);
+    cm.position.z = -7 + near * 3.6; cm.scale.setScalar(0.6 + 0.4 * ease(t / T_BUILD));
+    portal.light.material.opacity = br ? Math.max(0, 1 - br / 0.4) : Math.min(1, t / 0.6);
+    const dots = Math.floor(t / 0.35); if(dots !== portal.dots){ portal.dots = dots; drawCard(portal.info, dots); }
+    placeBlocks();
+    if(br >= T_BREAK) endPortal();
+  }
+  function endPortal(){
+    if(portal.group && portal.group.parent) portal.group.parent.remove(portal.group);
+    portal.on = false; portal.go = null;
+  }
+
   // for the automated tests (a simulated headset): the play space, panels and hands
-  VR._debug = ()=> ({ dolly, cam, scale, hud, wrist, hands, notes, orbit, floor, chat, palmOn, tele, teleports, menu: menuInUse() });
+  VR._debug = ()=> ({ dolly, cam, scale, hud, wrist, hands, notes, orbit, floor, chat, palmOn, tele, teleports, menu: menuInUse(), home, portal });
 
   document.addEventListener('DOMContentLoaded', ()=>{ checkSupport(); showButton(); });
   if(document.readyState !== 'loading'){ checkSupport(); }

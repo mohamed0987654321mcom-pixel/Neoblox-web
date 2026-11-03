@@ -4105,6 +4105,17 @@ function checkPortals(pos){
 }
 function enterPortal(ref){
   SFX.portal();
+  // in VR, a game portal is a tunnel of blocks you fly through (rbx/vr.js)
+  const toGame = ref.kind==='community' || (ref.kind==='builtin' && ref.id==='skyrush');
+  if(toGame && vrOn() && NeoVR.portal){
+    if(NeoVR.portalBusy()) return;
+    const sky = ref.kind==='builtin';
+    NeoVR.portal({ name: sky ? 'Sky Rush' : ((ref.data && ref.data.name) || 'A game'), sub: sky ? 'by Neoblox' : (ref.data && ref.data.authorName ? 'by ' + ref.data.authorName : ''), key: sky ? 'sky' : String(ref.id) }, ()=> enterPortalNow(ref));
+    return;
+  }
+  enterPortalNow(ref);
+}
+function enterPortalNow(ref){
   if(ref.kind==='studio'){ goToStudio(); return; }
   if(ref.kind==='builtin' && ref.id==='skyrush'){ goToPlay(SKYRUSH_WORLD, null); return; }
   if(ref.kind==='builtin' && ref.id==='thunderbattle'){ goToBattle(); return; }
